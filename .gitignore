@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+.DS_Store
+data/srgpc.db
+generated/*
+static/uploads/*
+data/signatures/*
+!data/signatures/.gitkeep
+!static/uploads/.gitkeep
