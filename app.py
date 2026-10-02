@@ -179,9 +179,137 @@ def current_academic_year():
     return f"{start}-{str(start+1)[-2:]}"
 
 
-# Initialize the SQLite schema when the app is imported by Gunicorn/Render.
-# The local __main__ block also calls this, but production WSGI imports app.py
-# without executing that block.
+def init_db():
+    id_pk = "SERIAL PRIMARY KEY" if DATABASE_URL else "INTEGER PRIMARY KEY AUTOINCREMENT"
+    case_unique = "" if DATABASE_URL else " COLLATE NOCASE"
+    with get_db() as db:
+        tables = [
+            f"""CREATE TABLE IF NOT EXISTS students (
+                id {id_pk},
+                username TEXT NOT NULL UNIQUE{case_unique},
+                password_hash TEXT NOT NULL,
+                mobile TEXT NOT NULL,
+                roll_number TEXT NOT NULL UNIQUE{case_unique},
+                gmail TEXT NOT NULL UNIQUE{case_unique},
+                name TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )""",
+            f"""CREATE TABLE IF NOT EXISTS certificates (
+                id {id_pk},
+                certificate_id TEXT NOT NULL UNIQUE,
+                name TEXT NOT NULL,
+                roll_number TEXT NOT NULL,
+                activity TEXT NOT NULL,
+                position TEXT NOT NULL,
+                template TEXT NOT NULL,
+                font_family TEXT NOT NULL DEFAULT 'Helvetica',
+                filename TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )""",
+            f"""CREATE TABLE IF NOT EXISTS certificate_requests (
+                id {id_pk},
+                student_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                roll_number TEXT NOT NULL,
+                request_type TEXT NOT NULL,
+                activity TEXT NOT NULL,
+                position TEXT NOT NULL,
+                note TEXT NOT NULL DEFAULT '',
+                status TEXT NOT NULL DEFAULT 'Pending',
+                admin_note TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL,
+                processed_at TEXT,
+                certificate_id TEXT,
+                FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE
+            )""",
+            """CREATE TABLE IF NOT EXISTS settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            )""",
+            f"""CREATE TABLE IF NOT EXISTS admin_users (
+                id {id_pk},
+                username TEXT NOT NULL UNIQUE{case_unique},
+                password_hash TEXT NOT NULL,
+                role TEXT NOT NULL DEFAULT 'manager',
+                created_at TEXT NOT NULL,
+                active INTEGER NOT NULL DEFAULT 1
+            )""",
+            f"""CREATE TABLE IF NOT EXISTS audit_logs (
+                id {id_pk},
+                actor_role TEXT NOT NULL,
+                actor_name TEXT NOT NULL,
+                action TEXT NOT NULL,
+                entity_type TEXT NOT NULL,
+                entity_id TEXT NOT NULL DEFAULT '',
+                details TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL
+            )""",
+            f"""CREATE TABLE IF NOT EXISTS notifications (
+                id {id_pk},
+                student_id INTEGER NOT NULL,
+                title TEXT NOT NULL,
+                body TEXT NOT NULL,
+                is_read INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE
+            )""",
+        ]
+        for sql in tables:
+            db.execute(sql)
+
+        if DATABASE_URL:
+            cols = {row["column_name"] for row in db.execute("SELECT column_name FROM information_schema.columns WHERE table_name='certificates'").fetchall()}
+            req_cols = {row["column_name"] for row in db.execute("SELECT column_name FROM information_schema.columns WHERE table_name='certificate_requests'").fetchall()}
+            stu_cols = {row["column_name"] for row in db.execute("SELECT column_name FROM information_schema.columns WHERE table_name='students'").fetchall()}
+        else:
+            cols = {row[1] for row in db.execute("PRAGMA table_info(certificates)").fetchall()}
+            req_cols = {row[1] for row in db.execute("PRAGMA table_info(certificate_requests)").fetchall()}
+            stu_cols = {row[1] for row in db.execute("PRAGMA table_info(students)").fetchall()}
+
+        migrations = {
+            "font_family": "ALTER TABLE certificates ADD COLUMN font_family TEXT NOT NULL DEFAULT 'Helvetica'",
+            "certificate_type": "ALTER TABLE certificates ADD COLUMN certificate_type TEXT NOT NULL DEFAULT 'Achievement'",
+            "academic_year": "ALTER TABLE certificates ADD COLUMN academic_year TEXT NOT NULL DEFAULT '2026-27'",
+            "status": "ALTER TABLE certificates ADD COLUMN status TEXT NOT NULL DEFAULT 'Valid'",
+            "payload_hash": "ALTER TABLE certificates ADD COLUMN payload_hash TEXT NOT NULL DEFAULT ''",
+            "pdf_sha256": "ALTER TABLE certificates ADD COLUMN pdf_sha256 TEXT NOT NULL DEFAULT ''",
+            "created_by": "ALTER TABLE certificates ADD COLUMN created_by TEXT NOT NULL DEFAULT 'ADMIN'",
+            "request_id": "ALTER TABLE certificates ADD COLUMN request_id INTEGER",
+            "revoked_at": "ALTER TABLE certificates ADD COLUMN revoked_at TEXT",
+            "revoke_reason": "ALTER TABLE certificates ADD COLUMN revoke_reason TEXT NOT NULL DEFAULT ''",
+            "reissued_from": "ALTER TABLE certificates ADD COLUMN reissued_from TEXT NOT NULL DEFAULT ''",
+        }
+        for col, sql in migrations.items():
+            if col not in cols:
+                db.execute(sql)
+
+        req_migrations = {
+            "academic_year": "ALTER TABLE certificate_requests ADD COLUMN academic_year TEXT NOT NULL DEFAULT '2026-27'",
+            "processed_by": "ALTER TABLE certificate_requests ADD COLUMN processed_by TEXT NOT NULL DEFAULT ''",
+        }
+        for col, sql in req_migrations.items():
+            if col not in req_cols:
+                db.execute(sql)
+
+        if "department" not in stu_cols:
+            db.execute("ALTER TABLE students ADD COLUMN department TEXT NOT NULL DEFAULT 'CSE'")
+        if "academic_year" not in stu_cols:
+            db.execute("ALTER TABLE students ADD COLUMN academic_year TEXT NOT NULL DEFAULT '2026-27'")
+
+        defaults = {
+            "default_template": "classic",
+            "default_font": "Helvetica",
+            "show_qr": "1",
+            "certificate_title": "CERTIFICATE OF ACHIEVEMENT",
+            "default_academic_year": current_academic_year(),
+        }
+        for key, value in defaults.items():
+            db.execute("INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO NOTHING", (key, value))
+        db.commit()
+
+
+# Initialize the database when the app is imported by Gunicorn/Render.
+# SQLite remains available for local development when DATABASE_URL is not set.
 init_db()
 
 
