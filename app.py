@@ -466,7 +466,7 @@ def do_login():
     username = clean(request.form.get("username"), 80).lower()
     password = request.form.get("password", "")
     if role == "admin":
-        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+        if username.casefold() == ADMIN_USERNAME.casefold() and password == ADMIN_PASSWORD:
             session.clear(); session["role"] = "admin"; session["username"] = ADMIN_USERNAME; session["admin_role"] = "superadmin"
             audit("Login", "admin", ADMIN_USERNAME, "Master admin login")
             return redirect(url_for("admin_dashboard"))
@@ -539,7 +539,8 @@ def admin_base_context(active):
         total_students = db.execute("SELECT COUNT(*) c FROM students").fetchone()["c"]
         total_certs = db.execute("SELECT COUNT(*) c FROM certificates").fetchone()["c"]
         pending = db.execute("SELECT COUNT(*) c FROM certificate_requests WHERE status='Pending'").fetchone()["c"]
-        today = db.execute("SELECT COUNT(*) c FROM certificates WHERE date(created_at)=date('now','localtime')").fetchone()["c"]
+        today_sql = "SELECT COUNT(*) c FROM certificates WHERE DATE(created_at) = CURRENT_DATE" if DATABASE_URL else "SELECT COUNT(*) c FROM certificates WHERE date(created_at)=date('now','localtime')"
+        today = db.execute(today_sql).fetchone()["c"]
         valid = db.execute("SELECT COUNT(*) c FROM certificates WHERE status='Valid'").fetchone()["c"]
         revoked = db.execute("SELECT COUNT(*) c FROM certificates WHERE status='Revoked'").fetchone()["c"]
     return dict(active=active, total_students=total_students, total_certs=total_certs, pending=pending, today=today, valid=valid, revoked=revoked, admin_username=ADMIN_USERNAME, admin_role=session.get('admin_role','superadmin'))
@@ -560,7 +561,8 @@ def admin_dashboard():
 def admin_generate_page():
     ctx = admin_base_context("generate")
     with get_db() as db:
-        students = db.execute("SELECT name, roll_number FROM students ORDER BY name COLLATE NOCASE").fetchall()
+        order_sql = "SELECT name, roll_number FROM students ORDER BY LOWER(name)" if DATABASE_URL else "SELECT name, roll_number FROM students ORDER BY name COLLATE NOCASE"
+        students = db.execute(order_sql).fetchall()
     return render_template(
         "admin_generate.html",
         **ctx,
