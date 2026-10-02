@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded',()=>{bindCertificateLivePreview();b
 function setupThemeToggle(){
   const root=document.documentElement, body=document.body, btn=document.getElementById('themeToggle'); if(!btn)return;
   const saved=localStorage.getItem('srgpc-theme');
-  const apply=dark=>{root.classList.toggle('dark-mode',dark);body.classList.toggle('dark-mode',dark);btn.querySelector('.theme-icon').textContent=dark?'☀':'☾';btn.querySelector('.theme-label').textContent=dark?'Light mode':'Dark mode';btn.setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode');};
+  const apply=dark=>{root.classList.toggle('dark-mode',dark);body.classList.toggle('dark-mode',dark);btn.querySelector('.theme-icon').textContent=dark?'☀':'☾';btn.setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode');};
   apply(saved==='dark');
   btn.addEventListener('click',()=>{const dark=!root.classList.contains('dark-mode');localStorage.setItem('srgpc-theme',dark?'dark':'light');apply(dark);});
 }
