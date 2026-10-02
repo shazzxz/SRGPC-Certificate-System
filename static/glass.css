@@ -74,7 +74,13 @@ body.glass-ui:before{
 .glass-ui .logout:hover{background:rgba(255,255,255,.06);color:#fff}
 .glass-ui .main{padding:30px 34px 50px;min-width:0}
 .glass-ui .topbar{
-  margin-bottom:24px;align-items:flex-end;
+  margin-bottom:24px;align-items:flex-end;position:relative;
+}
+.glass-ui .topbar .theme-toggle{
+  position:absolute;right:0;top:0;z-index:3;
+}
+@media(max-width:700px){
+  .glass-ui .topbar .theme-toggle{right:0;top:-2px}
 }
 .glass-ui .topbar h1{
   font-size:30px;letter-spacing:-.055em;line-height:1.08;margin:5px 0 7px
