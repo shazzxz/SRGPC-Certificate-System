@@ -1,5 +1,40 @@
 {% extends 'base.html' %}{% block title %}Students · SRGPC{% endblock %}
-{% block heading %}Registered Students{% endblock %}{% block subheading %}Manage the student accounts that can log in and view generated certificates.{% endblock %}
+{% block heading %}Registered Students{% endblock %}{% block subheading %}Manage student accounts, including secure password resets.{% endblock %}
 {% block content %}
-<section class="panel history-panel"><div class="panel-head"><div><h2>Student Directory</h2><p>Students only see certificates that exist for their registered roll number.</p></div><span class="count-pill">{{ students|length }}</span></div><form class="search-bar" method="get"><input name="q" value="{{ search }}" placeholder="Search name, roll number or username"><button class="secondary-btn" type="submit">Search</button>{% if search %}<a class="clear-link" href="{{ url_for('admin_students') }}">Clear</a>{% endif %}</form><div class="table-wrap"><table><thead><tr><th>Name</th><th>Roll</th><th>Username</th><th>Gmail</th><th>Mobile</th><th>Joined</th></tr></thead><tbody>{% for student in students %}<tr><td><strong>{{ student.name }}</strong></td><td>{{ student.roll_number }}</td><td>{{ student.username }}</td><td>{{ student.gmail }}</td><td>{{ student.mobile }}</td><td>{{ student.created_at }}</td></tr>{% else %}<tr><td colspan="6" class="empty">No student accounts yet.</td></tr>{% endfor %}</tbody></table></div></section>
+<section class="panel history-panel">
+  <div class="panel-head">
+    <div><h2>Student Directory</h2><p>Students only see certificates that exist for their registered roll number.</p></div>
+    <span class="count-pill">{{ students|length }}</span>
+  </div>
+  <form class="search-bar" method="get">
+    <input name="q" value="{{ search }}" placeholder="Search name, roll number or username">
+    <button class="secondary-btn" type="submit">Search</button>
+    {% if search %}<a class="clear-link" href="{{ url_for('admin_students') }}">Clear</a>{% endif %}
+  </form>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Name</th><th>Roll</th><th>Username</th><th>Gmail</th><th>Mobile</th><th>Joined</th><th>Password</th></tr></thead>
+      <tbody>
+      {% for student in students %}
+        <tr>
+          <td><strong>{{ student.name }}</strong></td>
+          <td>{{ student.roll_number }}</td>
+          <td>{{ student.username }}</td>
+          <td>{{ student.gmail }}</td>
+          <td>{{ student.mobile }}</td>
+          <td>{{ student.created_at }}</td>
+          <td>
+            <form method="post" action="{{ url_for('admin_student_reset_password', student_id=student.id) }}" class="inline-form" onsubmit="return confirm('Reset the password for {{ student.name }}?');">
+              <input type="password" name="new_password" minlength="4" required placeholder="New password" style="width:115px;padding:7px 9px">
+              <button class="small-btn success-mini" type="submit">Reset</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7" class="empty">No student accounts yet.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
 {% endblock %}
