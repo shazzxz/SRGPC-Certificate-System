@@ -1,0 +1,18 @@
+{% extends 'base.html' %}{% block title %}SRGPC Admin Dashboard{% endblock %}
+{% block heading %}SRGPC Certificate Portal{% endblock %}{% block subheading %}Overview of certificates, requests and student activity.{% endblock %}
+{% block topaction %}<a href="{{ url_for('admin_generate_page') }}" class="ghost-btn">＋ New Certificate</a>{% endblock %}
+{% block content %}
+<section class="stats-grid">
+  <div class="stat-card"><span class="stat-label">Certificates Generated</span><strong>{{ total_certs }}</strong><span class="stat-note">All-time</span></div>
+  <div class="stat-card"><span class="stat-label">Generated Today</span><strong>{{ today }}</strong><span class="stat-note">Local portal time</span></div>
+  <div class="stat-card"><span class="stat-label">Registered Students</span><strong>{{ total_students }}</strong><span class="stat-note">Student accounts</span></div>
+  <div class="stat-card accent"><span class="stat-label">Pending Requests</span><strong>{{ pending }}</strong><span class="stat-note">Need admin action</span></div>
+</section>
+<div class="dashboard-grid">
+  <section class="panel"><div class="panel-head"><div><h2>Recent Certificate Requests</h2><p>Student requests waiting for review.</p></div><a class="text-link" href="{{ url_for('admin_requests') }}">View all →</a></div>
+    <div class="request-list">{% for r in requests %}<div class="request-row"><div><strong>{{ r.name }}</strong><span>{{ r.roll_number }} · {{ r.request_type }} · {{ r.activity }}</span></div><span class="status-chip {{ r.status|lower }}">{{ r.status }}</span></div>{% else %}<div class="empty-card">No certificate requests yet.</div>{% endfor %}</div>
+  </section>
+  <section class="panel quick-panel"><div class="panel-head"><div><h2>Quick Actions</h2><p>Jump directly to common admin tasks.</p></div></div><div class="quick-actions">{% if session.get('admin_role')!='verifier' %}<a class="action-card" href="{{ url_for('admin_generate_page') }}"><b>＋</b><span>Generate Certificate</span><small>Create a certificate manually</small></a><a class="action-card" href="{{ url_for('admin_bulk') }}"><b>▥</b><span>Bulk Generate</span><small>Upload CSV and make a ZIP</small></a><a class="action-card" href="{{ url_for('admin_signatures') }}"><b>✎</b><span>Signature Studio</span><small>Upload or draw signatures</small></a>{% endif %}<a class="action-card" href="{{ url_for('admin_verify_page') }}"><b>✓</b><span>Verify Hash</span><small>Check an SRGPC certificate ID</small></a><a class="action-card" href="{{ url_for('public_verify') }}" target="_blank"><b>↗</b><span>Public Verifier</span><small>Open the no-login verification page</small></a><a class="action-card" href="{{ url_for('admin_analytics') }}"><b>◫</b><span>Analytics</span><small>Stats and audit history</small></a></div></section>
+</div>
+<section class="panel history-panel"><div class="panel-head"><div><h2>Recent Certificates</h2><p>The latest generated documents.</p></div><a class="text-link" href="{{ url_for('admin_certificates') }}">View all →</a></div><div class="table-wrap"><table><thead><tr><th>Student</th><th>Roll</th><th>Achievement</th><th>Hash</th><th>Action</th></tr></thead><tbody>{% for item in certs %}<tr><td><strong>{{ item.name }}</strong></td><td>{{ item.roll_number }}</td><td>{{ item.position }} · {{ item.activity }}</td><td><code>{{ item.certificate_id }}</code></td><td><a class="download-link" href="{{ url_for('download', filename=item.filename) }}">Download</a></td></tr>{% else %}<tr><td colspan="5" class="empty">No certificates generated yet.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

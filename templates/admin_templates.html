@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Templates & Fonts · SRGPC{% endblock %}
+{% block heading %}Templates, Fonts & QR{% endblock %}
+{% block subheading %}Set the college-wide defaults. Every individual certificate can still override these choices when needed.{% endblock %}
+{% block content %}
+<section class="panel settings-panel settings-modern">
+  <div class="panel-head"><div><h2>College-wide defaults</h2><p>Choose the starting style used by the certificate generator.</p></div><span class="pill">Global Settings</span></div>
+  <form method="post" action="{{ url_for('admin_templates_save') }}" class="global-settings-form">
+    <div class="settings-choice">
+      <div class="settings-choice-icon">▣</div>
+      <div class="settings-choice-copy"><b>Default template</b><small>The certificate design used when an admin opens Generate Certificate.</small></div>
+      <select name="default_template" aria-label="Default certificate template">{% for key,tpl in templates.items() %}<option value="{{ key }}" {% if key==default_template %}selected{% endif %}>{{ tpl.name }}</option>{% endfor %}</select>
+    </div>
+    <div class="settings-choice">
+      <div class="settings-choice-icon">Aa</div>
+      <div class="settings-choice-copy"><b>Default font</b><small>The typeface used when no custom font is selected.</small></div>
+      <select name="default_font" aria-label="Default font">{% for key in font_options %}<option value="{{ key }}" {% if key==default_font %}selected{% endif %}>{{ key }}</option>{% endfor %}</select>
+    </div>
+    <div class="settings-choice compact-choice">
+      <div class="settings-choice-icon">QR</div>
+      <div class="settings-choice-copy"><b>Public verification QR</b><small>Add a scannable verification code to every generated certificate.</small></div>
+      <label class="toggle"><input type="checkbox" name="show_qr" value="1" {% if show_qr=='1' %}checked{% endif %}><span></span></label>
+    </div>
+    <div class="settings-choice compact-choice year-choice">
+      <div class="settings-choice-icon">26</div>
+      <div class="settings-choice-copy"><b>Default academic year</b><small>Used when an admin does not change the academic year.</small></div>
+      <input name="default_academic_year" value="{{ default_academic_year }}" placeholder="2026-27" aria-label="Default academic year">
+    </div>
+    <div class="settings-actions"><button class="primary-btn inline-btn" type="submit">Save global preferences <span>→</span></button><span class="settings-hint">These settings affect new certificates only.</span></div>
+  </form>
+</section>
+
+<section class="template-studio-grid redesigned-template-grid">
+{% for key,tpl in templates.items() %}
+  <article class="panel studio-template {% if key==default_template %}is-default{% endif %}">
+    <div class="template-card-top">
+      <div><span class="template-kicker">Template</span><h3>{{ tpl.name }}</h3></div>
+      {% if key==default_template %}<span class="status-chip generated">Current default</span>{% endif %}
+    </div>
+    <div class="mini-cert large {{ key }}"><img src="{{ url_for('static', filename='college_logo.png') }}" alt=""><b>Certificate</b><small>{{ tpl.name }}</small></div>
+    <p>{{ tpl.description }}</p>
+    <div class="template-card-meta"><span>Font: {{ default_font }}</span><span>QR: {% if show_qr=='1' %}On{% else %}Off{% endif %}</span></div>
+  </article>
+{% endfor %}
+</section>
+<div class="bottom-note"><b>Built-in fonts</b><span>Helvetica · Times · Courier. PDF certificates stay consistent with the selected font family.</span></div>
+{% endblock %}

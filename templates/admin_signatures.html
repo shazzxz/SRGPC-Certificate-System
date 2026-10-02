@@ -1,0 +1,16 @@
+{% extends 'base.html' %}{% block title %}Signature Studio · SRGPC{% endblock %}
+{% block heading %}Signature Studio{% endblock %}{% block subheading %}Upload or draw the teacher and principal signatures used on generated PDFs.{% endblock %}
+{% block content %}
+<div class="signature-layout">
+<section class="signature-grid">
+{% for kind,label,has_sig,url in [('teacher','Teacher / Coordinator',teacher_sig,teacher_url),('principal','Principal / Head of Institution',principal_sig,principal_url)] %}
+<div class="panel signature-card"><div class="panel-head"><div><h2>{{ label }}</h2><p>Draw or upload a transparent PNG/JPG signature.</p></div><span class="pill">{{ 'Saved' if has_sig else 'Not Set' }}</span></div>
+<div class="signature-status">{% if has_sig %}<img src="{{ url }}" alt="{{ label }} signature">{% else %}<span>No signature saved yet</span>{% endif %}</div>
+<form class="upload-row" method="post" action="{{ url_for('signature_upload') }}" enctype="multipart/form-data"><input type="hidden" name="kind" value="{{ kind }}"><input class="signature-file" data-kind="{{ kind }}" type="file" name="signature" accept="image/png,image/jpeg"><button class="secondary-btn" type="submit">Upload</button></form>
+<div class="draw-label">Or draw digitally</div><canvas class="signature-canvas" id="canvas-{{ kind }}" width="700" height="180"></canvas><div class="draw-actions"><button type="button" class="secondary-btn" onclick="clearSignature('{{ kind }}')">Clear</button><form method="post" action="{{ url_for('signature_draw') }}" onsubmit="return saveSignature('{{ kind }}')"><input type="hidden" name="kind" value="{{ kind }}"><input type="hidden" name="signature_data" id="data-{{ kind }}"><button class="primary-btn inline-btn" type="submit">Save Drawing</button></form></div>{% if has_sig %}<form method="post" action="{{ url_for('signature_remove') }}" class="remove-form"><input type="hidden" name="kind" value="{{ kind }}"><button class="danger-link" type="submit">Remove current signature</button></form>{% endif %}</div>
+{% endfor %}
+</section>
+<section class="panel signature-preview-panel"><div class="panel-head"><div><h2>Live Certificate Preview</h2><p>The signature appears here while you draw, before you save it.</p></div><span class="preview-badge">Live</span></div>
+<div class="preview-frame signature-live-frame"><div class="certificate classic"><div class="cert-logo"><img src="{{ url_for('static', filename='college_logo.png') }}"></div><div class="cert-top"><small>SRGPC</small><span>CERTIFICATE OF ACHIEVEMENT</span></div><div class="cert-body"><small>Presented to</small><h3>Student Name</h3><div class="cert-rule"></div><p>for securing <b>1st Position</b> in <span>Sample Activity</span>.</p></div><div class="cert-sign"><div><img id="previewTeacherSignature" class="preview-signature {% if not teacher_sig %}hidden{% endif %}" src="{{ teacher_url }}"><span>Faculty / Coordinator</span></div><div><img id="previewPrincipalSignature" class="preview-signature {% if not principal_sig %}hidden{% endif %}" src="{{ principal_url }}"><span>Principal / Head</span></div></div><div class="cert-id">LIVE PREVIEW · hash assigned at generation</div></div></div></section>
+</div>
+{% endblock %}

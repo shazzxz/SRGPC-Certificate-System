@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Bulk Generation · SRGPC{% endblock %}
+{% block heading %}Bulk Certificate Generation{% endblock %}
+{% block subheading %}Upload a CSV, validate every row, and create a ZIP of verified certificates without layout drift.{% endblock %}
+{% block content %}
+<section class="csv-help-grid">
+  <section class="panel form-panel">
+    <div class="panel-head"><div><h2>Upload CSV</h2><p>Required columns: Name, Roll Number, Activity and Position.</p></div><span class="pill">Batch ZIP</span></div>
+    <form method="post" enctype="multipart/form-data" id="bulkForm">
+      <div class="upload-drop">
+        <label>CSV File<input type="file" name="csv_file" accept=".csv,text/csv" required></label>
+        <div class="bulk-actions"><button class="primary-btn inline-btn" type="submit"><span>Generate Batch</span><span>→</span></button><a class="ghost-btn" href="{{ url_for('admin_bulk') }}">Reset</a></div>
+      </div>
+      <div class="request-note"><span>Required</span>Name · Roll Number · Activity · Position</div>
+      <div class="request-note"><span>Optional</span>Certificate Type · Academic Year · Template · Font Family</div>
+      <div class="request-note"><span>Duplicate protection</span>Exact matching valid certificates are skipped automatically; skipped rows are listed in the result.</div>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><div><h2>CSV Format</h2><p>Use the exact header names shown below.</p></div><span class="pill">students.csv</span></div>
+    <div class="table-wrap">
+      <pre class="csv-example">Name,Roll Number,Activity,Position,Certificate Type,Academic Year,Template,Font Family
+Rahul Sharma,CSE24001,Coding Competition,1st Position,Achievement,2026-27,classic,Helvetica
+Priya Singh,CSE24002,Debate,2nd Position,Participation,2026-27,royal,Times</pre>
+      <div class="csv-columns">
+        <div class="csv-column-card"><b>Required</b><span>Name, Roll Number, Activity, Position</span></div>
+        <div class="csv-column-card"><b>Optional</b><span>Certificate Type, Academic Year</span></div>
+        <div class="csv-column-card"><b>Style</b><span>Template: classic / modern / emerald / midnight / royal / burgundy / skyline / minimal</span></div>
+        <div class="csv-column-card"><b>Font</b><span>Helvetica / Times / Courier</span></div>
+      </div>
+    </div>
+  </section>
+</section>
+{% endblock %}

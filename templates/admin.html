@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SRGPC Admin Portal</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body>
+<div class="app-shell">
+<aside class="sidebar">
+  <div class="brand"><div class="brand-mark">✓</div><div><div class="brand-name">SRGPC</div><div class="brand-sub">Admin Portal</div></div></div>
+  <div class="profile"><div class="avatar">A</div><div><strong>Admin User</strong><span>Administrator</span></div></div>
+  <nav><a class="nav-item active" href="#dashboard"><span>⌂</span> Dashboard</a><a class="nav-item" href="#generator"><span>▣</span> Generate Certificate</a><a class="nav-item" href="#certificates"><span>◷</span> Certificates</a><a class="nav-item" href="#verify"><span>✓</span> Verify Certificate</a><a class="nav-item" href="#signatures"><span>✎</span> Signature Studio</a><a class="nav-item" href="#students"><span>♙</span> Students</a></nav>
+  <div class="sidebar-bottom"><div class="system-card"><span class="status-dot"></span><div><b>System Ready</b><small>Database + PDF generator online</small></div></div><a class="logout" href="{{ url_for('logout') }}">↪ &nbsp;Logout</a></div>
+</aside>
+<main class="main">
+<header class="topbar"><div><div class="eyebrow">Administration</div><h1>SRGPC Certificate Portal</h1><p>Create, verify and manage student certificates.</p></div><div class="top-actions"><a href="#generator" class="ghost-btn">＋ New Certificate</a></div></header>
+{% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="flash page-flash {{ category }}">{{ message }}</div>{% endfor %}{% endwith %}
+<section id="dashboard" class="stats-grid">
+<div class="stat-card"><span class="stat-label">Certificates Generated</span><strong>{{ total_certs }}</strong><span class="stat-note">All-time</span></div>
+<div class="stat-card"><span class="stat-label">Generated Today</span><strong>{{ today }}</strong><span class="stat-note">Local portal time</span></div>
+<div class="stat-card"><span class="stat-label">Registered Students</span><strong>{{ total_students }}</strong><span class="stat-note">Student accounts</span></div>
+<div class="stat-card accent"><span class="stat-label">Admin Access</span><strong>Active</strong><span class="stat-note">{{ admin_username }}</span></div>
+</section>
+
+<section id="generator" class="content-grid">
+<div class="panel form-panel"><div class="panel-head"><div><h2>Generate Certificate</h2><p>Enter student and achievement details.</p></div><span class="pill">SRGPC</span></div>
+<form method="post" action="{{ url_for('admin_generate') }}" id="certForm">
+<div class="field-row"><label>Student Name<input id="name" name="name" required placeholder="e.g. Aryan Sharma"></label><label>Roll Number<input id="roll" name="roll_number" required placeholder="e.g. CSE24017"></label></div>
+<label>Activity / Event<input id="activity" name="activity" required placeholder="e.g. Inter-College Coding Competition"></label>
+<label>Position / Achievement<input id="position" name="position" required placeholder="e.g. 1st Position"></label>
+<div class="subhead">Choose a template</div>
+<div class="template-grid" id="templates">{% for key,tpl in templates.items() %}<button type="button" class="template-option {% if loop.first %}selected{% endif %}" data-template="{{ key }}"><div class="mini-cert {{ key }}"><img src="{{ url_for('static', filename='college_logo.png') }}"><b>Certificate</b><small>{{ tpl.name }}</small></div><strong>{{ tpl.name }}</strong><span>{{ tpl.description }}</span></button>{% endfor %}</div>
+<input type="hidden" name="template" id="template" value="classic"><button class="primary-btn" type="submit"><span>Generate Certificate PDF</span><span>→</span></button>
+</form></div>
+<div class="panel preview-panel"><div class="panel-head"><div><h2>Live Preview</h2><p>Logo and signature layout.</p></div><span class="preview-badge">A4 Landscape</span></div>
+<div class="preview-frame"><div id="certificatePreview" class="certificate classic"><div class="cert-logo"><img src="{{ url_for('static', filename='college_logo.png') }}"></div><div class="cert-top"><small>SRGPC</small><span>CERTIFICATE OF ACHIEVEMENT</span></div><div class="cert-body"><small>This certificate is proudly presented to</small><h3 id="previewName">Student Name</h3><div class="cert-rule"></div><p>for securing <b id="previewPosition">Position / Achievement</b> in <span id="previewActivity">Activity / Event</span>.</p></div><div class="cert-sign"><span>{% if teacher_sig %}✓ Signature saved{% else %}Faculty / Coordinator{% endif %}</span><span>{% if principal_sig %}✓ Signature saved{% else %}Principal / Head{% endif %}</span></div><div class="cert-id">Unique hash generated when exported</div></div></div></div>
+</section>
+
+<section id="verify" class="panel section-panel"><div class="panel-head"><div><h2>Verify Certificate</h2><p>Paste the exact SRGPC certificate hash ID to check authenticity.</p></div><span class="pill">Admin Only</span></div><form class="verify-form" method="post" action="{{ url_for('admin_verify') }}"><input name="certificate_id" placeholder="SRGPC-2026-XXXXXXXXXXXX" required><button class="primary-btn inline-btn" type="submit">Verify Hash</button></form></section>
+
+<section id="signatures" class="signature-grid">
+{% for kind,label,has_sig in [('teacher','Teacher / Coordinator',teacher_sig),('principal','Principal / Head of Institution',principal_sig)] %}
+<div class="panel signature-card"><div class="panel-head"><div><h2>{{ label }} Signature</h2><p>Upload a digital signature or draw one below.</p></div><span class="pill">{{ 'Saved' if has_sig else 'Not Set' }}</span></div>
+<div class="signature-status">{% if has_sig %}<img src="{{ url_for('signature_preview', kind=kind) }}" alt="{{ label }} signature">{% else %}<span>No signature saved yet</span>{% endif %}</div>
+<form class="upload-row" method="post" action="{{ url_for('signature_upload') }}" enctype="multipart/form-data"><input type="hidden" name="kind" value="{{ kind }}"><input type="file" name="signature" accept="image/png,image/jpeg,image/webp" required><button class="secondary-btn" type="submit">Upload</button></form>
+<div class="draw-label">Or draw digitally</div><canvas class="signature-canvas" id="canvas-{{ kind }}" width="520" height="150"></canvas><div class="draw-actions"><button type="button" class="secondary-btn" onclick="clearSignature('{{ kind }}')">Clear</button><form method="post" action="{{ url_for('signature_draw') }}" onsubmit="return saveSignature('{{ kind }}')"><input type="hidden" name="kind" value="{{ kind }}"><input type="hidden" name="signature_data" id="data-{{ kind }}"><button class="primary-btn inline-btn" type="submit">Save Drawing</button></form></div>{% if has_sig %}<form method="post" action="{{ url_for('signature_remove') }}" class="remove-form"><input type="hidden" name="kind" value="{{ kind }}"><button class="danger-link" type="submit">Remove current signature</button></form>{% endif %}</div>
+{% endfor %}
+</section>
+
+<section id="certificates" class="panel history-panel"><div class="panel-head"><div><h2>Recent Certificates</h2><p>Every generated certificate has a unique ID.</p></div><span class="count-pill">{{ certs|length }}</span></div><div class="table-wrap"><table><thead><tr><th>Student</th><th>Roll No.</th><th>Achievement</th><th>Template</th><th>Hash ID</th><th>Action</th></tr></thead><tbody>{% for item in certs %}<tr><td><strong>{{ item.name }}</strong></td><td>{{ item.roll_number }}</td><td>{{ item.position }} · {{ item.activity }}</td><td>{{ templates[item.template].name }}</td><td><code>{{ item.certificate_id }}</code></td><td><a class="download-link" href="{{ url_for('download', filename=item.filename) }}">Download</a></td></tr>{% else %}<tr><td colspan="6" class="empty">No certificates generated yet.</td></tr>{% endfor %}</tbody></table></div></section>
+
+<section id="students" class="panel history-panel"><div class="panel-head"><div><h2>Registered Students</h2><p>Student accounts that can access their certificates.</p></div><span class="count-pill">{{ total_students }}</span></div><div class="table-wrap"><table><thead><tr><th>Name</th><th>Roll No.</th><th>Username</th><th>Gmail</th><th>Mobile</th></tr></thead><tbody>{% for student in students %}<tr><td><strong>{{ student.name }}</strong></td><td>{{ student.roll_number }}</td><td>{{ student.username }}</td><td>{{ student.gmail }}</td><td>{{ student.mobile }}</td></tr>{% else %}<tr><td colspan="5" class="empty">No student accounts yet.</td></tr>{% endfor %}</tbody></table></div></section>
+<div class="bottom-note"><b>College branding</b><span>The supplied SRGPC logo is embedded into all four PDF certificate templates.</span></div>
+</main></div>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body></html>

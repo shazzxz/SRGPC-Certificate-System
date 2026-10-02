@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Generate Certificate · SRGPC{% endblock %}
+{% block heading %}Generate Certificate{% endblock %}
+{% block subheading %}The certificate preview updates live as you edit the details, using the same layout and safe-area rules as the final certificate.{% endblock %}
+{% block topaction %}<a href="{{ url_for('admin_requests') }}" class="ghost-btn">View Requests{% if pending %} · {{ pending }}{% endif %}</a>{% endblock %}
+{% block content %}
+<section class="content-grid">
+  <div class="panel form-panel">
+    <div class="panel-head">
+      <div><h2>Certificate Details</h2><p>All long values are auto-fitted before they reach the final PDF.</p></div>
+      <span class="pill">{{ default_font }}</span>
+    </div>
+    <form method="post" action="{{ url_for('admin_generate') }}" id="certForm">
+      <div class="field-row">
+        <label>Student Name<input id="name" name="name" required placeholder="e.g. Aryan Sharma"></label>
+        <label>Roll Number<input id="roll" name="roll_number" required placeholder="e.g. CSE24017"></label>
+      </div>
+      <label>Activity / Event<input id="activity" name="activity" required placeholder="e.g. Inter-College Coding Competition"></label>
+      <label>Position / Achievement<input id="position" name="position" required placeholder="e.g. 1st Position"></label>
+      <div class="field-row">
+        <label>Certificate Type<select id="certificate_type" name="certificate_type">{% for t in request_types %}<option>{{ t }}</option>{% endfor %}</select></label>
+        <label>Academic Year<input id="academic_year" name="academic_year" value="{{ academic_year }}" placeholder="2026-27"></label>
+      </div>
+      <div class="field-row">
+        <label>Font Family<select id="font_family" name="font_family">{% for key in font_options %}<option value="{{ key }}" {% if key==default_font %}selected{% endif %}>{{ key }}</option>{% endfor %}</select></label>
+        <label>Template<select id="templateSelect" name="template">{% for key,tpl in templates.items() %}<option value="{{ key }}" {% if key==default_template %}selected{% endif %}>{{ tpl.name }}</option>{% endfor %}</select></label>
+      </div>
+      <label class="checkbox-line"><input type="checkbox" name="allow_duplicate" value="1"> Allow duplicate issuance (use only for an intentional reissue)</label>
+      <div class="subhead">Choose a template</div>
+      <div class="template-grid" id="templates">
+        {% for key,tpl in templates.items() %}
+        <button type="button" class="template-option {% if key==default_template %}selected{% endif %}" data-template="{{ key }}">
+          <div class="mini-cert {{ key }}"><img src="{{ url_for('static', filename='college_logo.png') }}" alt=""><b>Certificate</b><small>{{ tpl.name }}</small></div>
+          <strong>{{ tpl.name }}</strong><span>{{ tpl.description }}</span>
+        </button>
+        {% endfor %}
+      </div>
+      <button class="primary-btn" type="submit"><span>Generate Verified PDF</span><span>→</span></button>
+    </form>
+  </div>
+
+  <div class="panel preview-panel">
+    <div class="panel-head">
+      <div><h2>Live Certificate Preview</h2><p>The preview uses the same certificate data and safe-area rules as the generated PDF, without an embedded PDF viewer.</p></div>
+      <span class="preview-badge">A4 Landscape</span>
+    </div>
+    <div class="live-preview-wrap">
+      <div id="certificateLivePreview" class="certificate-live-stage"
+           data-logo-url="{{ url_for('static', filename='college_logo.png') }}"
+           data-qr-url="{{ url_for('static', filename='preview_qr.png') }}"
+           data-teacher-url="{{ url_for('signature_preview', kind='teacher') if teacher_sig else '' }}"
+           data-principal-url="{{ url_for('signature_preview', kind='principal') if principal_sig else '' }}">
+        <svg id="certificateLiveSvg" class="certificate-live-svg" viewBox="0 0 842 595" role="img" aria-label="Live certificate preview" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+      <div class="preview-live-status"><span class="status-dot"></span>Live preview · updates instantly as you type</div>
+    </div>
+    <div class="qr-note preview-safe-note"><b>Preview:</b> the certificate is rendered directly in the page, so it stays responsive and updates without Acrobat or an iframe reload.</div>
+  </div>
+</section>
+{% endblock %}
+

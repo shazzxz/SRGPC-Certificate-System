@@ -1,16 +1,15 @@
 services:
   - type: web
-    name: srgpc-certificate
-    runtime: python
-    plan: free
+    name: srgpc-certificate-portal
+    env: python
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app
     envVars:
       - key: SRGPC_SESSION_KEY
-        generateValue: true
+        sync: false
       - key: SRGPC_PUBLIC_BASE_URL
         sync: false
       - key: SRGPC_ADMIN_USERNAME
-        sync: false
+        value: ADMIN
       - key: SRGPC_ADMIN_PASSWORD
         sync: false

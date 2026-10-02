@@ -1,0 +1,11 @@
+SRGPC CERTIFICATE MANAGEMENT SYSTEM v6
+
+1. Extract the ZIP.
+2. Double-click RUN.bat.
+3. Open http://127.0.0.1:5000
+
+ADMIN LOGIN
+Username: ADMIN
+Password: 0000
+
+The Generate Certificate page now shows the exact same PDF renderer used for the final certificate.
