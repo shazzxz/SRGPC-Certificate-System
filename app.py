@@ -260,6 +260,12 @@ def current_academic_year():
     return f"{start}-{str(start+1)[-2:]}"
 
 
+# Initialize the SQLite schema when the app is imported by Gunicorn/Render.
+# The local __main__ block also calls this, but production WSGI imports app.py
+# without executing that block.
+init_db()
+
+
 def current_signature_path(kind):
     filename = setting(f"{kind}_signature", "")
     if not filename:
