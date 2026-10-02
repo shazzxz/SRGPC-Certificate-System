@@ -9,12 +9,9 @@ A Flask-based college certificate platform with student and admin portals, certi
 3. The script creates a local virtual environment and installs the listed requirements.
 4. Open `http://127.0.0.1:5000`.
 
-### Master admin login
+### Admin login
 
-- Username: `ADMIN`
-- Password: `0000`
-
-For public deployment, change these values with `SRGPC_ADMIN_USERNAME` and `SRGPC_ADMIN_PASSWORD` environment variables.
+For deployment, set the admin credentials using the `SRGPC_ADMIN_USERNAME` and `SRGPC_ADMIN_PASSWORD` environment variables. Do not store credentials in this repository.
 
 ## v6 reliability fixes
 
