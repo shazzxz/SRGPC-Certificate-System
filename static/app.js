@@ -99,3 +99,12 @@ function saveSignature(kind){const c=document.getElementById('canvas-'+kind);if(
 function bindSignatureUploads(){document.querySelectorAll('.signature-file').forEach(input=>input.addEventListener('change',()=>{const file=input.files&&input.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>liveSignature(input.dataset.kind,e.target.result);reader.readAsDataURL(file);}));['teacher','principal'].forEach(setupSignatureCanvas);}
 function bindLoginRole(){const form=document.getElementById('loginForm');if(!form)return;const roleInput=document.getElementById('loginRole');const register=document.getElementById('studentRegister');const hint=document.getElementById('adminHint');document.querySelectorAll('.role-tab').forEach(tab=>tab.addEventListener('click',()=>{document.querySelectorAll('.role-tab').forEach(x=>x.classList.remove('active'));tab.classList.add('active');roleInput.value=tab.dataset.role;if(register)register.style.display=tab.dataset.role==='student'?'block':'none';if(hint)hint.style.display=tab.dataset.role==='admin'?'flex':'none';}));}
 document.addEventListener('DOMContentLoaded',()=>{bindCertificateLivePreview();bindSignatureUploads();bindLoginRole();});
+
+function setupThemeToggle(){
+  const root=document.documentElement, body=document.body, btn=document.getElementById('themeToggle'); if(!btn)return;
+  const saved=localStorage.getItem('srgpc-theme');
+  const apply=dark=>{root.classList.toggle('dark-mode',dark);body.classList.toggle('dark-mode',dark);btn.querySelector('.theme-icon').textContent=dark?'☀':'☾';btn.querySelector('.theme-label').textContent=dark?'Light mode':'Dark mode';btn.setAttribute('aria-label',dark?'Switch to light mode':'Switch to dark mode');};
+  apply(saved==='dark');
+  btn.addEventListener('click',()=>{const dark=!root.classList.contains('dark-mode');localStorage.setItem('srgpc-theme',dark?'dark':'light');apply(dark);});
+}
+document.addEventListener('DOMContentLoaded',setupThemeToggle);
