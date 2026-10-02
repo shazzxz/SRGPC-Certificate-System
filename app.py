@@ -479,7 +479,10 @@ def do_login():
         audit("Login", "admin", admin["username"], f"Role: {admin['role']}")
         return redirect(url_for("admin_dashboard"))
     with get_db() as db:
-        student = db.execute("SELECT * FROM students WHERE username = ?", (username,)).fetchone()
+        student = db.execute(
+            "SELECT * FROM students WHERE LOWER(username)=LOWER(?) OR LOWER(roll_number)=LOWER(?) OR LOWER(gmail)=LOWER(?) LIMIT 1",
+            (username, username, username),
+        ).fetchone()
     if not student or not check_password_hash(student["password_hash"], password):
         flash("Invalid student username or password.", "error")
         return redirect(url_for("login"))
@@ -798,6 +801,39 @@ def admin_student_reset_password(student_id):
 
     audit("Reset student password", "student", student_id, f"Username: {student['username']}")
     flash(f"Password reset successfully for {student['name']} ({student['username']}).", "success")
+    return redirect(url_for("admin_students"))
+
+
+@app.post("/admin/student/<int:student_id>/delete")
+@admin_permission("students")
+def admin_student_delete(student_id):
+    confirm = request.form.get("confirm_delete")
+    if confirm != "DELETE":
+        flash("Delete confirmation was not provided.", "error")
+        return redirect(url_for("admin_students"))
+
+    with get_db() as db:
+        student = db.execute(
+            "SELECT id, username, name, roll_number FROM students WHERE id = ?",
+            (student_id,),
+        ).fetchone()
+        if not student:
+            flash("Student account not found.", "error")
+            return redirect(url_for("admin_students"))
+
+        # Remove account-owned workflow data. Certificates remain archived by roll number.
+        db.execute("DELETE FROM notifications WHERE student_id = ?", (student_id,))
+        db.execute("DELETE FROM certificate_requests WHERE student_id = ?", (student_id,))
+        db.execute("DELETE FROM students WHERE id = ?", (student_id,))
+        db.commit()
+
+    audit(
+        "Delete student account",
+        "student",
+        student_id,
+        f"Deleted {student['name']} ({student['username']}, {student['roll_number']})",
+    )
+    flash(f"Student account deleted: {student['name']} ({student['username']}).", "success")
     return redirect(url_for("admin_students"))
 
 
