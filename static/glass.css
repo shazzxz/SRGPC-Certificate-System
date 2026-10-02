@@ -245,3 +245,38 @@ body.glass-auth{
   .glass-auth{padding:14px!important}
   .glass-auth .auth-card{padding:22px}
 }
+
+
+/* Dark mode */
+html.dark-mode{color-scheme:dark}
+body.glass-ui.dark-mode{
+  --glass-bg:#0b1120;--glass-surface:rgba(15,23,42,.68);--glass-surface-strong:rgba(15,23,42,.86);
+  --glass-border:rgba(148,163,184,.16);--glass-line:rgba(148,163,184,.14);
+  --glass-text:#e5e7eb;--glass-muted:#94a3b8;
+  background:radial-gradient(circle at 10% 0%,rgba(99,102,241,.16),transparent 28%),radial-gradient(circle at 90% 8%,rgba(14,165,233,.10),transparent 30%),linear-gradient(135deg,#0b1120,#111827 55%,#0b1220);
+}
+.dark-mode .topbar p,.dark-mode .stat-label,.dark-mode .stat-note,.dark-mode .panel-head p{color:#94a3b8}
+.dark-mode .stat-card,.dark-mode .panel{background:rgba(15,23,42,.70);border-color:rgba(148,163,184,.14)}
+.dark-mode .action-card,.dark-mode .certificate-card,.dark-mode .request-card{background:rgba(15,23,42,.62);border-color:rgba(148,163,184,.14)}
+.dark-mode input,.dark-mode select,.dark-mode textarea{background:rgba(15,23,42,.72);color:#e5e7eb;border-color:rgba(148,163,184,.22)}
+.dark-mode input:focus,.dark-mode select:focus,.dark-mode textarea:focus{background:rgba(15,23,42,.88)}
+.dark-mode th{background:rgba(30,41,59,.72);color:#94a3b8}
+.dark-mode td,.dark-mode th{border-bottom-color:rgba(148,163,184,.12)}
+.dark-mode .ghost-btn,.dark-mode .secondary-btn{background:rgba(30,41,59,.65);color:#e5e7eb;border-color:rgba(148,163,184,.18)}
+.dark-mode .empty-card{background:rgba(15,23,42,.55);border-color:rgba(148,163,184,.18)}
+.dark-mode .notification{border-bottom-color:rgba(148,163,184,.12)}
+.dark-mode .notification.unread{background:rgba(30,64,175,.20)}
+.dark-mode .status-valid{background:rgba(22,101,52,.25);border-color:rgba(74,222,128,.22);color:#86efac}
+.dark-mode .status-revoked{background:rgba(127,29,29,.25);border-color:rgba(248,113,113,.22);color:#fca5a5}
+.dark-mode .status-reissued{background:rgba(124,45,18,.25);border-color:rgba(251,146,60,.22);color:#fdba74}
+.dark-mode .template-option,.dark-mode .studio-template{background:rgba(15,23,42,.62);border-color:rgba(148,163,184,.18)}
+.dark-mode .bar{background:#1e3a5f}
+.dark-mode .public-card,.dark-mode .public-result,.dark-mode .public-grid div{background:#0f172a;color:#e5e7eb;border-color:#263449}
+.dark-mode .public-body{background:linear-gradient(180deg,#0b1120,#111827)}
+.dark-mode .footer-note{color:#64748b}
+.dark-mode .theme-toggle{color:#e5e7eb;background:rgba(15,23,42,.72);border-color:rgba(148,163,184,.20)}
+.dark-mode .theme-toggle:hover{background:rgba(30,41,59,.88)}
+.theme-toggle{display:inline-flex;align-items:center;gap:7px;padding:8px 11px;border:1px solid rgba(148,163,184,.24);border-radius:999px;background:rgba(255,255,255,.62);color:#334155;font:800 10px/1 inherit;cursor:pointer;box-shadow:0 8px 20px rgba(15,23,42,.06);backdrop-filter:blur(10px);transition:.18s ease}
+.theme-toggle:hover{transform:translateY(-1px);background:rgba(255,255,255,.85)}
+.theme-toggle .theme-icon{font-size:14px;line-height:1}
+@media(max-width:620px){.theme-toggle .theme-label{display:none}}
