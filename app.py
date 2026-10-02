@@ -773,6 +773,34 @@ def admin_students():
     return render_template("admin_students.html", **ctx, students=students, search=search)
 
 
+
+
+
+@app.post("/admin/student/<int:student_id>/reset-password")
+@admin_permission("students")
+def admin_student_reset_password(student_id):
+    new_password = request.form.get("new_password", "")
+    if len(new_password) < 4:
+        flash("Student password must be at least 4 characters.", "error")
+        return redirect(url_for("admin_students"))
+
+    with get_db() as db:
+        student = db.execute("SELECT id, username, name FROM students WHERE id = ?", (student_id,)).fetchone()
+        if not student:
+            flash("Student account not found.", "error")
+            return redirect(url_for("admin_students"))
+
+        db.execute(
+            "UPDATE students SET password_hash = ? WHERE id = ?",
+            (generate_password_hash(new_password), student_id),
+        )
+        db.commit()
+
+    audit("Reset student password", "student", student_id, f"Username: {student['username']}")
+    flash(f"Password reset successfully for {student['name']} ({student['username']}).", "success")
+    return redirect(url_for("admin_students"))
+
+
 @app.get("/admin/requests")
 @admin_permission("requests")
 def admin_requests():
