@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Resend Gmail Verification · SRGPC</title>
+<link rel="stylesheet" href="{{ url_for('static',filename='style.css') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='glass.css', v='1') }}">
+<link rel="stylesheet" href="{{ url_for('static',filename='aurora.css', v='1') }}">
+</head>
+<body class="auth-body glass-auth">
+<div class="auth-shell">
+  <div class="auth-card">
+    <div class="auth-brand"><img src="{{ url_for('static',filename='college_logo.png') }}"><div><b>SRGPC</b><span>Email Verification</span></div></div>
+    <div class="auth-title"><span>ACCOUNT VERIFICATION</span><h1>Resend verification email</h1><p>Enter the Gmail address used during registration. A fresh verification link will be sent if the account is still unverified.</p></div>
+    {% with messages=get_flashed_messages(with_categories=true) %}{% for category,message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}{% endwith %}
+    <form method="post" class="auth-form">
+      <label>Gmail ID<input type="email" name="gmail" value="{{ gmail if gmail else '' }}" placeholder="student@gmail.com" required></label>
+      <button class="primary-btn" type="submit">Send Verification Email →</button>
+    </form>
+    <div class="register-link"><a href="{{ url_for('login') }}">← Back to login</a></div>
+  </div>
+</div>
+</body>
+</html>
