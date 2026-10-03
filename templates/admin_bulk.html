@@ -6,7 +6,7 @@
 <section class="csv-help-grid">
   <section class="panel form-panel">
     <div class="panel-head"><div><h2>Upload CSV</h2><p>Required columns: Name, Roll Number, Activity and Position.</p></div><span class="pill">Batch ZIP</span></div>
-    <form method="post" enctype="multipart/form-data" id="bulkForm">
+    <form method="post" enctype="multipart/form-data" id="bulkForm"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
       <div class="upload-drop">
         <label>CSV File<input type="file" name="csv_file" accept=".csv,text/csv" required></label>
         <div class="bulk-actions"><button class="primary-btn inline-btn" type="submit"><span>Generate Batch</span><span>→</span></button><a class="ghost-btn" href="{{ url_for('admin_bulk') }}">Reset</a></div>
