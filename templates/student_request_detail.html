@@ -8,7 +8,7 @@
 <div class="dashboard-grid">
 <section class="panel">
   <div class="panel-head"><div><h2>Your request</h2><p>These details are attached to the certificate request.</p></div></div>
-  <div class="detail-grid"><div><span>Student</span><b>{{ request.name }}</b></div><div><span>Roll Number</span><b>{{ request.roll_number }}</b></div><div><span>Certificate Type</span><b>{{ request.request_type }}</b></div><div><span>Academic Year</span><b>{{ request.academic_year }}</b></div><div class="full"><span>Activity / Event</span><b>{{ request.activity }}</b></div><div class="full"><span>Position / Achievement</span><b>{{ request.position }}</b></div></div>
+  <div class="detail-grid"><div><span>Student</span><b>{{ request.name }}</b></div><div><span>Roll Number</span><b>{{ request.roll_number }}</b></div><div><span>Certificate Type</span><b>{{ request.request_type }}</b></div><div><span>Department</span><b>{{ request.department }}</b></div><div><span>Programme</span><b>{{ request.programme }}</b></div><div><span>Semester</span><b>{{ request.semester }}</b></div><div><span>Academic Year</span><b>{{ request.academic_year }}</b></div><div class="full"><span>Activity / Event</span><b>{{ request.activity }}</b></div><div class="full"><span>Position / Achievement</span><b>{{ request.position }}</b></div></div>
   {% if request.note %}<div class="request-note"><span>Your note</span>{{ request.note }}</div>{% endif %}
   {% if request.admin_note %}<div class="rejected-note"><b>Admin note:</b> {{ request.admin_note }}</div>{% endif %}
   {% if request.certificate_id %}<a class="primary-btn" href="{{ url_for('student_certificate_detail',certificate_id=request.certificate_id) }}">Open Certificate →</a>{% endif %}
