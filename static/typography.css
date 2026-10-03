@@ -292,3 +292,45 @@ body.glass-ui,body.glass-auth{font-size:16px!important}
   .glass-ui .settings-choice-copy b{font-size:15px!important}
   .glass-ui .settings-choice-copy small{font-size:13px!important}
 }
+
+/* Light-theme contrast pass: readable college-office UI text at normal zoom. */
+.glass-ui{color:#0f172a}
+.glass-ui .topbar p,
+.glass-ui .panel-head p,
+.glass-ui .request-row span:not(.status-chip),
+.glass-ui .stat-note,
+.glass-ui .subhead,
+.glass-ui .request-note,
+.glass-ui .settings-hint,
+.glass-ui .template-card-meta,
+.glass-ui .studio-template>p,
+.glass-ui .csv-column-card span,
+.glass-ui .bottom-note,
+.glass-ui .student-cta p,
+.glass-ui .certificate-card p,
+.glass-ui .info-card p,
+.glass-ui .profile-list span,
+.glass-ui .search-bar input::placeholder,
+.glass-ui .admin-access-student span,
+.glass-ui .admin-granted.admin-not-granted{color:#334155!important}
+.glass-ui label,
+.glass-ui .request-details span,
+.glass-ui .request-note span,
+.glass-ui .settings-choice-copy small,
+.glass-ui .template-kicker,
+.glass-ui .font-tag,
+.glass-ui .qr-note,
+.glass-ui .bar-row,
+.glass-ui .request-details b,
+.glass-ui .request-note,
+.glass-ui .clear-link{color:#1f2937!important}
+.glass-ui input::placeholder,
+.glass-ui textarea::placeholder,
+.glass-ui select::placeholder{color:#64748b!important}
+.glass-auth{color:#0f172a!important}
+.glass-auth .auth-title p,
+.glass-auth .register-link,
+.glass-auth .login-mode-note{color:#334155!important}
+.glass-auth .auth-form label{color:#111827!important}
+.glass-auth input::placeholder{color:#64748b!important}
+.glass-auth .admin-note{color:#334155!important}
