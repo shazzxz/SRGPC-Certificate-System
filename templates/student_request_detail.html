@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Request {{ request.id }} · SRGPC{% endblock %}
+{% block heading %}Certificate Request{% endblock %}
+{% block subheading %}Track exactly where your request is in the SRGPC workflow.{% endblock %}
+{% block topaction %}<a href="{{ url_for('student_request_page') }}" class="ghost-btn">← My Requests</a>{% endblock %}
+{% block content %}
+<section class="detail-hero panel"><div><span class="eyebrow">{{ request.request_type }}</span><h2>{{ request.activity }}</h2><p>{{ request.position }} · Submitted {{ request.created_at }}</p></div><span class="status-chip status-{{ request.status|lower|replace(' ','-') }}">{{ request.status }}</span></section>
+<div class="dashboard-grid">
+<section class="panel">
+  <div class="panel-head"><div><h2>Your request</h2><p>These details are attached to the certificate request.</p></div></div>
+  <div class="detail-grid"><div><span>Student</span><b>{{ request.name }}</b></div><div><span>Roll Number</span><b>{{ request.roll_number }}</b></div><div><span>Certificate Type</span><b>{{ request.request_type }}</b></div><div><span>Academic Year</span><b>{{ request.academic_year }}</b></div><div class="full"><span>Activity / Event</span><b>{{ request.activity }}</b></div><div class="full"><span>Position / Achievement</span><b>{{ request.position }}</b></div></div>
+  {% if request.note %}<div class="request-note"><span>Your note</span>{{ request.note }}</div>{% endif %}
+  {% if request.admin_note %}<div class="rejected-note"><b>Admin note:</b> {{ request.admin_note }}</div>{% endif %}
+  {% if request.certificate_id %}<a class="primary-btn" href="{{ url_for('student_certificate_detail',certificate_id=request.certificate_id) }}">Open Certificate →</a>{% endif %}
+</section>
+<section class="panel">
+  <div class="panel-head"><div><h2>What's happening?</h2><p>A simple timeline of your request.</p></div></div>
+  <div class="timeline">{% for update in updates %}<div class="timeline-row"><span class="timeline-dot"></span><div><div class="timeline-top"><strong>{{ update.status }}</strong><small>{{ update.created_at }}</small></div><p>{{ update.message }}</p></div></div>{% else %}<div class="empty-card">No timeline events yet.</div>{% endfor %}</div>
+</section>
+</div>
+{% endblock %}
