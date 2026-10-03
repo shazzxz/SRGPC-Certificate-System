@@ -1359,13 +1359,38 @@ def admin_student_delete(student_id):
 @admin_permission("requests")
 def admin_requests():
     ctx = admin_base_context("requests")
-    status = request.args.get("status", "All")
+    status = clean(request.args.get("status"), 40) or "All"
+    department = clean(request.args.get("department"), 60)
+    programme = clean(request.args.get("programme"), 60)
+    semester = clean(request.args.get("semester"), 10)
+    query = clean(request.args.get("q"), 100)
+    from_date = clean(request.args.get("from_date"), 10)
+    to_date = clean(request.args.get("to_date"), 10)
+    where = []
+    params = []
+    if status in REQUEST_STATUSES:
+        where.append("r.status=?"); params.append(status)
+    if query:
+        like=f"%{query}%"
+        where.append("(LOWER(r.name) LIKE LOWER(?) OR LOWER(r.roll_number) LIKE LOWER(?) OR LOWER(s.gmail) LIKE LOWER(?) OR LOWER(r.activity) LIKE LOWER(?) OR LOWER(r.request_type) LIKE LOWER(?))")
+        params.extend([like,like,like,like,like])
+    if department in DEPARTMENTS:
+        where.append("r.department=?"); params.append(department)
+    if programme in PROGRAMMES:
+        where.append("r.programme=?"); params.append(programme)
+    if semester in SEMESTERS:
+        where.append("r.semester=?"); params.append(semester)
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", from_date):
+        where.append("substr(r.created_at,1,10)>=?"); params.append(from_date)
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", to_date):
+        where.append("substr(r.created_at,1,10)<=?"); params.append(to_date)
+    sql="""SELECT r.*, s.username, s.gmail, s.mobile, s.name student_name, s.roll_number student_roll
+           FROM certificate_requests r JOIN students s ON s.id=r.student_id"""
+    if where: sql += " WHERE " + " AND ".join(where)
+    sql += " ORDER BY r.id DESC"
     with get_db() as db:
-        if status in {"Pending", "Under Review", "Generated", "Rejected"}:
-            rows = db.execute("SELECT r.*, s.username, s.gmail, s.mobile FROM certificate_requests r JOIN students s ON s.id=r.student_id WHERE r.status=? ORDER BY r.id DESC", (status,)).fetchall()
-        else:
-            rows = db.execute("SELECT r.*, s.username, s.gmail, s.mobile FROM certificate_requests r JOIN students s ON s.id=r.student_id ORDER BY r.id DESC").fetchall()
-    return render_template("admin_requests.html", **ctx, requests=rows, status=status, default_template=setting("default_template", "classic"), default_font=setting("default_font", "Helvetica"), templates=TEMPLATES)
+        rows=db.execute(sql,tuple(params)).fetchall()
+    return render_template("admin_requests.html", **ctx, requests=rows, status=status, query=query, department=department, programme=programme, semester=semester, from_date=from_date, to_date=to_date, departments=DEPARTMENTS, programmes=PROGRAMMES, semesters=SEMESTERS, request_statuses=REQUEST_STATUSES, default_template=setting("default_template","classic"), default_font=setting("default_font","Helvetica"), templates=TEMPLATES)
 
 
 @app.get("/admin/request/<int:request_id>")
