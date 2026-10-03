@@ -312,3 +312,41 @@ body.glass-ui.dark-mode{
   .glass-ui .topbar{display:block}
   .glass-ui .topbar-actions{margin-top:12px;justify-content:flex-start}
 }
+
+
+/* Global readability scale
+   Keeps the existing layout and glass styling, but makes text easier to read. */
+body.glass-ui{
+  font-size:16px;
+}
+.glass-ui .brand-sub{font-size:11px}
+.glass-ui .nav-item{font-size:15px}
+.glass-ui .profile{font-size:14px}
+.glass-ui .topbar p{font-size:14px}
+.glass-ui .eyebrow{font-size:11px}
+.glass-ui .stat-label{font-size:11px}
+.glass-ui .stat-note{font-size:11px}
+.glass-ui .panel-head h2{font-size:17px}
+.glass-ui .panel-head p{font-size:12px}
+.glass-ui th{font-size:11px}
+.glass-ui td{font-size:14px}
+.glass-ui input,.glass-ui select,.glass-ui textarea{font-size:15px}
+.glass-ui button,.glass-ui .primary-btn,.glass-ui .secondary-btn,.glass-ui .ghost-btn{font-size:14px}
+.glass-ui .text-link,.glass-ui .download-link{font-size:14px}
+.glass-ui .flash{font-size:14px}
+.glass-ui .status-chip{font-size:12px}
+.glass-ui .empty-card{font-size:14px}
+.glass-ui .action-card,.glass-ui .certificate-card,.glass-ui .request-card{font-size:14px}
+.glass-ui .action-card b{font-size:15px}
+.glass-auth{font-size:16px}
+.glass-auth input{font-size:15px}
+.glass-auth .role-tab{font-size:14px}
+.glass-auth .admin-note{font-size:13px}
+
+@media(max-width:620px){
+  .glass-ui .nav-item{font-size:15px}
+  .glass-ui .topbar p{font-size:13px}
+  .glass-ui td{font-size:14px}
+  .glass-ui th{font-size:10px}
+  .glass-ui input,.glass-ui select,.glass-ui textarea{font-size:16px}
+}
