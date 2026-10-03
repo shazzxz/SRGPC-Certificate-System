@@ -274,3 +274,120 @@ body.glass-auth{
 .glass-ui .sidebar::-webkit-scrollbar{width:8px}
 .glass-ui .sidebar::-webkit-scrollbar-track{background:transparent}
 .glass-ui .sidebar::-webkit-scrollbar-thumb{background:#64748b;border-radius:999px}
+
+
+/* Mobile layout repair: glass overrides must match the responsive layout in style.css. */
+@media (max-width:820px){
+  .glass-ui .app-shell{
+    display:block!important;
+    min-width:0!important;
+    width:100%!important;
+  }
+  .glass-ui .sidebar{
+    position:relative!important;
+    top:auto!important;
+    left:auto!important;
+    width:100%!important;
+    max-width:none!important;
+    height:auto!important;
+    min-height:0!important;
+    flex:none!important;
+    padding:14px 12px!important;
+    overflow:visible!important;
+    border-right:0!important;
+    border-bottom:1px solid rgba(255,255,255,.08);
+    box-shadow:0 8px 28px rgba(15,23,42,.10);
+  }
+  .glass-ui .brand{
+    padding:2px 7px 12px!important;
+  }
+  .glass-ui .profile{
+    margin:0 0 12px!important;
+  }
+  .glass-ui .nav-stack{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:6px!important;
+  }
+  .glass-ui .nav-item{
+    min-width:0!important;
+    padding:11px 9px!important;
+    white-space:normal!important;
+  }
+  .glass-ui .nav-item span{
+    flex:0 0 18px;
+  }
+  .glass-ui .sidebar-bottom{
+    margin-top:12px!important;
+    display:grid!important;
+    grid-template-columns:1fr 1fr!important;
+    gap:8px!important;
+  }
+  .glass-ui .logout{
+    margin-top:0!important;
+  }
+  .glass-ui .main{
+    width:100%!important;
+    min-width:0!important;
+    padding:22px 18px 38px!important;
+  }
+  .glass-ui .topbar{
+    flex-direction:column!important;
+    align-items:flex-start!important;
+  }
+  .glass-ui .topbar-actions{
+    width:100%!important;
+    justify-content:flex-start!important;
+  }
+  .glass-ui .stats-grid{
+    grid-template-columns:1fr 1fr!important;
+  }
+}
+
+@media (max-width:520px){
+  .glass-ui .sidebar{
+    padding:11px 9px!important;
+  }
+  .glass-ui .brand{
+    padding-left:5px!important;
+    padding-right:5px!important;
+  }
+  .glass-ui .profile{
+    padding:9px!important;
+  }
+  .glass-ui .nav-stack{
+    grid-template-columns:1fr 1fr!important;
+  }
+  .glass-ui .nav-item{
+    font-size:14px!important;
+    padding:10px 8px!important;
+    gap:7px!important;
+  }
+  .glass-ui .main{
+    padding:18px 12px 30px!important;
+  }
+  .glass-ui .stats-grid{
+    grid-template-columns:1fr!important;
+  }
+  .glass-ui .dashboard-grid,
+  .glass-ui .content-grid,
+  .glass-ui .verify-layout,
+  .glass-ui .signature-layout,
+  .glass-ui .profile-grid,
+  .glass-ui .template-studio-grid,
+  .glass-ui .two-col{
+    grid-template-columns:1fr!important;
+  }
+  .glass-ui .field-row,
+  .glass-ui .register-grid,
+  .glass-ui .profile-list{
+    grid-template-columns:1fr!important;
+  }
+  .glass-ui .table-wrap{
+    overflow-x:auto!important;
+    -webkit-overflow-scrolling:touch;
+  }
+  .glass-ui .topbar h1{
+    font-size:28px!important;
+  }
+}
