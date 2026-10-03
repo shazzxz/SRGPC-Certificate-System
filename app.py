@@ -831,7 +831,7 @@ def register_google():
     if not pending:
         return redirect(url_for("login"))
     if request.method == "GET":
-        return render_template("register.html", google_pending=pending, form={"name": pending.get("name",""), "gmail": pending["gmail"]})
+        return render_template("register.html", departments=DEPARTMENTS, programmes=PROGRAMMES, semesters=SEMESTERS, google_pending=pending, form={"name": pending.get("name",""), "gmail": pending["gmail"]})
     fields = {
         "mobile": clean(request.form.get("mobile"), 20),
         "roll_number": clean(request.form.get("roll_number"), 40),
@@ -845,7 +845,7 @@ def register_google():
     fields["password"] = secrets.token_urlsafe(24)
     if not all([fields["username"], fields["mobile"], fields["roll_number"], fields["name"], fields["department"]]):
         flash("Please complete every college profile field.", "error")
-        return render_template("register.html", form=fields, google_pending=pending)
+        return render_template("register.html", departments=DEPARTMENTS, programmes=PROGRAMMES, semesters=SEMESTERS, form=fields, google_pending=pending)
     if fields["department"] not in DEPARTMENTS:
         fields["department"] = "Other"
     if fields["programme"] not in PROGRAMMES:
@@ -854,10 +854,10 @@ def register_google():
         fields["semester"] = "1"
     if not re.fullmatch(r"\d{10}", fields["mobile"]):
         flash("Enter a valid 10-digit mobile number.", "error")
-        return render_template("register.html", form=fields, google_pending=pending)
+        return render_template("register.html", departments=DEPARTMENTS, programmes=PROGRAMMES, semesters=SEMESTERS, form=fields, google_pending=pending)
     if len(fields["roll_number"]) < 4:
         flash("Enter a valid college roll number.", "error")
-        return render_template("register.html", form=fields, google_pending=pending)
+        return render_template("register.html", departments=DEPARTMENTS, programmes=PROGRAMMES, semesters=SEMESTERS, form=fields, google_pending=pending)
     try:
         with get_db() as db:
             db.execute(
@@ -874,7 +874,7 @@ def register_google():
     except Exception as exc:
         if is_unique_violation(exc):
             flash("That username or roll number is already registered.", "error")
-            return render_template("register.html", form=fields, google_pending=pending)
+            return render_template("register.html", departments=DEPARTMENTS, programmes=PROGRAMMES, semesters=SEMESTERS, form=fields, google_pending=pending)
         raise
 
 
