@@ -529,7 +529,7 @@ def begin_session(**values):
 
 
 def cert_payload_hash(info):
-    raw = "|".join(str(info.get(k, "")) for k in ("name","roll_number","activity","position","certificate_type","academic_year"))
+    raw = "|".join(str(info.get(k, "")) for k in ("name","roll_number","department","programme","semester","activity","position","certificate_type","academic_year"))
     return hashlib.sha256(raw.encode("utf-8")).hexdigest().upper()
 
 
