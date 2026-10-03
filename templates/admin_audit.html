@@ -1,1 +1,20 @@
-{% extends 'base.html' %}{% block title %}Audit Log · SRGPC{% endblock %}{% block heading %}Audit Log{% endblock %}{% block subheading %}Administrative history for accountability and troubleshooting.{% endblock %}{% block content %}<section class="panel history-panel"><div class="table-wrap"><table><thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Entity</th><th>Details</th></tr></thead><tbody>{% for row in rows %}<tr><td>{{ row.created_at }}</td><td><strong>{{ row.actor_name }}</strong><small>{{ row.actor_role }}</small></td><td>{{ row.action }}</td><td>{{ row.entity_type }} {{ row.entity_id }}</td><td>{{ row.details }}</td></tr>{% else %}<tr><td colspan="5" class="empty">No audit events yet.</td></tr>{% endfor %}</tbody></table></div></section>{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Audit Log · SRGPC{% endblock %}
+{% block heading %}Audit Log{% endblock %}
+{% block subheading %}Filter and export the administrative history of the portal.{% endblock %}
+{% block topaction %}<div class="report-actions"><a class="secondary-btn inline-btn" href="{{ url_for('admin_report_audit',format='csv',actor=actor,action=action,entity=entity,q=query,from_date=from_date,to_date=to_date) }}">Export CSV</a><a class="secondary-btn inline-btn" href="{{ url_for('admin_report_audit',format='pdf',actor=actor,action=action,entity=entity,q=query,from_date=from_date,to_date=to_date) }}">Export PDF</a></div>{% endblock %}
+{% block content %}
+<section class="panel">
+  <form class="search-bar academic-filter-bar" method="get">
+    <input name="q" value="{{ query }}" placeholder="Search action, details or entity ID">
+    <input name="actor" value="{{ actor }}" placeholder="Actor">
+    <input name="action" value="{{ action }}" placeholder="Action">
+    <select name="entity"><option value="">All entities</option>{% for item in ['certificate','request','student','admin','settings','system'] %}<option value="{{ item }}" {% if entity==item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select>
+    <label class="date-filter">From <input type="date" name="from_date" value="{{ from_date }}"></label>
+    <label class="date-filter">To <input type="date" name="to_date" value="{{ to_date }}"></label>
+    <button class="secondary-btn" type="submit">Filter</button>
+    {% if query or actor or action or entity or from_date or to_date %}<a class="clear-link" href="{{ url_for('admin_audit') }}">Clear</a>{% endif %}
+  </form>
+</section>
+<section class="panel history-panel"><div class="panel-head"><div><h2>{{ rows|length }} audit event{{ '' if rows|length==1 else 's' }}</h2><p>Newest events appear first.</p></div></div><div class="table-wrap"><table><thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Entity</th><th>Details</th></tr></thead><tbody>{% for row in rows %}<tr><td>{{ row.created_at }}</td><td><strong>{{ row.actor_name }}</strong><small>{{ row.actor_role }}</small></td><td>{{ row.action }}</td><td>{{ row.entity_type }}{% if row.entity_id %} · {{ row.entity_id }}{% endif %}</td><td>{{ row.details }}</td></tr>{% else %}<tr><td colspan="5" class="empty">No audit events match the current filters.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}
