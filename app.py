@@ -1271,13 +1271,27 @@ def admin_templates_save():
 def admin_students():
     ctx = admin_base_context("students")
     search = clean(request.args.get("q"), 100)
+    department = clean(request.args.get("department"), 60)
+    programme = clean(request.args.get("programme"), 60)
+    semester = clean(request.args.get("semester"), 10)
+    where = []
+    params = []
+    if search:
+        where.append("(LOWER(name) LIKE LOWER(?) OR LOWER(roll_number) LIKE LOWER(?) OR LOWER(username) LIKE LOWER(?) OR LOWER(gmail) LIKE LOWER(?))")
+        like = f"%{search}%"
+        params.extend([like, like, like, like])
+    if department in DEPARTMENTS:
+        where.append("department=?"); params.append(department)
+    if programme in PROGRAMMES:
+        where.append("programme=?"); params.append(programme)
+    if semester in SEMESTERS:
+        where.append("semester=?"); params.append(semester)
+    sql = "SELECT id,username,mobile,roll_number,gmail,name,department,programme,semester,academic_year,created_at,admin_enabled FROM students"
+    if where: sql += " WHERE " + " AND ".join(where)
+    sql += " ORDER BY LOWER(name), id DESC"
     with get_db() as db:
-        if search:
-            like = f"%{search}%"
-            students = db.execute("SELECT id,username,mobile,roll_number,gmail,name,created_at FROM students WHERE name LIKE ? OR roll_number LIKE ? OR username LIKE ? ORDER BY id DESC", (like, like, like)).fetchall()
-        else:
-            students = db.execute("SELECT id,username,mobile,roll_number,gmail,name,created_at FROM students ORDER BY id DESC").fetchall()
-    return render_template("admin_students.html", **ctx, students=students, search=search)
+        students = db.execute(sql, tuple(params)).fetchall()
+    return render_template("admin_students.html", **ctx, students=students, search=search, department=department, programme=programme, semester=semester, departments=DEPARTMENTS, programmes=PROGRAMMES, semesters=SEMESTERS)
 
 
 
