@@ -838,12 +838,20 @@ def register_google():
         "gmail": pending["gmail"],
         "name": clean(request.form.get("name"), 80) or pending.get("name",""),
         "department": clean(request.form.get("department"), 60) or "CSE",
+        "programme": clean(request.form.get("programme"), 60) or "B.Tech",
+        "semester": clean(request.form.get("semester"), 10) or "1",
     }
     fields["username"] = re.sub(r"[^a-z0-9._-]+", "", fields["roll_number"].strip().lower())[:40]
     fields["password"] = secrets.token_urlsafe(24)
     if not all([fields["username"], fields["mobile"], fields["roll_number"], fields["name"], fields["department"]]):
         flash("Please complete every college profile field.", "error")
         return render_template("register.html", form=fields, google_pending=pending)
+    if fields["department"] not in DEPARTMENTS:
+        fields["department"] = "Other"
+    if fields["programme"] not in PROGRAMMES:
+        fields["programme"] = "Other"
+    if fields["semester"] not in SEMESTERS:
+        fields["semester"] = "1"
     if not re.fullmatch(r"\d{10}", fields["mobile"]):
         flash("Enter a valid 10-digit mobile number.", "error")
         return render_template("register.html", form=fields, google_pending=pending)
@@ -853,8 +861,8 @@ def register_google():
     try:
         with get_db() as db:
             db.execute(
-                "INSERT INTO students(username,password_hash,mobile,roll_number,gmail,name,department,academic_year,created_at,email_verified,google_sub) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
-                (fields["username"], generate_password_hash(fields["password"]), fields["mobile"], fields["roll_number"], fields["gmail"], fields["name"], fields["department"], setting("default_academic_year", current_academic_year()), datetime.now().isoformat(timespec="seconds"), 1, pending["sub"]),
+                "INSERT INTO students(username,password_hash,mobile,roll_number,gmail,name,department,programme,semester,academic_year,created_at,email_verified,google_sub) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                (fields["username"], generate_password_hash(fields["password"]), fields["mobile"], fields["roll_number"], fields["gmail"], fields["name"], fields["department"], fields["programme"], fields["semester"], setting("default_academic_year", current_academic_year()), datetime.now().isoformat(timespec="seconds"), 1, pending["sub"]),
             )
             row = db.execute("SELECT id FROM students WHERE google_sub=?", (pending["sub"],)).fetchone()
             student_id = row["id"] if row else None
@@ -1546,6 +1554,9 @@ def student_request_submit():
         "activity": clean(request.form.get("activity"), 140),
         "position": clean(request.form.get("position"), 80),
         "note": clean(request.form.get("note"), 240),
+        "department": student["department"],
+        "programme": student["programme"],
+        "semester": student["semester"],
     }
     if fields["name"] != student["name"] or fields["roll_number"].casefold() != student["roll_number"].casefold():
         flash("For security, the requested certificate name and roll number must match your registered account.", "error")
@@ -1569,8 +1580,8 @@ def student_request_submit():
     created_at = datetime.now().isoformat(timespec="seconds")
     with get_db() as db:
         db.execute(
-            "INSERT INTO certificate_requests(student_id,name,roll_number,request_type,activity,position,note,academic_year,created_at) VALUES(?,?,?,?,?,?,?,?,?)",
-            (student["id"], fields["name"], fields["roll_number"], fields["request_type"], fields["activity"], fields["position"], fields["note"], setting("default_academic_year", current_academic_year()), created_at),
+            "INSERT INTO certificate_requests(student_id,name,roll_number,request_type,activity,position,note,academic_year,department,programme,semester,created_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+            (student["id"], fields["name"], fields["roll_number"], fields["request_type"], fields["activity"], fields["position"], fields["note"], setting("default_academic_year", current_academic_year()), fields["department"], fields["programme"], fields["semester"], created_at),
         )
         req = db.execute(
             "SELECT id FROM certificate_requests WHERE student_id=? AND created_at=? ORDER BY id DESC LIMIT 1",
