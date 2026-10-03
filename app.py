@@ -627,7 +627,12 @@ def current_signature_path(kind):
     path = Path(filename)
     if not path.is_absolute():
         path = BASE_DIR / filename
-    return path if path.exists() else None
+    if path.exists():
+        return path
+    # Restore the active signature from object storage after an ephemeral deploy.
+    if storage_restore_file("signatures", path.name, path):
+        return path
+    return None
 
 
 def clean(value, max_len=140):
@@ -738,6 +743,12 @@ def render_certificate(target, info, verification_url=None):
         principal_sig=current_signature_path('principal'),
         show_qr=setting('show_qr', '1') == '1',
     )
+    if isinstance(target, (str, Path)):
+        try:
+            storage_put_file("certificates", Path(target))
+        except Exception as exc:
+            app.logger.exception("Object storage upload failed", extra={"request_id": getattr(g, "request_id", "")})
+
 
 
 def is_valid_gmail(gmail):
@@ -881,6 +892,14 @@ def save_signature_upload(kind, file_storage):
         try: old.unlink(missing_ok=True)
         except Exception: pass
     set_setting(f"{kind}_signature", str(path.relative_to(BASE_DIR)))
+    try:
+        storage_put_file("signatures", path)
+    except Exception:
+        app.logger.exception("Signature object storage upload failed", extra={"request_id": getattr(g, "request_id", "")})
+    try:
+        storage_put_file("signatures", path)
+    except Exception:
+        app.logger.exception("Signature object storage upload failed", extra={"request_id": getattr(g, "request_id", "")})
 
 
 def save_signature_data(kind, data_url):
