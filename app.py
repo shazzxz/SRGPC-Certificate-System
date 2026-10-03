@@ -80,6 +80,132 @@ app.config.update(
     SESSION_REFRESH_EACH_REQUEST=True,
     PERMANENT_SESSION_LIFETIME=timedelta(hours=8),
 )
+def csrf_token():
+    token = session.get("_csrf_token")
+    if not token:
+        token = secrets.token_urlsafe(32)
+        session["_csrf_token"] = token
+    return token
+
+
+@app.context_processor
+def security_context():
+    return {"csrf_token": csrf_token}
+
+
+@app.before_request
+def protect_state_changing_requests():
+    g.request_id = request.headers.get("X-Request-ID") or uuid.uuid4().hex[:16]
+    if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
+        return None
+    supplied = request.form.get("_csrf_token") or request.headers.get("X-CSRFToken") or request.headers.get("X-CSRF-Token")
+    expected = session.get("_csrf_token", "")
+    if not expected or not supplied or not hmac.compare_digest(str(supplied), str(expected)):
+        return jsonify({"error": "CSRF validation failed.", "request_id": g.request_id}), 403
+    return None
+
+
+@app.after_request
+def apply_security_headers(response):
+    response.headers["X-Request-ID"] = getattr(g, "request_id", uuid.uuid4().hex[:16])
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data: blob: https:; "
+        "script-src 'self' 'unsafe-inline'; "
+        "connect-src 'self'; "
+        "frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    )
+    if production_mode:
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
+
+
+@app.errorhandler(429)
+def rate_limit_error(error):
+    return jsonify({
+        "error": "Too many requests. Please try again shortly.",
+        "request_id": getattr(g, "request_id", ""),
+    }), 429
+
+
+@app.errorhandler(500)
+def server_error(error):
+    app.logger.exception("Unhandled application error", extra={"request_id": getattr(g, "request_id", "")})
+    return render_template("500.html", request_id=getattr(g, "request_id", "")), 500
+
+
+@app.get("/healthz")
+def healthz():
+    checks = {"database": "ok", "storage": "not_configured"}
+    try:
+        with get_db() as db:
+            db.execute("SELECT 1").fetchone()
+    except Exception as exc:
+        app.logger.error("Health check database failure: %s", exc, extra={"request_id": getattr(g, "request_id", "")})
+        checks["database"] = "error"
+    if storage_configured():
+        checks["storage"] = "configured"
+    status = 200 if checks["database"] == "ok" else 503
+    return jsonify({
+        "status": "ok" if status == 200 else "degraded",
+        "checks": checks,
+        "version": app.config["STATIC_VERSION"],
+        "request_id": getattr(g, "request_id", ""),
+    }), status
+
+
+def storage_configured():
+    required = ("SRGPC_S3_BUCKET", "SRGPC_S3_ACCESS_KEY", "SRGPC_S3_SECRET_KEY")
+    return boto3 is not None and all(os.environ.get(key, "").strip() for key in required)
+
+
+def storage_client():
+    if not storage_configured():
+        return None
+    return boto3.client(
+        "s3",
+        endpoint_url=os.environ.get("SRGPC_S3_ENDPOINT", "").strip() or None,
+        aws_access_key_id=os.environ["SRGPC_S3_ACCESS_KEY"],
+        aws_secret_access_key=os.environ["SRGPC_S3_SECRET_KEY"],
+        region_name=os.environ.get("SRGPC_S3_REGION", "auto"),
+    )
+
+
+def storage_key(kind, filename):
+    prefix = os.environ.get("SRGPC_S3_PREFIX", "srgpc").strip().strip("/")
+    return f"{prefix}/{kind}/{filename}" if prefix else f"{kind}/{filename}"
+
+
+def storage_put_file(kind, path):
+    client = storage_client()
+    if not client or not isinstance(path, (str, Path)):
+        return False
+    path = Path(path)
+    if not path.exists():
+        return False
+    client.upload_file(str(path), os.environ["SRGPC_S3_BUCKET"], storage_key(kind, path.name), ExtraArgs={"ContentType": "application/pdf" if path.suffix.lower()==".pdf" else "application/octet-stream"})
+    return True
+
+
+def storage_restore_file(kind, filename, target):
+    client = storage_client()
+    if not client:
+        return False
+    target = Path(target)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        client.download_file(os.environ["SRGPC_S3_BUCKET"], storage_key(kind, filename), str(target))
+        return target.exists()
+    except Exception:
+        return False
+
+
 CERT_TITLE = "CERTIFICATE OF ACHIEVEMENT"
 
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
