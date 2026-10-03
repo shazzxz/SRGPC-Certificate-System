@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
-{% block title %}{{ certificate.certificate_id }} · SRGPC{% endblock %}
+{% block title %}{{ certificate.certificate_id }} · SRGPC<section class="panel lifecycle-panel"><div class="panel-head"><div><h2>Certificate lifecycle</h2><p>Every important change to this certificate is recorded.</p></div></div><div class="timeline lifecycle-timeline">{% for event in history %}<div class="timeline-row"><span class="timeline-dot"></span><div><div class="timeline-top"><strong>{{ event.event }}</strong><small>{{ event.created_at }}</small></div><p>{{ event.details }}</p><span>{{ event.actor_name }} · {{ event.actor_role }}</span></div></div>{% else %}<div class="empty-card">No lifecycle events recorded.</div>{% endfor %}</div></section>
+{% endblock %}
 {% block heading %}Certificate Record{% endblock %}
 {% block subheading %}Official certificate lifecycle, verification and integrity details.{% endblock %}
 {% block topaction %}<a href="{{ url_for('admin_certificates') }}" class="ghost-btn">← Certificate Archive</a>{% endblock %}
