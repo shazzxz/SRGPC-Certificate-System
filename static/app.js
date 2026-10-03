@@ -99,3 +99,33 @@ function saveSignature(kind){const c=document.getElementById('canvas-'+kind);if(
 function bindSignatureUploads(){document.querySelectorAll('.signature-file').forEach(input=>input.addEventListener('change',()=>{const file=input.files&&input.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>liveSignature(input.dataset.kind,e.target.result);reader.readAsDataURL(file);}));['teacher','principal'].forEach(setupSignatureCanvas);}
 function bindLoginRole(){const form=document.getElementById('loginForm');if(!form)return;const roleInput=document.getElementById('loginRole');const register=document.getElementById('studentRegister');const hint=document.getElementById('adminHint');const google=document.getElementById('googleSignIn');const submit=document.getElementById('loginSubmit');const setRole=role=>{roleInput.value=role;if(register)register.style.display=role==='student'?'block':'none';if(hint)hint.style.display=role==='admin'?'flex':'none';if(google)google.style.display=role==='student'?'flex':'none';if(submit)submit.style.display='block';};document.querySelectorAll('.role-tab').forEach(tab=>tab.addEventListener('click',()=>{document.querySelectorAll('.role-tab').forEach(x=>x.classList.remove('active'));tab.classList.add('active');setRole(tab.dataset.role);}));setRole(roleInput.value||'student');}
 document.addEventListener('DOMContentLoaded',()=>{bindCertificateLivePreview();bindSignatureUploads();bindLoginRole();});
+
+function bindPhase4States(){
+  const bar=document.createElement('div');
+  bar.className='global-loading-bar';
+  bar.setAttribute('aria-hidden','true');
+  document.body.prepend(bar);
+  document.querySelectorAll('form').forEach(form=>{
+    form.addEventListener('submit',()=>{
+      if(form.dataset.noLoading==='true')return;
+      document.body.classList.add('page-loading');
+      const button=form.querySelector('button[type="submit"],input[type="submit"]');
+      if(button && !button.disabled){
+        button.dataset.loadingLabel=button.textContent || '';
+        if(button.tagName==='INPUT'){button.value='Working…';}
+        else{button.textContent='Working…';}
+        button.disabled=true;
+        button.setAttribute('aria-busy','true');
+      }
+    });
+  });
+  document.querySelectorAll('a[href]').forEach(link=>{
+    const href=link.getAttribute('href')||'';
+    if(!href || href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('javascript:') || link.target==='_blank') return;
+    link.addEventListener('click',()=>{
+      if(link.classList.contains('download-link') || link.hasAttribute('download')) return;
+      document.body.classList.add('page-loading');
+    });
+  });
+}
+document.addEventListener('DOMContentLoaded',()=>{bindCertificateLivePreview();bindSignatureUploads();bindLoginRole();injectCsrfTokens();bindPhase4States();});
