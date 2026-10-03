@@ -1192,6 +1192,33 @@ def download(filename):
         student = student_for_session()
         if not student or student["roll_number"].casefold() != cert["roll_number"].casefold():
             abort(403)
+
+    # Render's free web-service filesystem is ephemeral, so generated PDFs can
+    # disappear after a new deployment. Rebuild a missing certificate from the
+    # immutable certificate record instead of returning a 404.
+    pdf_path = GENERATED_DIR / filename
+    if not pdf_path.exists():
+        info = {
+            "name": cert["name"],
+            "roll_number": cert["roll_number"],
+            "activity": cert["activity"],
+            "position": cert["position"],
+            "certificate_type": cert["certificate_type"],
+            "academic_year": cert["academic_year"],
+            "template": allowed_template(cert["template"]),
+            "font_family": allowed_font(cert["font_family"]),
+            "certificate_id": cert["certificate_id"],
+            "payload_hash": cert["payload_hash"],
+            "created_at": cert["created_at"],
+            "created_by": cert["created_by"],
+        }
+        render_certificate(pdf_path, info, public_verify_url(cert["certificate_id"]))
+        # Keep the stored integrity hash in sync with a regenerated file.
+        new_hash = file_sha256(pdf_path)
+        with get_db() as db:
+            db.execute("UPDATE certificates SET pdf_sha256=? WHERE certificate_id=?", (new_hash, cert["certificate_id"]))
+            db.commit()
+
     return send_from_directory(GENERATED_DIR, filename, as_attachment=True)
 
 
