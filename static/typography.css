@@ -382,3 +382,54 @@ body.glass-ui,body.glass-auth{font-size:16px!important}
 .status-under-review{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}
 @media(max-width:900px){.glass-ui .student-wallet-grid{grid-template-columns:1fr 1fr}.glass-ui .admin-hero,.glass-ui .student-welcome,.glass-ui .detail-hero{align-items:flex-start;flex-direction:column}.glass-ui .admin-hero-metrics{width:100%}.glass-ui .admin-hero-metrics>div{flex:1}.glass-ui .student-identity{width:100%;box-sizing:border-box;text-align:left}.glass-ui .detail-hero .status-chip{margin-left:0}}
 @media(max-width:620px){.glass-ui .student-wallet-grid{grid-template-columns:1fr}.glass-ui .detail-grid{grid-template-columns:1fr}.glass-ui .detail-grid>div.full{grid-column:auto}.glass-ui .workflow-main{align-items:flex-start;flex-direction:column;gap:4px}.glass-ui .workflow-meta{align-items:flex-start}.glass-ui .dashboard-request-row,.glass-ui .workflow-row{align-items:flex-start}.glass-ui .request-actions,.glass-ui .request-actions form{width:100%}.glass-ui .request-actions>*{width:100%}.glass-ui .admin-hero-metrics{flex-direction:column}.glass-ui .admin-hero-metrics>div{min-width:0}.glass-ui .notification-row{align-items:flex-start;flex-direction:column}.glass-ui .notification-row small{white-space:normal}}
+
+/* Administrative activity feed: explicit layout prevents inline text collisions. */
+.glass-ui .activity-list{
+  display:grid!important;
+  gap:0!important;
+  padding:0 20px 10px!important;
+}
+.glass-ui .activity-row{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:space-between!important;
+  gap:20px!important;
+  padding:16px 0!important;
+  border-bottom:1px solid #edf1f5!important;
+  min-width:0!important;
+}
+.glass-ui .activity-row:last-child{border-bottom:0!important}
+.glass-ui .activity-main{
+  min-width:0!important;
+  display:grid!important;
+  gap:4px!important;
+}
+.glass-ui .activity-main strong{
+  display:block!important;
+  color:#0f172a!important;
+  font-size:15px!important;
+  line-height:1.35!important;
+  font-weight:600!important;
+}
+.glass-ui .activity-main span{
+  display:block!important;
+  color:#475569!important;
+  font-size:13px!important;
+  line-height:1.45!important;
+  overflow-wrap:anywhere!important;
+}
+.glass-ui .activity-time{
+  flex:0 0 auto!important;
+  color:#64748b!important;
+  font-size:12px!important;
+  line-height:1.35!important;
+  white-space:nowrap!important;
+}
+@media(max-width:620px){
+  .glass-ui .activity-row{
+    align-items:flex-start!important;
+    flex-direction:column!important;
+    gap:5px!important;
+  }
+  .glass-ui .activity-time{white-space:normal!important}
+}
