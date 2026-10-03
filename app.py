@@ -78,6 +78,7 @@ REQUEST_TYPES = ["Achievement", "Participation", "Sports", "Cultural", "Technica
 ADMIN_ROLES = {"superadmin", "manager", "verifier"}
 ROLE_PERMISSIONS = {
     "superadmin": {"*"},
+    "admin": {"*"},
     "manager": {"dashboard", "generate", "requests", "certificates", "signatures", "templates", "students", "bulk", "analytics"},
     "verifier": {"dashboard", "certificates", "verify", "analytics"},
 }
@@ -102,7 +103,7 @@ def require_role(role):
                     session.clear()
                     flash("Your student admin access has been revoked.", "error")
                     return redirect(url_for("login"))
-                session["admin_role"] = source["admin_role"] or "manager"
+                session["admin_role"] = source["admin_role"] or "admin"
             return view(*args, **kwargs)
         return wrapped
     return decorator
@@ -331,6 +332,8 @@ def init_db():
             db.execute("ALTER TABLE students ADD COLUMN admin_enabled INTEGER NOT NULL DEFAULT 0")
         if "admin_role" not in stu_cols:
             db.execute("ALTER TABLE students ADD COLUMN admin_role TEXT NOT NULL DEFAULT ''")
+        db.execute("UPDATE students SET admin_role='admin' WHERE admin_enabled=1")
+        db.execute("UPDATE students SET admin_role='' WHERE admin_enabled=0")
         # Remove the legacy manager account requested by the administrator.
         db.execute("DELETE FROM admin_users WHERE LOWER(username)=LOWER('MRGARG')")
 
@@ -688,7 +691,7 @@ def google_callback():
             session.clear()
             session["role"] = "admin"
             session["username"] = student["username"]
-            session["admin_role"] = student["admin_role"] or "manager"
+            session["admin_role"] = "admin"
             session["admin_id"] = None
             session["admin_source_student_id"] = student["id"]
             audit("Admin Google login", "admin", student["username"], f"Student admin role: {session['admin_role']}")
@@ -1417,21 +1420,18 @@ def admin_audit():
     return render_template("admin_audit.html", **ctx, rows=rows)
 
 
-@app.get("/admin/users")
+@app.get("/admin/access")
 @admin_permission("dashboard")
-def admin_users():
+def admin_access():
     if session.get("admin_role") != "superadmin":
         return redirect(url_for("admin_dashboard"))
-    ctx = admin_base_context("users")
+    ctx = admin_base_context("admin_access")
     student_query = clean(request.args.get("q"), 100)
     with get_db() as db:
-        users = db.execute(
-            "SELECT id,username,role,created_at,active FROM admin_users ORDER BY id DESC"
-        ).fetchall()
         if student_query:
             like = f"%{student_query}%"
             students = db.execute(
-                """SELECT id,username,name,roll_number,gmail,admin_enabled,admin_role
+                """SELECT id,username,name,roll_number,gmail,admin_enabled
                    FROM students
                    WHERE LOWER(name) LIKE LOWER(?) OR LOWER(username) LIKE LOWER(?)
                       OR LOWER(roll_number) LIKE LOWER(?) OR LOWER(gmail) LIKE LOWER(?)
@@ -1440,16 +1440,16 @@ def admin_users():
             ).fetchall()
         else:
             students = db.execute(
-                """SELECT id,username,name,roll_number,gmail,admin_enabled,admin_role
-                   FROM students ORDER BY id DESC LIMIT 100"""
+                """SELECT id,username,name,roll_number,gmail,admin_enabled
+                   FROM students ORDER BY LOWER(name) LIMIT 100"""
             ).fetchall()
-    return render_template(
-        "admin_users.html",
-        **ctx,
-        users=users,
-        students=students,
-        student_query=student_query,
-    )
+    return render_template("admin_access.html", **ctx, students=students, student_query=student_query)
+
+
+@app.get("/admin/users")
+@admin_permission("dashboard")
+def admin_users():
+    return redirect(url_for("admin_access"))
 
 
 @app.post("/admin/users")
@@ -1486,25 +1486,27 @@ def admin_users_toggle(user_id):
 def admin_student_admin_toggle(student_id):
     if session.get("admin_role") != "superadmin":
         flash("Only the superadmin can grant or revoke student admin access.", "error")
-        return redirect(url_for("admin_users"))
-    role = clean(request.form.get("admin_role"), 20)
-    if role not in {"manager", "verifier"}:
-        role = "manager"
+        return redirect(url_for("admin_access"))
     with get_db() as db:
-        student = db.execute("SELECT id,username,name,admin_enabled,admin_role FROM students WHERE id=?", (student_id,)).fetchone()
+        student = db.execute(
+            "SELECT id,username,name,admin_enabled FROM students WHERE id=?",
+            (student_id,),
+        ).fetchone()
         if not student:
             abort(404)
         new_enabled = 0 if student["admin_enabled"] else 1
-        new_role = role if new_enabled else ""
-        db.execute("UPDATE students SET admin_enabled=?,admin_role=? WHERE id=?", (new_enabled,new_role,student_id))
+        db.execute(
+            "UPDATE students SET admin_enabled=?,admin_role=? WHERE id=?",
+            (new_enabled, "admin" if new_enabled else "", student_id),
+        )
         db.commit()
-    audit("Student admin access changed", "student", student_id, f"enabled={new_enabled}; role={new_role or 'none'}")
+    audit("Student admin access changed", "student", student_id, f"enabled={new_enabled}")
     flash(
         f"Admin access {'granted' if new_enabled else 'revoked'} for {student['name'] or student['username']}.",
         "success",
     )
-    return redirect(url_for("admin_users"))
-
+    return redirect(url_for("admin_access") + (f"?q={quote_plus(clean(request.form.get('q'), 100))}" if request.form.get("q") else ""))
+    
 
 @app.get("/admin/notifications")
 @require_role("admin")
