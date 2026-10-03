@@ -72,7 +72,7 @@ def test_login_has_accessibility_and_branding_markers(app):
     _, client = app
     response = client.get("/")
     html = response.get_data(as_text=True)
-    assert 'Skip to main content' in html
+    assert 'Skip to login form' in html
     assert 'Certificate Management System' in html
     assert 'college_logo.png' in html
     assert 'id="login-main"' in html
