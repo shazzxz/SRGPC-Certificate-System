@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SRGPC · Page not found</title>
+<meta name="theme-color" content="#0f2a52">
+<link rel="icon" href="{{ url_for('static', filename='college_logo.png') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='6') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='glass.css', v='5') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='typography.css', v='16') }}">
+</head>
+<body class="auth-body glass-auth">
+  <main class="auth-shell" aria-labelledby="error-title">
+    <section class="auth-card">
+      <div class="auth-brand"><img src="{{ url_for('static', filename='college_logo.png') }}" alt="SRGPC"><div><b>SRGPC</b><span>Certificate Management System</span></div></div>
+      <div class="auth-title"><span>PAGE NOT FOUND</span><h1 id="error-title">This page isn't available</h1><p>The page may have moved, or the address may be incorrect. You can return to the portal safely.</p></div>
+      <a class="primary-btn" href="{{ url_for('login') }}">Return to portal →</a>
+    </section>
+  </main>
+</body>
+</html>
