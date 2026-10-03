@@ -87,3 +87,25 @@ td small{display:block;margin-top:4px;color:#94a3b8;font-size:8px;line-height:1.
 .mini-cert.burgundy{background:#fffaf5;color:#6f1d2a;border-top:3px solid #6f1d2a;border-bottom:4px solid #8f2f42;border:1px solid #c6a15b}
 @media(max-width:920px){.global-settings-form{grid-template-columns:1fr}.settings-actions{grid-column:auto}}
 @media(max-width:620px){.global-settings-form{grid-template-columns:1fr}.settings-choice,.settings-choice.compact-choice{grid-template-columns:34px minmax(0,1fr) auto}.settings-choice select{grid-column:2/-1}.year-choice input{grid-column:2/-1;max-width:none}.settings-actions{display:block}.settings-hint{display:block;margin-top:8px}.certificate-live-stage{padding:5px}}
+
+/* Final light dashboard accent: keep all KPI text readable at 100% zoom. */
+.stat-card.accent{
+  background:#eef2f7!important;
+  border-color:#d8e0e9!important;
+  color:#0f172a!important;
+  box-shadow:0 7px 18px rgba(15,23,42,.05)!important;
+}
+.stat-card.accent .stat-label,
+.stat-card.accent strong,
+.stat-card.accent .stat-note{
+  color:#0f172a!important;
+}
+.stat-card.accent .stat-label{
+  color:#334155!important;
+}
+.stat-card.accent .stat-note{
+  color:#475569!important;
+}
+.stat-card.accent:hover{
+  background:#e7edf3!important;
+}
