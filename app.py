@@ -1452,6 +1452,34 @@ def admin_users():
     return redirect(url_for("admin_access"))
 
 
+@app.post("/admin/student-admin/<int:student_id>/toggle")
+@admin_permission("dashboard")
+def admin_student_admin_toggle(student_id):
+    if session.get("admin_role") != "superadmin":
+        flash("Only the superadmin can grant or revoke student admin access.", "error")
+        return redirect(url_for("admin_access"))
+    with get_db() as db:
+        student = db.execute(
+            "SELECT id,username,name,admin_enabled FROM students WHERE id=?",
+            (student_id,),
+        ).fetchone()
+        if not student:
+            abort(404)
+        enabled = 0 if student["admin_enabled"] else 1
+        db.execute(
+            "UPDATE students SET admin_enabled=?,admin_role=? WHERE id=?",
+            (enabled, "admin" if enabled else "", student_id),
+        )
+        db.commit()
+    audit("Student admin access changed", "student", student_id, f"enabled={enabled}")
+    flash(
+        f"Admin access {'granted' if enabled else 'revoked'} for {student['name'] or student['username']}.",
+        "success",
+    )
+    query = urllib.parse.quote_plus(clean(request.form.get("q"), 100))
+    return redirect(url_for("admin_access") + (f"?q={query}" if query else ""))
+
+
 @app.get("/admin/notifications")
 @require_role("admin")
 def admin_notifications():
