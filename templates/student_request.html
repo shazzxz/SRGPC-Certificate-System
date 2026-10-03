@@ -6,7 +6,7 @@
 <div class="content-grid">
 <section class="panel form-panel">
   <div class="panel-head"><div><h2>Certificate Request</h2><p>Your name and roll number are locked to your registered account.</p></div><span class="pill">Student</span></div>
-  <form method="post" action="{{ url_for('student_request_submit') }}">
+  <form method="post" action="{{ url_for('student_request_submit') }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
     <div class="field-row"><label>Student Name<input name="name" value="{{ student.name }}" readonly></label><label>Roll Number<input name="roll_number" value="{{ student.roll_number }}" readonly></label></div>
     <label>Certificate Type<select name="request_type" required>{% for t in request_types %}<option>{{ t }}</option>{% endfor %}</select></label>
     <label>Activity / Event<input name="activity" required placeholder="e.g. Annual Sports Meet"></label>
