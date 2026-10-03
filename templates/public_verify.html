@@ -175,7 +175,7 @@
                 <div class="verify-field"><span>Academic Year</span><b>{{ certificate.academic_year }}</b></div>
                 <div class="verify-field"><span>Activity</span><b>{{ certificate.activity }}</b></div>
                 <div class="verify-field"><span>Achievement</span><b>{{ certificate.position }}</b></div>
-                <div class="verify-field"><span>Issued</span><b>{{ certificate.created_at }}</b></div><div class="verify-field"><span>Issued By</span><b>{{ certificate.created_by }}</b></div>
+                <div class="verify-field"><span>Department</span><b>{{ certificate.department or '—' }}</b></div><div class="verify-field"><span>Programme</span><b>{{ certificate.programme or '—' }}</b></div><div class="verify-field"><span>Semester</span><b>{{ certificate.semester or '—' }}</b></div><div class="verify-field"><span>Issued</span><b>{{ certificate.created_at }}</b></div><div class="verify-field"><span>Issued By</span><b>{{ certificate.created_by }}</b></div>
               </div>
 
               {% if certificate.revoke_reason %}
