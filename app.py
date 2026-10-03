@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, send_file, abort
 from pathlib import Path
 from io import BytesIO
-from datetime import datetime
+from datetime import datetime, timedelta
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -55,6 +55,12 @@ app.config["STATIC_VERSION"] = "6.3"
 ADMIN_USERNAME = os.environ.get("SRGPC_ADMIN_USERNAME", "ADMIN")
 ADMIN_PASSWORD = os.environ.get("SRGPC_ADMIN_PASSWORD", "0000")
 PUBLIC_BASE_URL = os.environ.get("SRGPC_PUBLIC_BASE_URL", "")
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=bool(DATABASE_URL or PUBLIC_BASE_URL.startswith("https://")),
+    PERMANENT_SESSION_LIFETIME=timedelta(hours=8),
+)
 CERT_TITLE = "CERTIFICATE OF ACHIEVEMENT"
 
 TEMPLATES = {
@@ -75,6 +81,7 @@ FONT_OPTIONS = {
 }
 
 REQUEST_TYPES = ["Achievement", "Participation", "Sports", "Cultural", "Technical", "Workshop / Training", "Internship", "Academic", "Other"]
+REQUEST_STATUSES = ["Pending", "Under Review", "Generated", "Rejected"]
 ADMIN_ROLES = {"superadmin", "manager", "verifier"}
 ROLE_PERMISSIONS = {
     "superadmin": {"*"},
@@ -406,6 +413,26 @@ def notify_student(student_id, title, body):
         db.commit()
 
 
+def add_request_update(db, request_id, status, message, actor_role=None, actor_name=None):
+    db.execute(
+        "INSERT INTO request_updates(request_id,status,message,actor_role,actor_name,created_at) VALUES(?,?,?,?,?,?)",
+        (
+            request_id,
+            status,
+            clean(message, 500),
+            actor_role or session.get("admin_role", session.get("role", "system")),
+            actor_name or session.get("username", "system"),
+            datetime.now().isoformat(timespec="seconds"),
+        ),
+    )
+
+
+def begin_session(**values):
+    session.clear()
+    session.permanent = True
+    session.update(values)
+
+
 def cert_payload_hash(info):
     raw = "|".join(str(info.get(k, "")) for k in ("name","roll_number","activity","position","certificate_type","academic_year"))
     return hashlib.sha256(raw.encode("utf-8")).hexdigest().upper()
@@ -689,18 +716,10 @@ def google_callback():
             if not student["admin_enabled"]:
                 flash("This student account does not have admin access. Ask the superadmin to grant it first.", "error")
                 return redirect(url_for("login"))
-            session.clear()
-            session["role"] = "admin"
-            session["username"] = student["username"]
-            session["admin_role"] = "admin"
-            session["admin_id"] = None
-            session["admin_source_student_id"] = student["id"]
+            begin_session(role="admin", username=student["username"], admin_role="admin", admin_id=None, admin_source_student_id=student["id"])
             audit("Admin Google login", "admin", student["username"], f"Student admin role: {session['admin_role']}")
             return redirect(url_for("admin_dashboard"))
-        session.clear()
-        session["role"] = "student"
-        session["student_id"] = student["id"]
-        session["username"] = student["username"]
+        begin_session(role="student", student_id=student["id"], username=student["username"])
         return redirect(url_for("student_dashboard"))
 
     if login_mode == "admin":
@@ -719,19 +738,17 @@ def register_google():
     if request.method == "GET":
         return render_template("register.html", google_pending=pending, form={"name": pending.get("name",""), "gmail": pending["gmail"]})
     fields = {
-        "username": clean(request.form.get("username"), 40),
-        "password": request.form.get("password", ""),
         "mobile": clean(request.form.get("mobile"), 20),
         "roll_number": clean(request.form.get("roll_number"), 40),
         "gmail": pending["gmail"],
         "name": clean(request.form.get("name"), 80) or pending.get("name",""),
         "department": clean(request.form.get("department"), 60) or "CSE",
     }
+    fields["username"] = re.sub(r"[^a-z0-9._-]+", "", fields["roll_number"].strip().lower())[:40]
+    fields["password"] = secrets.token_urlsafe(24)
     if not all([fields["username"], fields["mobile"], fields["roll_number"], fields["name"], fields["department"]]):
         flash("Please complete every college profile field.", "error")
         return render_template("register.html", form=fields, google_pending=pending)
-    if len(fields["password"]) < 4:
-        fields["password"] = secrets.token_urlsafe(18)
     try:
         with get_db() as db:
             db.execute(
@@ -742,10 +759,7 @@ def register_google():
             student_id = row["id"] if row else None
             db.commit()
         session.pop("pending_google", None)
-        session.clear()
-        session["role"] = "student"
-        session["student_id"] = student_id
-        session["username"] = fields["username"]
+        begin_session(role="student", student_id=student_id, username=fields["username"])
         flash("Google account connected. Your SRGPC student account is ready.", "success")
         return redirect(url_for("student_dashboard"))
     except Exception as exc:
@@ -762,7 +776,7 @@ def do_login():
     password = request.form.get("password", "")
     if role == "admin":
         if username.casefold() == ADMIN_USERNAME.casefold() and password == ADMIN_PASSWORD:
-            session.clear(); session["role"] = "admin"; session["username"] = ADMIN_USERNAME; session["admin_role"] = "superadmin"
+            begin_session(role="admin", username=ADMIN_USERNAME, admin_role="superadmin")
             audit("Login", "admin", ADMIN_USERNAME, "Master admin login")
             return redirect(url_for("admin_dashboard"))
         with get_db() as db:
@@ -770,7 +784,7 @@ def do_login():
         if not admin or not check_password_hash(admin["password_hash"], password):
             flash("Invalid admin username or password.", "error")
             return redirect(url_for("login"))
-        session.clear(); session["role"] = "admin"; session["username"] = admin["username"]; session["admin_role"] = admin["role"]; session["admin_id"] = admin["id"]
+        begin_session(role="admin", username=admin["username"], admin_role=admin["role"], admin_id=admin["id"])
         audit("Login", "admin", admin["username"], f"Role: {admin['role']}")
         return redirect(url_for("admin_dashboard"))
     with get_db() as db:
@@ -784,7 +798,7 @@ def do_login():
     if not student["email_verified"]:
         flash("Please verify your Gmail address before logging in. Check your inbox for the verification link.", "error")
         return redirect(url_for("login"))
-    session.clear(); session["role"] = "student"; session["student_id"] = student["id"]; session["username"] = student["username"]
+    begin_session(role="student", student_id=student["id"], username=student["username"])
     return redirect(url_for("student_dashboard"))
 
 
@@ -854,11 +868,13 @@ def admin_base_context(active):
         total_students = db.execute("SELECT COUNT(*) c FROM students").fetchone()["c"]
         total_certs = db.execute("SELECT COUNT(*) c FROM certificates").fetchone()["c"]
         pending = db.execute("SELECT COUNT(*) c FROM certificate_requests WHERE status='Pending'").fetchone()["c"]
+        under_review = db.execute("SELECT COUNT(*) c FROM certificate_requests WHERE status='Under Review'").fetchone()["c"]
+        attention = pending + under_review
         today_sql = "SELECT COUNT(*) c FROM certificates WHERE DATE(created_at) = CURRENT_DATE" if DATABASE_URL else "SELECT COUNT(*) c FROM certificates WHERE date(created_at)=date('now','localtime')"
         today = db.execute(today_sql).fetchone()["c"]
         valid = db.execute("SELECT COUNT(*) c FROM certificates WHERE status='Valid'").fetchone()["c"]
         revoked = db.execute("SELECT COUNT(*) c FROM certificates WHERE status='Revoked'").fetchone()["c"]
-    return dict(active=active, total_students=total_students, total_certs=total_certs, pending=pending, today=today, valid=valid, revoked=revoked, admin_username=ADMIN_USERNAME, admin_role=session.get('admin_role','superadmin'))
+    return dict(active=active, total_students=total_students, total_certs=total_certs, pending=pending, under_review=under_review, attention=attention, today=today, valid=valid, revoked=revoked, admin_username=ADMIN_USERNAME, admin_role=session.get('admin_role','superadmin'))
 
 
 @app.get("/admin")
@@ -867,8 +883,13 @@ def admin_dashboard():
     ctx = admin_base_context("dashboard")
     with get_db() as db:
         certs = db.execute("SELECT * FROM certificates ORDER BY id DESC LIMIT 8").fetchall()
-        requests = db.execute("SELECT * FROM certificate_requests ORDER BY id DESC LIMIT 6").fetchall()
-    return render_template("admin_dashboard.html", **ctx, certs=certs, requests=requests, templates=TEMPLATES)
+        requests = db.execute(
+            """SELECT r.*, s.name student_name, s.roll_number student_roll
+               FROM certificate_requests r JOIN students s ON s.id=r.student_id
+               ORDER BY r.id DESC LIMIT 8"""
+        ).fetchall()
+        audit_rows = db.execute("SELECT * FROM audit_logs ORDER BY id DESC LIMIT 8").fetchall()
+    return render_template("admin_dashboard.html", **ctx, certs=certs, requests=requests, audit_rows=audit_rows, templates=TEMPLATES)
 
 
 @app.get("/admin/generate")
@@ -953,6 +974,34 @@ def admin_certificate_preview():
     response = send_file(buf, mimetype="application/pdf", download_name="SRGPC_Preview.pdf", max_age=0, conditional=False)
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     return response
+
+
+@app.get("/admin/certificate/<certificate_id>")
+@admin_permission("certificates")
+def admin_certificate_detail(certificate_id):
+    ctx = admin_base_context("certificates")
+    with get_db() as db:
+        cert = db.execute(
+            "SELECT * FROM certificates WHERE certificate_id=?",
+            (clean(certificate_id,80).upper(),),
+        ).fetchone()
+    if not cert:
+        abort(404)
+    return render_template("admin_certificate_detail.html", **ctx, certificate=cert, templates=TEMPLATES)
+
+
+@app.get("/student/certificate/<certificate_id>")
+@require_role("student")
+def student_certificate_detail(certificate_id):
+    student = student_for_session()
+    with get_db() as db:
+        cert = db.execute(
+            "SELECT * FROM certificates WHERE certificate_id=? AND lower(roll_number)=lower(?)",
+            (clean(certificate_id,80).upper(), student["roll_number"]),
+        ).fetchone()
+    if not cert:
+        abort(404)
+    return render_template("student_certificate_detail.html", student=student, certificate=cert, active="certificates", templates=TEMPLATES)
 
 
 @app.get("/admin/certificates")
@@ -1155,11 +1204,53 @@ def admin_requests():
     ctx = admin_base_context("requests")
     status = request.args.get("status", "All")
     with get_db() as db:
-        if status in {"Pending", "Generated", "Rejected"}:
+        if status in {"Pending", "Under Review", "Generated", "Rejected"}:
             rows = db.execute("SELECT r.*, s.username, s.gmail, s.mobile FROM certificate_requests r JOIN students s ON s.id=r.student_id WHERE r.status=? ORDER BY r.id DESC", (status,)).fetchall()
         else:
             rows = db.execute("SELECT r.*, s.username, s.gmail, s.mobile FROM certificate_requests r JOIN students s ON s.id=r.student_id ORDER BY r.id DESC").fetchall()
     return render_template("admin_requests.html", **ctx, requests=rows, status=status, default_template=setting("default_template", "classic"), default_font=setting("default_font", "Helvetica"), templates=TEMPLATES)
+
+
+@app.get("/admin/request/<int:request_id>")
+@admin_permission("requests")
+def admin_request_detail(request_id):
+    ctx = admin_base_context("requests")
+    with get_db() as db:
+        req = db.execute(
+            """SELECT r.*, s.name student_name, s.roll_number student_roll, s.gmail student_gmail,
+                      s.mobile student_mobile, s.department
+               FROM certificate_requests r JOIN students s ON s.id=r.student_id
+               WHERE r.id=?""",
+            (request_id,),
+        ).fetchone()
+        if not req:
+            abort(404)
+        updates = db.execute("SELECT * FROM request_updates WHERE request_id=? ORDER BY id ASC", (request_id,)).fetchall()
+    return render_template("admin_request_detail.html", **ctx, request=req, updates=updates, templates=TEMPLATES, default_template=setting("default_template","classic"), default_font=setting("default_font","Helvetica"))
+
+
+@app.post("/admin/request/<int:request_id>/review")
+@admin_permission("requests")
+def admin_request_review(request_id):
+    with get_db() as db:
+        req = db.execute("SELECT * FROM certificate_requests WHERE id=?", (request_id,)).fetchone()
+        if not req:
+            flash("Certificate request not found.", "error")
+            return redirect(url_for("admin_requests"))
+        if req["status"] != "Pending":
+            flash("Only pending requests can be moved to review.", "error")
+            return redirect(url_for("admin_requests"))
+        now = datetime.now().isoformat(timespec="seconds")
+        db.execute(
+            "UPDATE certificate_requests SET status='Under Review', processed_at=NULL, processed_by=? WHERE id=?",
+            (session.get("username", ADMIN_USERNAME), request_id),
+        )
+        add_request_update(db, request_id, "Under Review", "Request moved to under review.", session.get("admin_role","admin"), session.get("username", ADMIN_USERNAME))
+        db.commit()
+    notify_student(req["student_id"], "Request under review", f"Your {req['request_type']} certificate request is now being reviewed by the admin.")
+    audit("Review request", "request", request_id, "Moved to Under Review")
+    flash("Request moved to review.", "success")
+    return redirect(url_for("admin_requests", status="Under Review"))
 
 
 @app.post("/admin/request/<int:request_id>/generate")
@@ -1170,7 +1261,7 @@ def admin_request_generate(request_id):
     if not req:
         flash("Certificate request not found.", "error")
         return redirect(url_for("admin_requests"))
-    if req["status"] != "Pending":
+    if req["status"] not in {"Pending", "Under Review"}:
         flash("This request has already been processed.", "error")
         return redirect(url_for("admin_requests"))
     info = {
@@ -1194,6 +1285,7 @@ def admin_request_generate(request_id):
     with get_db() as db:
         db.execute("INSERT INTO certificates(certificate_id,name,roll_number,activity,position,template,font_family,filename,created_at,certificate_type,academic_year,status,payload_hash,pdf_sha256,created_by,request_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (info["certificate_id"], info["name"], info["roll_number"], info["activity"], info["position"], info["template"], info["font_family"], filename, info["created_at"], info["certificate_type"], info["academic_year"], "Valid", info["payload_hash"], pdf_hash, info["created_by"], request_id))
         db.execute("UPDATE certificate_requests SET status='Generated', processed_at=?, processed_by=?, certificate_id=? WHERE id=?", (info["created_at"], session.get("username", ADMIN_USERNAME), info["certificate_id"], request_id))
+        add_request_update(db, request_id, "Generated", f"Certificate generated: {info['certificate_id']}.", session.get("admin_role","admin"), session.get("username", ADMIN_USERNAME))
         db.commit()
     notify_student(req["student_id"], "Certificate generated", f"Your {req['request_type']} certificate is ready: {info['certificate_id']}")
     audit("Fulfil request", "request", request_id, f"Generated {info['certificate_id']}")
@@ -1228,8 +1320,14 @@ def student_dashboard():
         requests = db.execute("SELECT * FROM certificate_requests WHERE student_id = ? ORDER BY id DESC", (student["id"],)).fetchall()
         notifications = db.execute("SELECT * FROM notifications WHERE student_id=? ORDER BY id DESC LIMIT 8", (student["id"],)).fetchall()
         unread = db.execute("SELECT COUNT(*) c FROM notifications WHERE student_id=? AND is_read=0", (student["id"],)).fetchone()["c"]
+    request_counts = {
+        "Pending": sum(1 for row in requests if row["status"]=="Pending"),
+        "Under Review": sum(1 for row in requests if row["status"]=="Under Review"),
+        "Generated": sum(1 for row in requests if row["status"]=="Generated"),
+        "Rejected": sum(1 for row in requests if row["status"]=="Rejected"),
+    }
     shown = [c for c in certs if not search_name or norm(c["name"]) == norm(search_name)]
-    return render_template("student_dashboard.html", student=student, certs=shown, all_count=len(certs), search_name=search_name, requests=requests, notifications=notifications, unread=unread, templates=TEMPLATES, active="dashboard")
+    return render_template("student_dashboard.html", student=student, certs=shown, all_count=len(certs), search_name=search_name, requests=requests, request_counts=request_counts, notifications=notifications, unread=unread, templates=TEMPLATES, active="dashboard")
 
 
 @app.get("/student/certificates")
@@ -1249,7 +1347,28 @@ def student_request_page():
     student = student_for_session()
     with get_db() as db:
         requests = db.execute("SELECT * FROM certificate_requests WHERE student_id=? ORDER BY id DESC", (student["id"],)).fetchall()
-    return render_template("student_request.html", student=student, requests=requests, request_types=REQUEST_TYPES, active="request")
+    request_ids = [row["id"] for row in requests]
+    updates = {}
+    if request_ids:
+        with get_db() as db:
+            for rid in request_ids:
+                updates[rid] = db.execute("SELECT * FROM request_updates WHERE request_id=? ORDER BY id DESC", (rid,)).fetchall()
+    return render_template("student_request.html", student=student, requests=requests, request_types=REQUEST_TYPES, request_updates=updates, active="request")
+
+
+@app.get("/student/request/<int:request_id>")
+@require_role("student")
+def student_request_detail(request_id):
+    student = student_for_session()
+    with get_db() as db:
+        req = db.execute(
+            "SELECT * FROM certificate_requests WHERE id=? AND student_id=?",
+            (request_id, student["id"]),
+        ).fetchone()
+        if not req:
+            abort(404)
+        updates = db.execute("SELECT * FROM request_updates WHERE request_id=? ORDER BY id ASC", (request_id,)).fetchall()
+    return render_template("student_request_detail.html", student=student, request=req, updates=updates, active="request")
 
 
 @app.post("/student/request")
@@ -1273,9 +1392,20 @@ def student_request_submit():
     if not all([fields["name"], fields["roll_number"], fields["activity"], fields["position"]]):
         flash("Please fill in name, roll number, activity and position.", "error")
         return redirect(url_for("student_request_page"))
+    created_at = datetime.now().isoformat(timespec="seconds")
     with get_db() as db:
-        db.execute("INSERT INTO certificate_requests(student_id,name,roll_number,request_type,activity,position,note,academic_year,created_at) VALUES(?,?,?,?,?,?,?,?,?)", (student["id"], fields["name"], fields["roll_number"], fields["request_type"], fields["activity"], fields["position"], fields["note"], setting("default_academic_year", current_academic_year()), datetime.now().isoformat(timespec="seconds")))
+        db.execute(
+            "INSERT INTO certificate_requests(student_id,name,roll_number,request_type,activity,position,note,academic_year,created_at) VALUES(?,?,?,?,?,?,?,?,?)",
+            (student["id"], fields["name"], fields["roll_number"], fields["request_type"], fields["activity"], fields["position"], fields["note"], setting("default_academic_year", current_academic_year()), created_at),
+        )
+        req = db.execute(
+            "SELECT id FROM certificate_requests WHERE student_id=? AND created_at=? ORDER BY id DESC LIMIT 1",
+            (student["id"], created_at),
+        ).fetchone()
+        if req:
+            add_request_update(db, req["id"], "Pending", "Certificate request submitted.", "student", student["name"])
         db.commit()
+    notify_student(student["id"], "Request submitted", "Your certificate request has been submitted and is waiting for admin review.")
     flash("Certificate request submitted to the admin.", "success")
     return redirect(url_for("student_request_page"))
 
@@ -1487,6 +1617,16 @@ def admin_notifications():
     return redirect(url_for("admin_dashboard"))
 
 
+@app.get("/student/notifications/read/<int:notification_id>")
+@require_role("student")
+def student_notification_read(notification_id):
+    student = student_for_session()
+    with get_db() as db:
+        db.execute("UPDATE notifications SET is_read=1 WHERE id=? AND student_id=?", (notification_id, student["id"]))
+        db.commit()
+    return redirect(request.referrer or url_for("student_dashboard"))
+
+
 @app.get("/student/notifications/read")
 @require_role("student")
 def student_notifications_read():
@@ -1501,7 +1641,7 @@ def public_verify(certificate_id):
     certificate_id=clean(certificate_id,80).upper()
     cert=None
     if certificate_id:
-        with get_db() as db: cert=db.execute("SELECT certificate_id,name,roll_number,activity,position,certificate_type,academic_year,template,font_family,created_at,status,payload_hash,pdf_sha256,revoke_reason,reissued_from FROM certificates WHERE certificate_id=?",(certificate_id,)).fetchone()
+        with get_db() as db: cert=db.execute("SELECT certificate_id,name,roll_number,activity,position,certificate_type,academic_year,template,font_family,created_at,status,payload_hash,pdf_sha256,revoke_reason,reissued_from,created_by,revoked_at FROM certificates WHERE certificate_id=?",(certificate_id,)).fetchone()
     return render_template("public_verify.html", certificate=cert, query=certificate_id)
 
 
