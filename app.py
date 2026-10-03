@@ -741,60 +741,8 @@ def do_login():
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
-    if request.method == "GET":
-        return render_template("register.html")
-    fields = {
-        "username": clean(request.form.get("username"), 40),
-        "password": request.form.get("password", ""),
-        "mobile": clean(request.form.get("mobile"), 20),
-        "roll_number": clean(request.form.get("roll_number"), 40),
-        "gmail": clean(request.form.get("gmail"), 120).lower(),
-        "name": clean(request.form.get("name"), 80),
-        "department": clean(request.form.get("department"), 60) or "CSE",
-    }
-    if not all(fields.values()):
-        flash("Please complete every registration field.", "error")
-        return render_template("register.html", form=fields)
-    if len(fields["password"]) < 4:
-        flash("Password must be at least 4 characters.", "error")
-        return render_template("register.html", form=fields)
-    if not is_valid_gmail(fields["gmail"]):
-        flash("Please enter a valid Gmail address.", "error")
-        return render_template("register.html", form=fields)
-    if not verification_configured():
-        flash("Student registration is temporarily unavailable because email verification is not configured by the administrator.", "error")
-        return render_template("register.html", form=fields)
-    student_id = None
-    try:
-        now = datetime.now().isoformat(timespec="seconds")
-        with get_db() as db:
-            db.execute(
-                "INSERT INTO students(username,password_hash,mobile,roll_number,gmail,name,department,academic_year,created_at,email_verified) VALUES(?,?,?,?,?,?,?,?,?,?)",
-                (fields["username"], generate_password_hash(fields["password"]), fields["mobile"], fields["roll_number"], fields["gmail"], fields["name"], fields["department"], setting("default_academic_year", current_academic_year()), now, 0),
-            )
-            row = db.execute("SELECT id FROM students WHERE LOWER(username)=LOWER(?)", (fields["username"],)).fetchone()
-            student_id = row["id"] if row else None
-            db.commit()
-        if not student_id:
-            raise RuntimeError("Unable to create the student account.")
-        token = create_email_verification(student_id)
-        try:
-            send_verification_email(fields["gmail"], fields["name"], token)
-        except Exception:
-            with get_db() as db:
-                db.execute("DELETE FROM students WHERE id=?", (student_id,))
-                db.commit()
-            raise
-        flash("Account created. We sent a verification link to your Gmail. Verify it before logging in.", "success")
-        return redirect(url_for("login"))
-    except Exception as exc:
-        if is_unique_violation(exc):
-            flash("Username, roll number, or Gmail is already registered.", "error")
-        elif isinstance(exc, (smtplib.SMTPException, OSError, ValueError, RuntimeError)):
-            flash("We could not send the verification email. Please try again later.", "error")
-        else:
-            raise
-        return render_template("register.html", form=fields)
+    return redirect(url_for("google_login"))
+
 
 
 @app.route("/verify-email", methods=["GET"])
