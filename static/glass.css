@@ -246,3 +246,31 @@ body.glass-auth{
   .glass-auth{padding:14px!important}
   .glass-auth .auth-card{padding:22px}
 }
+
+/* Final sidebar behavior: at 100% zoom the sidebar itself scrolls, keeping every item reachable. */
+.glass-ui .sidebar{
+  position:sticky;
+  top:0;
+  height:100vh;
+  min-height:100vh;
+  box-sizing:border-box;
+  overflow-y:auto;
+  overflow-x:hidden;
+  display:flex;
+  flex-direction:column;
+  scrollbar-width:thin;
+  scrollbar-color:#94a3b8 transparent;
+}
+.glass-ui .nav-stack{
+  min-height:0;
+  overflow:visible;
+  flex:0 0 auto;
+}
+.glass-ui .sidebar-bottom{
+  margin-top:20px;
+  flex:0 0 auto;
+  padding-bottom:4px;
+}
+.glass-ui .sidebar::-webkit-scrollbar{width:8px}
+.glass-ui .sidebar::-webkit-scrollbar-track{background:transparent}
+.glass-ui .sidebar::-webkit-scrollbar-thumb{background:#64748b;border-radius:999px}
