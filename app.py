@@ -96,6 +96,7 @@ def security_context():
 @app.before_request
 def protect_state_changing_requests():
     g.request_id = request.headers.get("X-Request-ID") or uuid.uuid4().hex[:16]
+    g.request_started = time.perf_counter()
     if request.method not in {"POST", "PUT", "PATCH", "DELETE"}:
         return None
     supplied = request.form.get("_csrf_token") or request.headers.get("X-CSRFToken") or request.headers.get("X-CSRF-Token")
@@ -123,6 +124,12 @@ def apply_security_headers(response):
     )
     if production_mode:
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    if request.endpoint != "healthz":
+        duration_ms = round((time.perf_counter() - getattr(g, "request_started", time.perf_counter())) * 1000, 2)
+        app.logger.info(
+            "request_complete",
+            extra={"request_id": getattr(g, "request_id", ""), "duration_ms": duration_ms},
+        )
     return response
 
 
@@ -141,6 +148,7 @@ def server_error(error):
 
 
 @app.get("/healthz")
+@limiter.exempt
 def healthz():
     checks = {"database": "ok", "storage": "not_configured"}
     try:
@@ -944,12 +952,14 @@ def login():
 
 
 @app.get("/auth/google")
+@limiter.limit("12 per minute")
 def google_login():
     session["google_login_mode"] = "student"
     return google_signin_or_register()
 
 
 @app.get("/auth/google/admin")
+@limiter.limit("12 per minute")
 def google_admin_login():
     session["google_login_mode"] = "admin"
     return google_signin_or_register()
@@ -1022,6 +1032,7 @@ def google_callback():
 
 
 @app.route("/register/google", methods=["GET", "POST"])
+@limiter.limit("6 per minute")
 def register_google():
     pending = session.get("pending_google")
     if not pending:
@@ -1075,6 +1086,7 @@ def register_google():
 
 
 @app.post("/login")
+@limiter.limit("10 per minute")
 def do_login():
     role = request.form.get("role", "student")
     username = clean(request.form.get("username"), 80).lower()
@@ -1257,6 +1269,7 @@ def admin_generate_page():
 
 
 @app.post("/admin/generate")
+@limiter.limit("30 per minute")
 @admin_permission("generate")
 def admin_generate():
     info = {
@@ -1816,6 +1829,7 @@ def student_request_detail(request_id):
 
 
 @app.post("/student/request")
+@limiter.limit("20 per minute")
 @require_role("student")
 def student_request_submit():
     student = student_for_session()
@@ -2085,6 +2099,7 @@ def admin_bulk():
 
 
 @app.post("/admin/bulk")
+@limiter.limit("10 per minute")
 @admin_permission("bulk")
 def admin_bulk_generate():
     upload = request.files.get("csv_file")
@@ -2319,6 +2334,7 @@ def student_notifications_read():
 
 @app.get("/verify", defaults={"certificate_id": ""})
 @app.get("/verify/<certificate_id>")
+@limiter.limit("60 per minute")
 def public_verify(certificate_id):
     certificate_id=clean(certificate_id,80).upper()
     cert=None
