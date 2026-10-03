@@ -13,7 +13,7 @@
     <span class="count-pill">{{ students|length }}</span>
   </div>
 
-  <form class="search-bar academic-filter-bar" method="get">
+  <form class="search-bar academic-filter-bar" method="get"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
     <input name="q" value="{{ search }}" placeholder="Search name, roll number, username or Gmail">
     <select name="department"><option value="">All departments</option>{% for item in departments %}<option value="{{ item }}" {% if department==item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select>
     <select name="programme"><option value="">All programmes</option>{% for item in programmes %}<option value="{{ item }}" {% if programme==item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select>
@@ -49,7 +49,7 @@
               <form method="post"
                     action="{{ url_for('admin_student_reset_password', student_id=student.id) }}"
                     class="inline-form"
-                    onsubmit="return confirm('Reset this student password?');">
+                    onsubmit="return confirm('Reset this student password?');"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                 <input type="password"
                        name="new_password"
                        minlength="4"
@@ -62,7 +62,7 @@
               <form method="post"
                     action="{{ url_for('admin_student_delete', student_id=student.id) }}"
                     class="inline-form"
-                    onsubmit="return confirm('Delete this student account? The login, requests and notifications will be removed. Certificates remain archived.');">
+                    onsubmit="return confirm('Delete this student account? The login, requests and notifications will be removed. Certificates remain archived.');"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="confirm_delete" value="DELETE">
                 <button class="small-btn danger-mini" type="submit">Delete</button>
               </form>
