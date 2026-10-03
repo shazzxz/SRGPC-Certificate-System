@@ -343,6 +343,21 @@ def init_db():
         db.execute("UPDATE students SET admin_role='' WHERE admin_enabled=0")
         # Remove the legacy manager account requested by the administrator.
         db.execute("DELETE FROM admin_users WHERE LOWER(username)=LOWER('MRGARG')")
+        existing_requests = db.execute(
+            "SELECT id,status,name FROM certificate_requests WHERE id NOT IN (SELECT request_id FROM request_updates)"
+        ).fetchall()
+        for existing in existing_requests:
+            db.execute(
+                "INSERT INTO request_updates(request_id,status,message,actor_role,actor_name,created_at) VALUES(?,?,?,?,?,?)",
+                (
+                    existing["id"],
+                    existing["status"],
+                    "Existing request imported into the workflow timeline.",
+                    "system",
+                    "SRGPC",
+                    datetime.now().isoformat(timespec="seconds"),
+                ),
+            )
 
         defaults = {
             "default_template": "classic",
@@ -854,6 +869,40 @@ def resend_verification():
         return render_template("resend_verification.html", gmail=gmail)
 
 
+@app.get("/student/admin")
+@require_role("student")
+def student_admin_portal():
+    student = student_for_session()
+    if not student or not student["admin_enabled"]:
+        abort(403)
+    begin_session(
+        role="admin",
+        username=student["username"],
+        admin_role="admin",
+        admin_id=None,
+        admin_source_student_id=student["id"],
+    )
+    audit("Switch to admin portal", "student", student["id"], "Promoted student admin access")
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.get("/admin/student-portal")
+@require_role("admin")
+def admin_student_portal():
+    source_id = session.get("admin_source_student_id")
+    if not source_id:
+        flash("This admin account is not linked to a student portal.", "error")
+        return redirect(url_for("admin_dashboard"))
+    with get_db() as db:
+        student = db.execute("SELECT id,username FROM students WHERE id=? AND admin_enabled=1", (source_id,)).fetchone()
+    if not student:
+        session.clear()
+        return redirect(url_for("login"))
+    begin_session(role="student", student_id=student["id"], username=student["username"])
+    audit("Switch to student portal", "student", student["id"], "Returned from promoted admin access")
+    return redirect(url_for("student_dashboard"))
+
+
 @app.get("/logout")
 def logout():
     session.clear()
@@ -1298,14 +1347,31 @@ def admin_request_generate(request_id):
 def admin_request_reject(request_id):
     note = clean(request.form.get("admin_note"), 240)
     with get_db() as db:
-        db.execute("UPDATE certificate_requests SET status='Rejected', admin_note=?, processed_at=?, processed_by=? WHERE id=? AND status='Pending'", (note, datetime.now().isoformat(timespec="seconds"), session.get("username", ADMIN_USERNAME), request_id))
-        req = db.execute("SELECT student_id FROM certificate_requests WHERE id=?", (request_id,)).fetchone()
+        req = db.execute("SELECT * FROM certificate_requests WHERE id=?", (request_id,)).fetchone()
+        if not req:
+            flash("Certificate request not found.", "error")
+            return redirect(url_for("admin_requests"))
+        if req["status"] not in {"Pending", "Under Review"}:
+            flash("This request has already been processed.", "error")
+            return redirect(url_for("admin_requests"))
+        now = datetime.now().isoformat(timespec="seconds")
+        db.execute(
+            "UPDATE certificate_requests SET status='Rejected', admin_note=?, processed_at=?, processed_by=? WHERE id=?",
+            (note, now, session.get("username", ADMIN_USERNAME), request_id),
+        )
+        add_request_update(
+            db,
+            request_id,
+            "Rejected",
+            note or "Request rejected by the admin.",
+            session.get("admin_role", "admin"),
+            session.get("username", ADMIN_USERNAME),
+        )
         db.commit()
-    if req:
-        notify_student(req["student_id"], "Certificate request rejected", note or "Your certificate request was rejected by the admin.")
+    notify_student(req["student_id"], "Certificate request rejected", note or "Your certificate request was rejected by the admin.")
     audit("Reject request", "request", request_id, note)
     flash("Certificate request rejected.", "success")
-    return redirect(url_for("admin_requests"))
+    return redirect(url_for("admin_requests", status="Rejected"))
 
 
 # ------------------------- STUDENT PAGES -------------------------
@@ -1647,7 +1713,7 @@ def public_verify(certificate_id):
 
 @app.get("/api/verify/<certificate_id>")
 def api_verify(certificate_id):
-    with get_db() as db: cert=db.execute("SELECT certificate_id,name,roll_number,activity,position,certificate_type,academic_year,created_at,status,payload_hash,pdf_sha256,revoke_reason,reissued_from FROM certificates WHERE certificate_id=?",(clean(certificate_id,80).upper(),)).fetchone()
+    with get_db() as db: cert=db.execute("SELECT certificate_id,name,roll_number,activity,position,certificate_type,academic_year,created_at,status,payload_hash,pdf_sha256,revoke_reason,reissued_from,created_by,revoked_at FROM certificates WHERE certificate_id=?",(clean(certificate_id,80).upper(),)).fetchone()
     if not cert: return {"valid":False,"status":"NOT_FOUND","certificate_id":clean(certificate_id,80).upper()},404
     return {"valid": cert["status"]=="Valid", **dict(cert)}
 
