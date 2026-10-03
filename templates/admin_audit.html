@@ -5,7 +5,7 @@
 {% block topaction %}<div class="report-actions"><a class="secondary-btn inline-btn" href="{{ url_for('admin_report_audit',format='csv',actor=actor,action=action,entity=entity,q=query,from_date=from_date,to_date=to_date) }}">Export CSV</a><a class="secondary-btn inline-btn" href="{{ url_for('admin_report_audit',format='pdf',actor=actor,action=action,entity=entity,q=query,from_date=from_date,to_date=to_date) }}">Export PDF</a></div>{% endblock %}
 {% block content %}
 <section class="panel">
-  <form class="search-bar academic-filter-bar" method="get">
+  <form class="search-bar academic-filter-bar" method="get"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
     <input name="q" value="{{ query }}" placeholder="Search action, details or entity ID">
     <input name="actor" value="{{ actor }}" placeholder="Actor">
     <input name="action" value="{{ action }}" placeholder="Action">
