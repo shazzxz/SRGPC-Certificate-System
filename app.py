@@ -2127,7 +2127,7 @@ def public_verify(certificate_id):
     certificate_id=clean(certificate_id,80).upper()
     cert=None
     if certificate_id:
-        with get_db() as db: cert=db.execute("SELECT certificate_id,name,roll_number,activity,position,certificate_type,academic_year,template,font_family,created_at,status,payload_hash,pdf_sha256,revoke_reason,reissued_from,created_by,revoked_at FROM certificates WHERE certificate_id=?",(certificate_id,)).fetchone()
+        with get_db() as db: cert=db.execute("SELECT certificate_id,name,roll_number,department,programme,semester,activity,position,certificate_type,academic_year,template,font_family,created_at,status,payload_hash,pdf_sha256,revoke_reason,reissued_from,created_by,revoked_at FROM certificates WHERE certificate_id=?",(certificate_id,)).fetchone()
     return render_template("public_verify.html", certificate=cert, query=certificate_id)
 
 
