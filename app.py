@@ -1452,62 +1452,6 @@ def admin_users():
     return redirect(url_for("admin_access"))
 
 
-@app.post("/admin/users")
-@admin_permission("dashboard")
-def admin_users_create():
-    if session.get("admin_role") != "superadmin":
-        flash("Only the master admin can create staff accounts.","error"); return redirect(url_for("admin_users"))
-    username=clean(request.form.get("username"),40); password=request.form.get("password",""); role=request.form.get("role","manager")
-    if not username or len(password)<6 or role not in ADMIN_ROLES-{"superadmin"}:
-        flash("Enter a username, a 6+ character password and a valid role.","error"); return redirect(url_for("admin_users"))
-    try:
-        with get_db() as db: db.execute("INSERT INTO admin_users(username,password_hash,role,created_at) VALUES(?,?,?,?)",(username,generate_password_hash(password),role,datetime.now().isoformat(timespec="seconds"))); db.commit()
-        audit("Create staff account","admin",username,f"Role: {role}")
-        flash("Staff account created.","success")
-    except Exception as exc:
-        if is_unique_violation(exc):
-            flash("That username already exists.","error")
-        else:
-            raise
-    return redirect(url_for("admin_users"))
-
-
-@app.post("/admin/users/<int:user_id>/toggle")
-@admin_permission("dashboard")
-def admin_users_toggle(user_id):
-    if session.get("admin_role") != "superadmin": flash("Only the master admin can change staff accounts.","error"); return redirect(url_for("admin_users"))
-    with get_db() as db: db.execute("UPDATE admin_users SET active=CASE active WHEN 1 THEN 0 ELSE 1 END WHERE id=?",(user_id,)); db.commit()
-    audit("Toggle staff account","admin",user_id)
-    return redirect(url_for("admin_users"))
-
-
-@app.post("/admin/student-admin/<int:student_id>/toggle")
-@admin_permission("dashboard")
-def admin_student_admin_toggle(student_id):
-    if session.get("admin_role") != "superadmin":
-        flash("Only the superadmin can grant or revoke student admin access.", "error")
-        return redirect(url_for("admin_access"))
-    with get_db() as db:
-        student = db.execute(
-            "SELECT id,username,name,admin_enabled FROM students WHERE id=?",
-            (student_id,),
-        ).fetchone()
-        if not student:
-            abort(404)
-        new_enabled = 0 if student["admin_enabled"] else 1
-        db.execute(
-            "UPDATE students SET admin_enabled=?,admin_role=? WHERE id=?",
-            (new_enabled, "admin" if new_enabled else "", student_id),
-        )
-        db.commit()
-    audit("Student admin access changed", "student", student_id, f"enabled={new_enabled}")
-    flash(
-        f"Admin access {'granted' if new_enabled else 'revoked'} for {student['name'] or student['username']}.",
-        "success",
-    )
-    return redirect(url_for("admin_access") + (f"?q={urllib.parse.quote_plus(clean(request.form.get('q'), 100))}" if request.form.get("q") else ""))
-    
-
 @app.get("/admin/notifications")
 @require_role("admin")
 def admin_notifications():
