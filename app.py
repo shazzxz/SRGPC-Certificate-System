@@ -1505,7 +1505,7 @@ def admin_student_admin_toggle(student_id):
         f"Admin access {'granted' if new_enabled else 'revoked'} for {student['name'] or student['username']}.",
         "success",
     )
-    return redirect(url_for("admin_access") + (f"?q={quote_plus(clean(request.form.get('q'), 100))}" if request.form.get("q") else ""))
+    return redirect(url_for("admin_access") + (f"?q={urllib.parse.quote_plus(clean(request.form.get('q'), 100))}" if request.form.get("q") else ""))
     
 
 @app.get("/admin/notifications")
