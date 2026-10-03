@@ -2000,8 +2000,27 @@ def admin_reissue_certificate(certificate_id):
 @admin_permission("analytics")
 def admin_audit():
     ctx = admin_base_context("audit")
-    with get_db() as db: rows=db.execute("SELECT * FROM audit_logs ORDER BY id DESC LIMIT 250").fetchall()
-    return render_template("admin_audit.html", **ctx, rows=rows)
+    actor=clean(request.args.get("actor"),80)
+    action=clean(request.args.get("action"),120)
+    entity=clean(request.args.get("entity"),80)
+    query=clean(request.args.get("q"),120)
+    from_date=clean(request.args.get("from_date"),10)
+    to_date=clean(request.args.get("to_date"),10)
+    where=[]; params=[]
+    if actor: where.append("LOWER(actor_name) LIKE LOWER(?)"); params.append(f"%{actor}%")
+    if action: where.append("LOWER(action) LIKE LOWER(?)"); params.append(f"%{action}%")
+    if entity: where.append("LOWER(entity_type)=LOWER(?)"); params.append(entity)
+    if query:
+        like=f"%{query}%"
+        where.append("(LOWER(details) LIKE LOWER(?) OR LOWER(entity_id) LIKE LOWER(?) OR LOWER(action) LIKE LOWER(?))")
+        params.extend([like,like,like])
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", from_date): where.append("substr(created_at,1,10)>=?"); params.append(from_date)
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", to_date): where.append("substr(created_at,1,10)<=?"); params.append(to_date)
+    sql="SELECT * FROM audit_logs"
+    if where: sql += " WHERE " + " AND ".join(where)
+    sql += " ORDER BY id DESC LIMIT 500"
+    with get_db() as db: rows=db.execute(sql,tuple(params)).fetchall()
+    return render_template("admin_audit.html", **ctx, rows=rows, actor=actor, action=action, entity=entity, query=query, from_date=from_date, to_date=to_date)
 
 
 @app.get("/admin/access")
