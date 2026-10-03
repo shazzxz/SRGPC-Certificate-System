@@ -22,7 +22,7 @@
   <div class="action-stack">
     <a class="primary-btn" href="{{ url_for('download',filename=certificate.filename) }}">Download PDF</a>
     <a class="secondary-btn" href="{{ url_for('public_verify',certificate_id=certificate.certificate_id) }}" target="_blank">Open Public Verification</a>
-    {% if certificate.status=='Valid' %}<form method="post" action="{{ url_for('admin_revoke_certificate',certificate_id=certificate.certificate_id) }}"><input name="reason" placeholder="Revocation reason"><button class="secondary-btn danger-btn" type="submit">Revoke Certificate</button></form>{% else %}<form method="post" action="{{ url_for('admin_reissue_certificate',certificate_id=certificate.certificate_id) }}"><button class="secondary-btn success-mini" type="submit">Reissue Certificate</button></form>{% endif %}
+    {% if certificate.status=='Valid' %}<form method="post" action="{{ url_for('admin_revoke_certificate',certificate_id=certificate.certificate_id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input name="reason" placeholder="Revocation reason"><button class="secondary-btn danger-btn" type="submit">Revoke Certificate</button></form>{% else %}<form method="post" action="{{ url_for('admin_reissue_certificate',certificate_id=certificate.certificate_id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="secondary-btn success-mini" type="submit">Reissue Certificate</button></form>{% endif %}
   </div>
 </section>
 </div>
