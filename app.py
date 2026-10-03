@@ -1914,10 +1914,23 @@ def admin_bulk_generate():
                     "academic_year": clean(row.get("Academic Year"),20) or setting("default_academic_year", current_academic_year()),
                     "template": allowed_template(row.get("Template") or setting("default_template","classic")),
                     "font_family": allowed_font(row.get("Font Family") or setting("default_font","Helvetica")),
+                    "department": clean(row.get("Department"),60),
+                    "programme": clean(row.get("Programme"),60),
+                    "semester": clean(row.get("Semester"),10),
                 }
                 if not all([info["name"],info["roll_number"],info["activity"],info["position"]]):
                     skipped.append(f"Row {idx}: missing required field")
                     continue
+                if not info["department"] or not info["programme"]:
+                    with get_db() as db:
+                        academic = db.execute("SELECT department,programme,semester FROM students WHERE lower(roll_number)=lower(?) LIMIT 1", (info["roll_number"],)).fetchone()
+                    if academic:
+                        info["department"] = info["department"] or academic["department"]
+                        info["programme"] = info["programme"] or academic["programme"]
+                        info["semester"] = info["semester"] or academic["semester"]
+                info["department"] = info["department"] if info["department"] in DEPARTMENTS else "Other"
+                info["programme"] = info["programme"] if info["programme"] in PROGRAMMES else "Other"
+                info["semester"] = info["semester"] if info["semester"] in SEMESTERS else ""
                 with get_db() as db:
                     dup = db.execute("SELECT certificate_id FROM certificates WHERE lower(name)=lower(?) AND lower(roll_number)=lower(?) AND lower(activity)=lower(?) AND lower(position)=lower(?) AND status='Valid'", (info["name"],info["roll_number"],info["activity"],info["position"])).fetchone()
                 if dup:
@@ -1932,7 +1945,8 @@ def admin_bulk_generate():
                 final = GENERATED_DIR / filename
                 shutil.copy2(outpath, final)
                 with get_db() as db:
-                    db.execute("INSERT INTO certificates(certificate_id,name,roll_number,activity,position,template,font_family,filename,created_at,certificate_type,academic_year,status,payload_hash,pdf_sha256,created_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (info["certificate_id"],info["name"],info["roll_number"],info["activity"],info["position"],info["template"],info["font_family"],filename,info["created_at"],info["certificate_type"],info["academic_year"],"Valid",info["payload_hash"],pdf_hash,info["created_by"]))
+                    db.execute("INSERT INTO certificates(certificate_id,name,roll_number,activity,position,template,font_family,filename,created_at,certificate_type,academic_year,status,payload_hash,pdf_sha256,created_by,department,programme,semester) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (info["certificate_id"],info["name"],info["roll_number"],info["activity"],info["position"],info["template"],info["font_family"],filename,info["created_at"],info["certificate_type"],info["academic_year"],"Valid",info["payload_hash"],pdf_hash,info["created_by"],info["department"],info["programme"],info["semester"]))
+                    add_certificate_history(db, info["certificate_id"], "Generated", f"Bulk CSV row {idx}.", session.get("admin_role","admin"), session.get("username",ADMIN_USERNAME), info["created_at"])
                     db.commit()
                 generated.append(filename)
                 audit("Bulk generate", "certificate", info["certificate_id"], f"CSV row {idx}")
