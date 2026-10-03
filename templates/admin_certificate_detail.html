@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}{{ certificate.certificate_id }} · SRGPC{% endblock %}
+{% block heading %}Certificate Record{% endblock %}
+{% block subheading %}Official certificate lifecycle, verification and integrity details.{% endblock %}
+{% block topaction %}<a href="{{ url_for('admin_certificates') }}" class="ghost-btn">← Certificate Archive</a>{% endblock %}
+{% block content %}
+<section class="detail-hero panel"><div><span class="eyebrow">CERTIFICATE {{ certificate.certificate_id }}</span><h2>{{ certificate.name }}</h2><p>{{ certificate.certificate_type }} · {{ certificate.position }} · {{ certificate.activity }}</p></div><span class="status-chip status-{{ certificate.status|lower }}">{{ certificate.status }}</span></section>
+<div class="dashboard-grid">
+<section class="panel">
+  <div class="panel-head"><div><h2>Certificate details</h2><p>Stored record used to regenerate and verify the PDF.</p></div></div>
+  <div class="detail-grid">
+    <div><span>Student</span><b>{{ certificate.name }}</b></div><div><span>Roll Number</span><b>{{ certificate.roll_number }}</b></div>
+    <div><span>Certificate Type</span><b>{{ certificate.certificate_type }}</b></div><div><span>Academic Year</span><b>{{ certificate.academic_year }}</b></div>
+    <div class="full"><span>Activity</span><b>{{ certificate.activity }}</b></div><div class="full"><span>Achievement</span><b>{{ certificate.position }}</b></div>
+    <div><span>Issued By</span><b>{{ certificate.created_by }}</b></div><div><span>Issued At</span><b>{{ certificate.created_at }}</b></div>
+    <div class="full"><span>Certificate ID</span><b><code>{{ certificate.certificate_id }}</code></b></div>
+  </div>
+</section>
+<section class="panel">
+  <div class="panel-head"><div><h2>Actions</h2><p>Manage the certificate lifecycle.</p></div></div>
+  <div class="action-stack">
+    <a class="primary-btn" href="{{ url_for('download',filename=certificate.filename) }}">Download PDF</a>
+    <a class="secondary-btn" href="{{ url_for('public_verify',certificate_id=certificate.certificate_id) }}" target="_blank">Open Public Verification</a>
+    {% if certificate.status=='Valid' %}<form method="post" action="{{ url_for('admin_revoke_certificate',certificate_id=certificate.certificate_id) }}"><input name="reason" placeholder="Revocation reason"><button class="secondary-btn danger-btn" type="submit">Revoke Certificate</button></form>{% else %}<form method="post" action="{{ url_for('admin_reissue_certificate',certificate_id=certificate.certificate_id) }}"><button class="secondary-btn success-mini" type="submit">Reissue Certificate</button></form>{% endif %}
+  </div>
+</section>
+</div>
+<section class="panel">
+  <div class="panel-head"><div><h2>Integrity record</h2><p>Hashes stored with the certificate record.</p></div></div>
+  <div class="detail-grid hash-grid"><div class="full"><span>Payload SHA-256</span><code>{{ certificate.payload_hash }}</code></div><div class="full"><span>PDF SHA-256</span><code>{{ certificate.pdf_sha256 }}</code></div>{% if certificate.revoked_at %}<div><span>Revoked At</span><b>{{ certificate.revoked_at }}</b></div>{% endif %}{% if certificate.revoke_reason %}<div><span>Revocation Reason</span><b>{{ certificate.revoke_reason }}</b></div>{% endif %}{% if certificate.reissued_from %}<div class="full"><span>Reissued From</span><b>{{ certificate.reissued_from }}</b></div>{% endif %}</div>
+</section>
+{% endblock %}
