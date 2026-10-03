@@ -1,1 +1,59 @@
-{% extends 'base.html' %}{% block title %}Staff Accounts · SRGPC{% endblock %}{% block heading %}Staff Accounts{% endblock %}{% block subheading %}Create limited admin accounts while keeping the ADMIN / 0000 master login available.{% endblock %}{% block content %}<div class="two-col"><section class="panel form-panel"><div class="panel-head"><div><h2>Create Staff Account</h2><p>Use staff roles for safer day-to-day operations.</p></div></div><form method="post"><label>Username<input name="username" required placeholder="e.g. verifier01"></label><label>Password<input type="password" name="password" required minlength="6"></label><label>Role<select name="role"><option value="manager">Manager</option><option value="verifier">Verifier</option></select></label><button class="primary-btn" type="submit">Create Staff Account →</button></form></section><section class="panel"><div class="panel-head"><div><h2>Accounts</h2><p>Manager can operate the portal; verifier is read-only for verification and archive work.</p></div></div><div class="request-list"><div class="request-row"><div><strong>ADMIN</strong><span>Master administrator</span></div><span class="status-chip generated">Always Available</span></div>{% for u in users %}<div class="request-row"><div><strong>{{ u.username }}</strong><span>{{ u.role|title }} · {{ u.created_at }}</span></div><form method="post" action="{{ url_for('admin_users_toggle',user_id=u.id) }}"><button class="small-btn {% if u.active %}danger-mini{% else %}success-mini{% endif %}" type="submit">{{ 'Disable' if u.active else 'Enable' }}</button></form></div>{% else %}<div class="empty-card">No staff accounts created yet.</div>{% endfor %}</div></section></div>{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Staff Accounts · SRGPC{% endblock %}
+{% block heading %}Staff & Access{% endblock %}
+{% block subheading %}Manage staff accounts and grant or revoke admin access for student accounts at any time.{% endblock %}
+{% block content %}
+<div class="two-col">
+<section class="panel form-panel">
+  <div class="panel-head"><div><h2>Create Staff Account</h2><p>Use staff roles for day-to-day portal operations.</p></div></div>
+  <form method="post" action="{{ url_for('admin_users_create') }}">
+    <label>Username<input name="username" required placeholder="e.g. verifier01"></label>
+    <label>Password<input type="password" name="password" required minlength="6"></label>
+    <label>Role<select name="role"><option value="manager">Manager</option><option value="verifier">Verifier</option></select></label>
+    <button class="primary-btn" type="submit">Create Staff Account →</button>
+  </form>
+</section>
+
+<section class="panel">
+  <div class="panel-head"><div><h2>Staff Accounts</h2><p>Inactive accounts cannot sign in.</p></div></div>
+  <div class="request-list">
+    {% for u in users %}
+    <div class="request-row"><div><strong>{{ u.username }}</strong><span>{{ u.role|title }} · {{ u.created_at }}</span></div><form method="post" action="{{ url_for('admin_users_toggle',user_id=u.id) }}"><button class="small-btn {% if u.active %}danger-mini{% else %}success-mini{% endif %}" type="submit">{{ 'Disable' if u.active else 'Enable' }}</button></form></div>
+    {% else %}<div class="empty-card">No staff accounts created.</div>{% endfor %}
+  </div>
+</section>
+</div>
+
+<section class="panel access-panel" style="margin-top:16px">
+  <div class="panel-head">
+    <div><h2>Student Admin Access</h2><p>Grant a student a Google-based admin login. You can revoke it instantly.</p></div>
+  </div>
+  <form method="get" class="inline-filter" style="padding:14px 21px;border-bottom:1px solid var(--glass-line);display:flex;gap:8px">
+    <input name="q" value="{{ student_query }}" placeholder="Search student name, roll number or Gmail" style="flex:1">
+    <button class="ghost-btn" type="submit">Search</button>
+    {% if student_query %}<a class="ghost-btn" href="{{ url_for('admin_users') }}">Clear</a>{% endif %}
+  </form>
+  <div class="request-list">
+  {% for s in students %}
+    <div class="request-row">
+      <div>
+        <strong>{{ s.name }}</strong>
+        <span>{{ s.roll_number }} · {{ s.gmail }}</span>
+        {% if s.admin_enabled %}<small style="display:block;margin-top:4px;color:#67e8f9">{{ s.admin_role|title }} admin access enabled</small>{% endif %}
+      </div>
+      <form method="post" action="{{ url_for('admin_student_admin_toggle',student_id=s.id) }}" style="display:flex;gap:7px;align-items:center">
+        {% if not s.admin_enabled %}
+          <select name="admin_role" class="small-select"><option value="manager">Manager</option><option value="verifier">Verifier</option></select>
+          <button class="small-btn success-mini" type="submit">Grant Admin</button>
+        {% else %}
+          <input type="hidden" name="admin_role" value="{{ s.admin_role }}">
+          <button class="small-btn danger-mini" type="submit">Revoke Admin</button>
+        {% endif %}
+      </form>
+    </div>
+  {% else %}
+    <div class="empty-card">No students match your search.</div>
+  {% endfor %}
+  </div>
+</section>
+{% endblock %}
