@@ -643,3 +643,76 @@ body.glass-ui,body.glass-auth{font-size:16px!important}
     font-size:13px!important;
   }
 }
+
+/* =========================================================
+   Notification feed alignment repair
+   ========================================================= */
+.glass-ui .notification-list{
+  display:grid!important;
+  gap:0!important;
+  padding:0 20px 8px!important;
+}
+.glass-ui .notification-row{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 125px!important;
+  align-items:start!important;
+  gap:18px!important;
+  width:100%!important;
+  box-sizing:border-box!important;
+  padding:16px 0!important;
+  margin:0!important;
+  border-bottom:1px solid #edf1f5!important;
+  text-decoration:none!important;
+}
+.glass-ui .notification-row>div{
+  min-width:0!important;
+  display:block!important;
+}
+.glass-ui .notification-row>div strong{
+  display:block!important;
+  font-size:15px!important;
+  line-height:1.35!important;
+  font-weight:600!important;
+  color:#0f172a!important;
+}
+.glass-ui .notification-row>div span{
+  display:block!important;
+  margin-top:6px!important;
+  font-size:14px!important;
+  line-height:1.5!important;
+  color:#334155!important;
+  overflow-wrap:anywhere!important;
+}
+.glass-ui .notification-row small{
+  display:block!important;
+  min-width:0!important;
+  text-align:right!important;
+  white-space:normal!important;
+  overflow-wrap:anywhere!important;
+  color:#64748b!important;
+  font-size:12px!important;
+  line-height:1.4!important;
+}
+.glass-ui .notification-row.unread{
+  padding-left:12px!important;
+  padding-right:0!important;
+  border-left:3px solid #2563eb!important;
+  background:#f8fbff!important;
+}
+.glass-ui .notification-row:hover{
+  background:#f8fafc!important;
+}
+@media(max-width:760px){
+  .glass-ui .notification-list{
+    padding-left:14px!important;
+    padding-right:14px!important;
+  }
+  .glass-ui .notification-row{
+    grid-template-columns:1fr!important;
+    gap:7px!important;
+  }
+  .glass-ui .notification-row small{
+    text-align:left!important;
+    font-size:11px!important;
+  }
+}
