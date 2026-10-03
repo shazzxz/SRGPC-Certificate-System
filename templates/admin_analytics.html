@@ -1,3 +1,36 @@
-{% extends 'base.html' %}{% block title %}Analytics · SRGPC{% endblock %}
-{% block heading %}Analytics & Audit{% endblock %}{% block subheading %}Understand certificate activity and see who performed administrative actions.{% endblock %}
-{% block content %}<section class="advanced-grid"><div class="stat-card"><span class="stat-label">Valid Certificates</span><div class="metric-big">{{ valid }}</div><span class="stat-note">Current valid records</span></div><div class="stat-card"><span class="stat-label">Revoked</span><div class="metric-big">{{ revoked }}</div><span class="stat-note">Revoked / replaced records</span></div><div class="stat-card accent"><span class="stat-label">Pending Requests</span><div class="metric-big">{{ pending }}</div><span class="stat-note">Awaiting admin action</span></div></section><div class="two-col" style="margin-top:18px"><section class="panel"><div class="panel-head"><div><h2>Certificates by Academic Year</h2></div></div><div style="padding:16px 20px">{% set maxv=(by_year|map(attribute='c')|list|max if by_year else 1) %}{% for row in by_year %}<div class="bar-row"><span>{{ row.academic_year }}</span><div class="bar"><span style="width:{{ (row.c/maxv*100)|round(0) }}%"></span></div><b>{{ row.c }}</b></div>{% else %}<div class="empty-card">No data yet.</div>{% endfor %}</div></section><section class="panel"><div class="panel-head"><div><h2>Certificates by Type</h2></div></div><div style="padding:16px 20px">{% set maxv=(by_type|map(attribute='c')|list|max if by_type else 1) %}{% for row in by_type %}<div class="bar-row"><span>{{ row.certificate_type }}</span><div class="bar"><span style="width:{{ (row.c/maxv*100)|round(0) }}%"></span></div><b>{{ row.c }}</b></div>{% else %}<div class="empty-card">No data yet.</div>{% endfor %}</div></section></div><section class="panel history-panel" style="margin-top:18px"><div class="panel-head"><div><h2>Audit Log</h2><p>Recent system actions.</p></div><a class="text-link" href="{{ url_for('admin_audit') }}">Full audit →</a></div><div class="table-wrap"><table><thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Entity</th><th>Details</th></tr></thead><tbody>{% for row in audit_rows %}<tr><td>{{ row.created_at }}</td><td>{{ row.actor_name }}<small>{{ row.actor_role }}</small></td><td>{{ row.action }}</td><td>{{ row.entity_type }} {{ row.entity_id }}</td><td>{{ row.details }}</td></tr>{% else %}<tr><td colspan="5" class="empty">No audit events yet.</td></tr>{% endfor %}</tbody></table></div></section>{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Analytics & Reports · SRGPC{% endblock %}
+{% block heading %}Analytics & Reports{% endblock %}
+{% block subheading %}A management view of certificates, requests, academic distribution and administrative activity.{% endblock %}
+{% block topaction %}<a class="secondary-btn" href="{{ url_for('admin_report_certificates',format='pdf') }}">Export Certificate Register</a>{% endblock %}
+{% block content %}
+<section class="stats-grid">
+  <div class="stat-card"><span class="stat-label">Students</span><strong>{{ students }}</strong><span class="stat-note">Registered accounts</span></div>
+  <div class="stat-card"><span class="stat-label">Certificates</span><strong>{{ certificates }}</strong><span class="stat-note">All issued records</span></div>
+  <div class="stat-card"><span class="stat-label">Valid</span><strong>{{ valid }}</strong><span class="stat-note">Current certificates</span></div>
+  <div class="stat-card"><span class="stat-label">Requests</span><strong>{{ requests }}</strong><span class="stat-note">All submitted requests</span></div>
+</section>
+
+<section class="report-toolbar panel">
+  <div><h2>Official exports</h2><p>Download the registers currently managed by the portal.</p></div>
+  <div class="report-actions">
+    <a class="secondary-btn inline-btn" href="{{ url_for('admin_report_certificates',format='csv') }}">Certificates CSV</a>
+    <a class="secondary-btn inline-btn" href="{{ url_for('admin_report_certificates',format='pdf') }}">Certificates PDF</a>
+    <a class="secondary-btn inline-btn" href="{{ url_for('admin_report_requests',format='csv') }}">Requests CSV</a>
+    <a class="secondary-btn inline-btn" href="{{ url_for('admin_report_requests',format='pdf') }}">Requests PDF</a>
+    <a class="secondary-btn inline-btn" href="{{ url_for('admin_report_audit',format='csv') }}">Audit CSV</a>
+    <a class="secondary-btn inline-btn" href="{{ url_for('admin_report_audit',format='pdf') }}">Audit PDF</a>
+  </div>
+</section>
+
+<div class="two-col analytics-panels">
+<section class="panel"><div class="panel-head"><div><h2>Certificates by Department</h2><p>Where official certificates are being issued.</p></div></div><div class="metric-list">{% set maxv=(by_department|map(attribute='c')|list|max if by_department else 1) %}{% for row in by_department %}<div class="bar-row"><span>{{ row.department }}</span><div class="bar"><span style="width:{{ (row.c/maxv*100)|round(0) }}%"></span></div><b>{{ row.c }}</b></div>{% else %}<div class="empty-card">No certificate data yet.</div>{% endfor %}</div></section>
+<section class="panel"><div class="panel-head"><div><h2>Certificates by Programme</h2><p>Programme-level distribution.</p></div></div><div class="metric-list">{% set maxv=(by_programme|map(attribute='c')|list|max if by_programme else 1) %}{% for row in by_programme %}<div class="bar-row"><span>{{ row.programme }}</span><div class="bar"><span style="width:{{ (row.c/maxv*100)|round(0) }}%"></span></div><b>{{ row.c }}</b></div>{% else %}<div class="empty-card">No programme data yet.</div>{% endfor %}</div></section>
+<section class="panel"><div class="panel-head"><div><h2>Certificates by Type</h2></div></div><div class="metric-list">{% set maxv=(by_type|map(attribute='c')|list|max if by_type else 1) %}{% for row in by_type %}<div class="bar-row"><span>{{ row.certificate_type }}</span><div class="bar"><span style="width:{{ (row.c/maxv*100)|round(0) }}%"></span></div><b>{{ row.c }}</b></div>{% else %}<div class="empty-card">No type data yet.</div>{% endfor %}</div></section>
+<section class="panel"><div class="panel-head"><div><h2>Request status</h2></div></div><div class="metric-list">{% set maxv=(request_status|map(attribute='c')|list|max if request_status else 1) %}{% for row in request_status %}<div class="bar-row"><span>{{ row.status }}</span><div class="bar"><span style="width:{{ (row.c/maxv*100)|round(0) }}%"></span></div><b>{{ row.c }}</b></div>{% else %}<div class="empty-card">No request data yet.</div>{% endfor %}</div></section>
+</div>
+
+<section class="panel history-panel"><div class="panel-head"><div><h2>Monthly certificate trend</h2><p>Latest twelve months of issued records.</p></div></div><div class="metric-list">{% set maxv=(monthly|map(attribute='c')|list|max if monthly else 1) %}{% for row in monthly|reverse %}<div class="bar-row"><span>{{ row.month }}</span><div class="bar"><span style="width:{{ (row.c/maxv*100)|round(0) }}%"></span></div><b>{{ row.c }}</b></div>{% else %}<div class="empty-card">No monthly data yet.</div>{% endfor %}</div></section>
+
+<section class="panel history-panel"><div class="panel-head"><div><h2>Recent audit activity</h2><p>Administrative actions in the portal.</p></div><a class="text-link" href="{{ url_for('admin_audit') }}">Open full audit →</a></div><div class="table-wrap"><table><thead><tr><th>Time</th><th>Actor</th><th>Action</th><th>Entity</th><th>Details</th></tr></thead><tbody>{% for row in audit_rows %}<tr><td>{{ row.created_at }}</td><td><strong>{{ row.actor_name }}</strong><small>{{ row.actor_role }}</small></td><td>{{ row.action }}</td><td>{{ row.entity_type }}{% if row.entity_id %} · {{ row.entity_id }}{% endif %}</td><td>{{ row.details }}</td></tr>{% else %}<tr><td colspan="5" class="empty">No audit events yet.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}
