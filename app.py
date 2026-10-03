@@ -1054,6 +1054,9 @@ def admin_generate_page():
         teacher_sig=bool(current_signature_path("teacher")),
         principal_sig=bool(current_signature_path("principal")),
         students=students,
+        departments=DEPARTMENTS,
+        programmes=PROGRAMMES,
+        semesters=SEMESTERS,
     )
 
 
@@ -1067,6 +1070,9 @@ def admin_generate():
         "position": clean(request.form.get("position"), 80),
         "certificate_type": clean(request.form.get("certificate_type"), 60) or "Achievement",
         "academic_year": clean(request.form.get("academic_year"), 20) or setting("default_academic_year", current_academic_year()),
+        "department": clean(request.form.get("department"), 60) or "Other",
+        "programme": clean(request.form.get("programme"), 60) or "Other",
+        "semester": clean(request.form.get("semester"), 10) or "",
         "template": allowed_template(request.form.get("template")),
         "font_family": allowed_font(request.form.get("font_family")),
     }
@@ -1088,9 +1094,10 @@ def admin_generate():
     pdf_hash = file_sha256(GENERATED_DIR / filename)
     with get_db() as db:
         db.execute(
-            "INSERT INTO certificates(certificate_id,name,roll_number,activity,position,template,font_family,filename,created_at,certificate_type,academic_year,status,payload_hash,pdf_sha256,created_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-            (info["certificate_id"], info["name"], info["roll_number"], info["activity"], info["position"], info["template"], info["font_family"], filename, info["created_at"], info["certificate_type"], info["academic_year"], "Valid", info["payload_hash"], pdf_hash, info["created_by"]),
+            "INSERT INTO certificates(certificate_id,name,roll_number,activity,position,template,font_family,filename,created_at,certificate_type,academic_year,status,payload_hash,pdf_sha256,created_by,department,programme,semester) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (info["certificate_id"], info["name"], info["roll_number"], info["activity"], info["position"], info["template"], info["font_family"], filename, info["created_at"], info["certificate_type"], info["academic_year"], "Valid", info["payload_hash"], pdf_hash, info["created_by"], info["department"], info["programme"], info["semester"]),
         )
+        add_certificate_history(db, info["certificate_id"], "Generated", "Manual certificate generation.", session.get("admin_role","admin"), session.get("username",ADMIN_USERNAME), info["created_at"])
         db.commit()
     audit("Generate certificate", "certificate", info["certificate_id"], f"{info['name']} · {info['activity']}")
     flash(f"Certificate generated: {info['certificate_id']}", "success")
