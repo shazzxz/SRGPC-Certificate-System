@@ -348,6 +348,30 @@ def init_db():
             db.execute("INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO NOTHING", (key, value))
         db.commit()
 
+        if os.environ.get("SRGPC_TEST_RESET_ON_STARTUP", "").strip() == "1":
+            print("SRGPC: performing requested test-data reset")
+            for table in (
+                "notifications",
+                "email_verifications",
+                "certificate_requests",
+                "certificates",
+                "students",
+                "audit_logs",
+            ):
+                db.execute(f"DELETE FROM {table}")
+            db.commit()
+            for folder in (GENERATED_DIR, UPLOAD_DIR):
+                folder.mkdir(parents=True, exist_ok=True)
+                for item in folder.iterdir():
+                    try:
+                        if item.is_dir():
+                            shutil.rmtree(item)
+                        else:
+                            item.unlink(missing_ok=True)
+                    except OSError:
+                        pass
+            print("SRGPC: test-data reset complete")
+
 
 # Initialize the database when the app is imported by Gunicorn/Render.
 # SQLite remains available for local development when DATABASE_URL is not set.
@@ -1418,36 +1442,6 @@ def admin_audit():
     ctx = admin_base_context("audit")
     with get_db() as db: rows=db.execute("SELECT * FROM audit_logs ORDER BY id DESC LIMIT 250").fetchall()
     return render_template("admin_audit.html", **ctx, rows=rows)
-
-
-@app.route("/__reset_test_data", methods=["GET","POST"])
-def reset_test_data():
-    expected = os.environ.get("SRGPC_TEST_RESET_TOKEN", "").strip()
-    supplied = request.headers.get("X-SRGPC-Reset-Token", "").strip() or request.args.get("token", "").strip()
-    if not expected or not supplied or not secrets.compare_digest(supplied, expected):
-        abort(404)
-    with get_db() as db:
-        for table in (
-            "notifications",
-            "email_verifications",
-            "certificate_requests",
-            "certificates",
-            "students",
-            "audit_logs",
-        ):
-            db.execute(f"DELETE FROM {table}")
-        db.commit()
-    for folder in (GENERATED_DIR, UPLOAD_DIR):
-        folder.mkdir(parents=True, exist_ok=True)
-        for item in folder.iterdir():
-            try:
-                if item.is_dir():
-                    shutil.rmtree(item)
-                else:
-                    item.unlink(missing_ok=True)
-            except OSError:
-                pass
-    return {"ok": True, "message": "Student accounts, certificates, requests, notifications, verification records, audit logs and generated files were cleared."}
 
 
 @app.get("/admin/access")
