@@ -774,3 +774,21 @@ html.dark-mode .glass-ui .certificate-card p{
   .glass-ui .stat-card strong{font-size:25px}
   .glass-ui .table-wrap{padding:16px 15px 10px}
 }
+
+/* Stable viewport layout */
+.glass-ui .app-shell{min-height:100dvh}
+.glass-ui .sidebar{box-sizing:border-box;height:100dvh;min-height:0;overflow:hidden;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto}
+.glass-ui .nav-stack{min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin}
+.glass-ui .sidebar-bottom{min-height:0;padding-top:8px}
+
+/* Login theme consistency */
+html.dark-mode .glass-auth{color:#eef6ff}
+html.dark-mode .glass-auth .auth-card{background:linear-gradient(145deg,rgba(15,23,42,.84),rgba(8,15,29,.82));border-color:rgba(148,163,184,.16)}
+html.dark-mode .glass-auth input{background:rgba(7,14,28,.82);border-color:rgba(148,163,184,.20);color:#eef6ff}
+html.dark-mode .glass-auth input::placeholder{color:#64748b}
+html.dark-mode .glass-auth .auth-title h1,html.dark-mode .glass-auth .auth-brand b{color:#f4f8ff}
+html.dark-mode .glass-auth .auth-title p,html.dark-mode .glass-auth .register-link{color:#91a4bd}
+html.dark-mode .glass-auth .admin-note{background:rgba(15,23,42,.72);border-color:rgba(148,163,184,.16);color:#a8b8cc}
+html.dark-mode .glass-auth .admin-note b{color:#e6eef8}
+html:not(.dark-mode) .glass-auth .auth-card{background:rgba(255,255,255,.83);color:#0f172a}
+html:not(.dark-mode) .glass-auth .role-switch{background:rgba(241,245,249,.72);border-color:rgba(148,163,184,.20)}
