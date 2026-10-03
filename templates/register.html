@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="csrf-token" content="{{ csrf_token() }}">
 <title>Student Onboarding · SRGPC</title>
 <link rel="stylesheet" href="{{ url_for('static',filename='style.css', v='8') }}">
 <link rel="stylesheet" href="{{ url_for('static',filename='glass.css', v='5') }}">
@@ -13,7 +13,7 @@
   <div class="auth-title"><span>STUDENT ONBOARDING</span><h1>Complete your profile</h1><p>Your Google account is verified. Add your college details once and your student portal is ready.</p></div>
   {% with messages=get_flashed_messages(with_categories=true) %}{% for category,message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}{% endwith %}
   <div class="onboarding-account"><span class="onboarding-check">✓</span><div><b>Google account verified</b><span>{{ form.gmail if form else "" }}</span></div></div>
-  <form method="post" class="auth-form">
+  <form method="post"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"> class="auth-form">
     <div class="register-grid">
       <label>Full Name<input name="name" value="{{ form.name if form else '' }}" required></label>
       <label>Roll Number<input name="roll_number" value="{{ form.roll_number if form else '' }}" required placeholder="e.g. 24039C04060"></label>
@@ -26,4 +26,4 @@
     <button class="primary-btn" type="submit">Create Student Account →</button>
   </form>
   <div class="register-link">Using the wrong Google account? <a href="{{ url_for('login') }}">Back to login</a></div>
-</div></div></body></html>
+</div></div><script src="{{ url_for('static', filename='app.js', v='9') }}"></script></body></html>
