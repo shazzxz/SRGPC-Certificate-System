@@ -1130,7 +1130,9 @@ def admin_certificate_detail(certificate_id):
         ).fetchone()
     if not cert:
         abort(404)
-    return render_template("admin_certificate_detail.html", **ctx, certificate=cert, templates=TEMPLATES)
+    with get_db() as db:
+        history = db.execute("SELECT * FROM certificate_history WHERE certificate_id=? ORDER BY id ASC", (cert["certificate_id"],)).fetchall()
+    return render_template("admin_certificate_detail.html", **ctx, certificate=cert, history=history, templates=TEMPLATES)
 
 
 @app.get("/student/certificate/<certificate_id>")
@@ -1144,7 +1146,9 @@ def student_certificate_detail(certificate_id):
         ).fetchone()
     if not cert:
         abort(404)
-    return render_template("student_certificate_detail.html", student=student, certificate=cert, active="certificates", templates=TEMPLATES)
+    with get_db() as db:
+        history = db.execute("SELECT * FROM certificate_history WHERE certificate_id=? ORDER BY id ASC", (cert["certificate_id"],)).fetchall()
+    return render_template("student_certificate_detail.html", student=student, certificate=cert, history=history, active="certificates", templates=TEMPLATES)
 
 
 @app.get("/admin/certificates")
@@ -1400,7 +1404,8 @@ def admin_request_detail(request_id):
     with get_db() as db:
         req = db.execute(
             """SELECT r.*, s.name student_name, s.roll_number student_roll, s.gmail student_gmail,
-                      s.mobile student_mobile, s.department
+                      s.mobile student_mobile, s.department student_department,
+                      s.programme student_programme, s.semester student_semester
                FROM certificate_requests r JOIN students s ON s.id=r.student_id
                WHERE r.id=?""",
             (request_id,),
@@ -1465,6 +1470,9 @@ def admin_request_generate(request_id):
         "position": req["position"],
         "certificate_type": req["request_type"],
         "academic_year": req["academic_year"] if "academic_year" in req.keys() else setting("default_academic_year", current_academic_year()),
+        "department": req["department"] if "department" in req.keys() else "",
+        "programme": req["programme"] if "programme" in req.keys() else "",
+        "semester": req["semester"] if "semester" in req.keys() else "",
         "template": allowed_template(request.form.get("template") or setting("default_template", "classic")),
         "font_family": allowed_font(request.form.get("font_family") or setting("default_font", "Helvetica")),
         "certificate_id": make_certificate_id(),
@@ -1477,8 +1485,9 @@ def admin_request_generate(request_id):
     render_certificate(GENERATED_DIR / filename, info, public_verify_url(info["certificate_id"]))
     pdf_hash = file_sha256(GENERATED_DIR / filename)
     with get_db() as db:
-        db.execute("INSERT INTO certificates(certificate_id,name,roll_number,activity,position,template,font_family,filename,created_at,certificate_type,academic_year,status,payload_hash,pdf_sha256,created_by,request_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (info["certificate_id"], info["name"], info["roll_number"], info["activity"], info["position"], info["template"], info["font_family"], filename, info["created_at"], info["certificate_type"], info["academic_year"], "Valid", info["payload_hash"], pdf_hash, info["created_by"], request_id))
+        db.execute("INSERT INTO certificates(certificate_id,name,roll_number,activity,position,template,font_family,filename,created_at,certificate_type,academic_year,status,payload_hash,pdf_sha256,created_by,request_id,department,programme,semester) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (info["certificate_id"], info["name"], info["roll_number"], info["activity"], info["position"], info["template"], info["font_family"], filename, info["created_at"], info["certificate_type"], info["academic_year"], "Valid", info["payload_hash"], pdf_hash, info["created_by"], request_id, info["department"], info["programme"], info["semester"]))
         db.execute("UPDATE certificate_requests SET status='Generated', processed_at=?, processed_by=?, certificate_id=? WHERE id=?", (info["created_at"], session.get("username", ADMIN_USERNAME), info["certificate_id"], request_id))
+        add_certificate_history(db, info["certificate_id"], "Generated", "Certificate generated from request.", session.get("admin_role","admin"), session.get("username", ADMIN_USERNAME), info["created_at"])
         add_request_update(db, request_id, "Generated", f"Certificate generated: {info['certificate_id']}.", session.get("admin_role","admin"), session.get("username", ADMIN_USERNAME))
         db.commit()
     notify_student(req["student_id"], "Certificate generated", f"Your {req['request_type']} certificate is ready: {info['certificate_id']}")
@@ -1733,7 +1742,9 @@ def admin_revoke_certificate(certificate_id):
         cert = db.execute("SELECT * FROM certificates WHERE certificate_id=?", (certificate_id,)).fetchone()
         if not cert:
             flash("Certificate not found.","error"); return redirect(url_for("admin_certificates"))
-        db.execute("UPDATE certificates SET status='Revoked', revoked_at=?, revoke_reason=? WHERE certificate_id=?", (datetime.now().isoformat(timespec="seconds"),reason,certificate_id))
+        revoked_at = datetime.now().isoformat(timespec="seconds")
+        db.execute("UPDATE certificates SET status='Revoked', revoked_at=?, revoke_reason=? WHERE certificate_id=?", (revoked_at,reason,certificate_id))
+        add_certificate_history(db, certificate_id, "Revoked", reason, session.get("admin_role","admin"), session.get("username",ADMIN_USERNAME), revoked_at)
         student = db.execute("SELECT id FROM students WHERE lower(roll_number)=lower(?)", (cert["roll_number"],)).fetchone()
         db.commit()
     if student: notify_student(student["id"], "Certificate revoked", f"Certificate {certificate_id} has been revoked. Reason: {reason}")
@@ -1749,7 +1760,7 @@ def admin_reissue_certificate(certificate_id):
         old = db.execute("SELECT * FROM certificates WHERE certificate_id=?", (certificate_id,)).fetchone()
     if not old:
         flash("Certificate not found.","error"); return redirect(url_for("admin_certificates"))
-    info = {k: old[k] for k in ["name","roll_number","activity","position","template","font_family","certificate_type","academic_year"]}
+    info = {k: old[k] for k in ["name","roll_number","activity","position","template","font_family","certificate_type","academic_year","department","programme","semester"]}
     info["certificate_id"] = make_certificate_id(); info["payload_hash"] = cert_payload_hash(info); info["created_at"] = datetime.now().isoformat(timespec="seconds"); info["created_by"] = session.get("username",ADMIN_USERNAME); info["reissued_from"] = old["certificate_id"]
     slug = re.sub(r"[^a-zA-Z0-9]+","_",info["name"]).strip("_").lower() or "student"
     filename = f"{slug}_{info['certificate_id']}.pdf"
@@ -1758,7 +1769,9 @@ def admin_reissue_certificate(certificate_id):
     pdf_hash = file_sha256(out)
     with get_db() as db:
         db.execute("UPDATE certificates SET status='Reissued' WHERE certificate_id=?", (certificate_id,))
-        db.execute("INSERT INTO certificates(certificate_id,name,roll_number,activity,position,template,font_family,filename,created_at,certificate_type,academic_year,status,payload_hash,pdf_sha256,created_by,reissued_from) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (info["certificate_id"],info["name"],info["roll_number"],info["activity"],info["position"],info["template"],info["font_family"],filename,info["created_at"],info["certificate_type"],info["academic_year"],"Valid",info["payload_hash"],pdf_hash,info["created_by"],certificate_id))
+        add_certificate_history(db, certificate_id, "Reissued", f"Replaced by {info['certificate_id']}.", session.get("admin_role","admin"), session.get("username",ADMIN_USERNAME), info["created_at"])
+        db.execute("INSERT INTO certificates(certificate_id,name,roll_number,activity,position,template,font_family,filename,created_at,certificate_type,academic_year,status,payload_hash,pdf_sha256,created_by,reissued_from,department,programme,semester) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (info["certificate_id"],info["name"],info["roll_number"],info["activity"],info["position"],info["template"],info["font_family"],filename,info["created_at"],info["certificate_type"],info["academic_year"],"Valid",info["payload_hash"],pdf_hash,info["created_by"],certificate_id,info["department"],info["programme"],info["semester"]))
+        add_certificate_history(db, info["certificate_id"], "Generated as Replacement", f"Replacement for {certificate_id}.", session.get("admin_role","admin"), session.get("username",ADMIN_USERNAME), info["created_at"])
         student = db.execute("SELECT id FROM students WHERE lower(roll_number)=lower(?)", (info["roll_number"],)).fetchone()
         db.commit()
     if student: notify_student(student["id"], "Certificate reissued", f"Your replacement certificate is ready: {info['certificate_id']}")
