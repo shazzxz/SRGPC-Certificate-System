@@ -1,0 +1,274 @@
+/* SRGPC Aurora Dark — visual theme layer
+   Keeps the existing glass UI, readability scale, layouts and functionality intact. */
+:root{
+  --aurora-bg:#050814;
+  --aurora-panel:rgba(10,17,32,.72);
+  --aurora-panel-strong:rgba(12,20,38,.88);
+  --aurora-border:rgba(148,163,184,.15);
+  --aurora-text:#eef6ff;
+  --aurora-muted:#91a4bd;
+  --aurora-cyan:#22d3ee;
+  --aurora-blue:#3b82f6;
+  --aurora-violet:#8b5cf6;
+  --aurora-pink:#c084fc;
+  --aurora-shadow:0 18px 60px rgba(0,0,0,.30);
+}
+html.dark-mode body.glass-ui{
+  background:
+    radial-gradient(700px 420px at 8% -5%,rgba(34,211,238,.13),transparent 62%),
+    radial-gradient(720px 460px at 92% 4%,rgba(139,92,246,.16),transparent 62%),
+    radial-gradient(620px 430px at 52% 108%,rgba(59,130,246,.12),transparent 65%),
+    linear-gradient(135deg,#050814 0%,#0a1020 48%,#060a16 100%);
+  color:var(--aurora-text);
+}
+html.dark-mode body.glass-ui:before{
+  z-index:-1;
+  opacity:.9;
+  background:
+    radial-gradient(420px 240px at 24% 22%,rgba(34,211,238,.07),transparent 70%),
+    radial-gradient(480px 280px at 78% 36%,rgba(192,132,252,.06),transparent 70%);
+}
+html.dark-mode body.glass-ui:after{
+  content:"";
+  position:fixed;
+  inset:-20%;
+  pointer-events:none;
+  z-index:-2;
+  background:
+    radial-gradient(500px 180px at 30% 10%,rgba(34,211,238,.045),transparent 70%),
+    radial-gradient(500px 180px at 70% 18%,rgba(139,92,246,.045),transparent 70%);
+  filter:blur(34px);
+}
+html.dark-mode .glass-ui .sidebar{
+  background:linear-gradient(180deg,rgba(5,10,23,.94),rgba(8,14,29,.88));
+  border-right:1px solid rgba(148,163,184,.13);
+  box-shadow:14px 0 50px rgba(0,0,0,.28);
+}
+html.dark-mode .glass-ui .brand-mark{
+  box-shadow:0 0 28px rgba(34,211,238,.12);
+}
+html.dark-mode .glass-ui .avatar{
+  background:linear-gradient(135deg,var(--aurora-cyan),var(--aurora-violet));
+  color:#06101d;
+  box-shadow:0 8px 25px rgba(34,211,238,.18);
+}
+html.dark-mode .glass-ui .profile,
+html.dark-mode .glass-ui .system-card{
+  background:rgba(255,255,255,.045);
+  border-color:rgba(148,163,184,.12);
+}
+html.dark-mode .glass-ui .nav-item{
+  color:#9fb1c8;
+}
+html.dark-mode .glass-ui .nav-item:hover{
+  background:linear-gradient(90deg,rgba(34,211,238,.07),rgba(139,92,246,.06));
+  border-color:rgba(34,211,238,.10);
+  color:#fff;
+}
+html.dark-mode .glass-ui .nav-item.active{
+  background:linear-gradient(135deg,rgba(34,211,238,.19),rgba(99,102,241,.28),rgba(139,92,246,.20));
+  border-color:rgba(103,232,249,.22);
+  box-shadow:0 10px 30px rgba(34,211,238,.10),inset 0 1px rgba(255,255,255,.10);
+  color:#f4fbff;
+}
+html.dark-mode .glass-ui .eyebrow{
+  color:#67e8f9;
+}
+html.dark-mode .glass-ui .topbar h1{
+  color:#f4f8ff;
+  text-shadow:0 0 30px rgba(34,211,238,.06);
+}
+html.dark-mode .glass-ui .topbar p{
+  color:#91a4bd;
+}
+html.dark-mode .glass-ui .panel,
+html.dark-mode .glass-ui .stat-card,
+html.dark-mode .glass-ui .request-card,
+html.dark-mode .glass-ui .certificate-card,
+html.dark-mode .glass-ui .info-card,
+html.dark-mode .glass-ui .empty-card{
+  background:linear-gradient(145deg,rgba(15,23,42,.78),rgba(8,15,29,.70));
+  border-color:var(--aurora-border);
+  box-shadow:var(--aurora-shadow);
+}
+html.dark-mode .glass-ui .panel,
+html.dark-mode .glass-ui .stat-card{
+  position:relative;
+}
+html.dark-mode .glass-ui .panel:before,
+html.dark-mode .glass-ui .stat-card:before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  border-radius:inherit;
+  background:linear-gradient(120deg,rgba(34,211,238,.035),transparent 38%,rgba(139,92,246,.035));
+}
+html.dark-mode .glass-ui .panel-head{
+  border-bottom-color:rgba(148,163,184,.12);
+}
+html.dark-mode .glass-ui .panel-head h2,
+html.dark-mode .glass-ui .certificate-card h3{
+  color:#eef6ff;
+}
+html.dark-mode .glass-ui .panel-head p,
+html.dark-mode .glass-ui .stat-note,
+html.dark-mode .glass-ui .stat-label{
+  color:#8ea2bb;
+}
+html.dark-mode .glass-ui .stat-card.accent{
+  background:linear-gradient(135deg,rgba(34,211,238,.22),rgba(59,130,246,.24) 45%,rgba(139,92,246,.25));
+  border-color:rgba(103,232,249,.22);
+  box-shadow:0 18px 45px rgba(59,130,246,.15);
+}
+html.dark-mode .glass-ui .stat-card.accent .stat-label,
+html.dark-mode .glass-ui .stat-card.accent .stat-note{
+  color:rgba(238,246,255,.78);
+}
+html.dark-mode .glass-ui .text-link,
+html.dark-mode .glass-ui .download-link{
+  color:#67e8f9;
+}
+html.dark-mode .glass-ui .primary-btn{
+  background:linear-gradient(135deg,#0891b2,#3b82f6 48%,#7c3aed);
+  border-color:rgba(255,255,255,.18);
+  box-shadow:0 12px 30px rgba(59,130,246,.20);
+}
+html.dark-mode .glass-ui .primary-btn:hover{
+  box-shadow:0 16px 36px rgba(34,211,238,.18),0 12px 30px rgba(124,58,237,.14);
+}
+html.dark-mode .glass-ui .ghost-btn,
+html.dark-mode .glass-ui .secondary-btn{
+  background:rgba(15,23,42,.70);
+  border-color:rgba(148,163,184,.17);
+  color:#dbeafe;
+}
+html.dark-mode .glass-ui input,
+html.dark-mode .glass-ui select,
+html.dark-mode .glass-ui textarea{
+  background:rgba(7,14,28,.78);
+  border-color:rgba(148,163,184,.18);
+  color:#edf6ff;
+}
+html.dark-mode .glass-ui input::placeholder,
+html.dark-mode .glass-ui textarea::placeholder{
+  color:#60738e;
+}
+html.dark-mode .glass-ui input:focus,
+html.dark-mode .glass-ui select:focus,
+html.dark-mode .glass-ui textarea:focus{
+  border-color:rgba(34,211,238,.50);
+  box-shadow:0 0 0 4px rgba(34,211,238,.08),0 0 22px rgba(34,211,238,.05);
+  background:rgba(8,17,32,.92);
+}
+html.dark-mode .glass-ui .action-card,
+html.dark-mode .glass-ui .certificate-card,
+html.dark-mode .glass-ui .request-card{
+  background:rgba(10,18,34,.70);
+  border-color:rgba(148,163,184,.14);
+}
+html.dark-mode .glass-ui .action-card:hover,
+html.dark-mode .glass-ui .certificate-card:hover{
+  border-color:rgba(34,211,238,.25);
+  box-shadow:0 18px 40px rgba(0,0,0,.28),0 0 25px rgba(34,211,238,.05);
+}
+html.dark-mode .glass-ui .action-card b{
+  background:linear-gradient(135deg,rgba(34,211,238,.16),rgba(139,92,246,.18));
+  color:#67e8f9;
+}
+html.dark-mode .glass-ui th{
+  background:rgba(30,41,59,.48);
+  color:#8ea2bb;
+}
+html.dark-mode .glass-ui td{
+  color:#b9c7d8;
+}
+html.dark-mode .glass-ui code{
+  background:rgba(15,23,42,.80);
+  border-color:rgba(148,163,184,.14);
+  color:#bfefff;
+}
+html.dark-mode .glass-ui .filter-tab,
+html.dark-mode .glass-ui .template-option,
+html.dark-mode .glass-ui .studio-template{
+  background:rgba(10,18,34,.68);
+  border-color:rgba(148,163,184,.15);
+  color:#dce8f6;
+}
+html.dark-mode .glass-ui .filter-tab.active,
+html.dark-mode .glass-ui .template-option.selected{
+  border-color:rgba(34,211,238,.40);
+  box-shadow:0 0 0 2px rgba(34,211,238,.10),0 12px 28px rgba(34,211,238,.07);
+}
+html.dark-mode .glass-ui .pill,
+html.dark-mode .glass-ui .count-pill,
+html.dark-mode .glass-ui .preview-badge{
+  background:rgba(15,23,42,.72);
+  border-color:rgba(148,163,184,.16);
+  color:#9fb1c8;
+}
+html.dark-mode .glass-ui .flash{
+  background:rgba(15,23,42,.78);
+  border-color:rgba(148,163,184,.14);
+}
+html.dark-mode .glass-ui .notification.unread{
+  background:rgba(34,211,238,.06);
+  border-color:rgba(34,211,238,.12);
+}
+html.dark-mode .glass-ui .bottom-note{
+  background:rgba(10,18,34,.65);
+  border-color:rgba(34,211,238,.18);
+  color:#91a4bd;
+}
+html.dark-mode .glass-ui .theme-toggle{
+  background:linear-gradient(135deg,rgba(34,211,238,.10),rgba(139,92,246,.12));
+  border-color:rgba(103,232,249,.22);
+  color:#dffaff;
+  box-shadow:0 7px 22px rgba(0,0,0,.22);
+}
+html.dark-mode .glass-ui .theme-toggle:hover{
+  background:linear-gradient(135deg,rgba(34,211,238,.16),rgba(139,92,246,.18));
+  box-shadow:0 8px 26px rgba(34,211,238,.10);
+}
+html.dark-mode .glass-auth{
+  background:
+    radial-gradient(600px 360px at 8% 5%,rgba(34,211,238,.15),transparent 62%),
+    radial-gradient(600px 380px at 92% 8%,rgba(139,92,246,.18),transparent 62%),
+    radial-gradient(500px 280px at 50% 100%,rgba(59,130,246,.12),transparent 65%),
+    #050814;
+}
+html.dark-mode .glass-auth .auth-card{
+  background:linear-gradient(145deg,rgba(15,23,42,.76),rgba(8,15,29,.72));
+  border-color:rgba(148,163,184,.16);
+  box-shadow:0 30px 90px rgba(0,0,0,.36),0 0 50px rgba(59,130,246,.05);
+}
+html.dark-mode .glass-auth .auth-brand img{
+  box-shadow:0 0 30px rgba(34,211,238,.10);
+}
+html.dark-mode .glass-auth .auth-title span{
+  color:#67e8f9;
+}
+html.dark-mode .glass-auth .role-switch{
+  background:rgba(7,14,28,.72)!important;
+  border-color:rgba(148,163,184,.14)!important;
+}
+html.dark-mode .glass-auth .role-tab.active{
+  background:linear-gradient(135deg,rgba(34,211,238,.13),rgba(139,92,246,.15))!important;
+  color:#67e8f9!important;
+  box-shadow:0 7px 20px rgba(0,0,0,.20);
+}
+html.dark-mode .glass-auth input{
+  background:rgba(7,14,28,.76);
+  color:#eef6ff;
+}
+html.dark-mode .glass-auth .register-link a{
+  color:#67e8f9;
+}
+@media(max-width:620px){
+  html.dark-mode body.glass-ui{
+    background:
+      radial-gradient(500px 280px at 10% 0%,rgba(34,211,238,.10),transparent 65%),
+      radial-gradient(500px 300px at 90% 2%,rgba(139,92,246,.12),transparent 65%),
+      #050814;
+  }
+}
