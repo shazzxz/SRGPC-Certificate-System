@@ -148,7 +148,6 @@ def server_error(error):
 
 
 @app.get("/healthz")
-@limiter.exempt
 def healthz():
     checks = {"database": "ok", "storage": "not_configured"}
     try:
