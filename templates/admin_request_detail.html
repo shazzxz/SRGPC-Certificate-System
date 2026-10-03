@@ -11,7 +11,7 @@
   <div class="detail-grid">
     <div><span>Student</span><b>{{ request.student_name }}</b></div><div><span>Roll Number</span><b>{{ request.student_roll }}</b></div>
     <div><span>Gmail</span><b>{{ request.student_gmail }}</b></div><div><span>Mobile</span><b>{{ request.student_mobile }}</b></div>
-    <div><span>Department</span><b>{{ request.department }}</b></div><div><span>Certificate Type</span><b>{{ request.request_type }}</b></div>
+    <div><span>Department</span><b>{{ request.student_department or request.department }}</b></div><div><span>Programme</span><b>{{ request.student_programme or request.programme }}</b></div><div><span>Semester</span><b>{{ request.student_semester or request.semester }}</b></div><div><span>Certificate Type</span><b>{{ request.request_type }}</b></div>
     <div class="full"><span>Activity</span><b>{{ request.activity }}</b></div><div class="full"><span>Achievement</span><b>{{ request.position }}</b></div>
   </div>
   {% if request.note %}<div class="request-note"><span>Student note</span>{{ request.note }}</div>{% endif %}
