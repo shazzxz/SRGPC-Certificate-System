@@ -249,6 +249,16 @@ def init_db():
                 certificate_id TEXT,
                 FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE
             )""",
+            f"""CREATE TABLE IF NOT EXISTS request_updates (
+                id {id_pk},
+                request_id INTEGER NOT NULL,
+                status TEXT NOT NULL,
+                message TEXT NOT NULL DEFAULT '',
+                actor_role TEXT NOT NULL,
+                actor_name TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY(request_id) REFERENCES certificate_requests(id) ON DELETE CASCADE
+            )""",
             """CREATE TABLE IF NOT EXISTS settings (
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL
