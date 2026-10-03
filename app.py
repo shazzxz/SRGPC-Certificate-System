@@ -29,6 +29,8 @@ import json
 import zipfile
 import tempfile
 import shutil
+import smtplib
+from email.message import EmailMessage
 from werkzeug.wsgi import get_current_url
 import qrcode
 
@@ -46,7 +48,7 @@ for folder in (DATA_DIR, GENERATED_DIR, SIGNATURE_DIR, UPLOAD_DIR):
 app = Flask(__name__)
 app.secret_key = os.environ.get("SRGPC_SESSION_KEY", "srgpc-local-session-key-change-before-public-hosting")
 app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024
-app.config["STATIC_VERSION"] = "6.1"
+app.config["STATIC_VERSION"] = "6.2"
 
 ADMIN_USERNAME = os.environ.get("SRGPC_ADMIN_USERNAME", "ADMIN")
 ADMIN_PASSWORD = os.environ.get("SRGPC_ADMIN_PASSWORD", "0000")
@@ -192,7 +194,8 @@ def init_db():
                 roll_number TEXT NOT NULL UNIQUE{case_unique},
                 gmail TEXT NOT NULL UNIQUE{case_unique},
                 name TEXT NOT NULL,
-                created_at TEXT NOT NULL
+                created_at TEXT NOT NULL,
+                email_verified INTEGER NOT NULL DEFAULT 1
             )""",
             f"""CREATE TABLE IF NOT EXISTS certificates (
                 id {id_pk},
@@ -253,6 +256,15 @@ def init_db():
                 created_at TEXT NOT NULL,
                 FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE
             )""",
+            f"""CREATE TABLE IF NOT EXISTS email_verifications (
+                id {id_pk},
+                student_id INTEGER NOT NULL,
+                token_hash TEXT NOT NULL UNIQUE{case_unique},
+                expires_at TEXT NOT NULL,
+                used_at TEXT,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE
+            )""",
         ]
         for sql in tables:
             db.execute(sql)
@@ -295,6 +307,8 @@ def init_db():
             db.execute("ALTER TABLE students ADD COLUMN department TEXT NOT NULL DEFAULT 'CSE'")
         if "academic_year" not in stu_cols:
             db.execute("ALTER TABLE students ADD COLUMN academic_year TEXT NOT NULL DEFAULT '2026-27'")
+        if "email_verified" not in stu_cols:
+            db.execute("ALTER TABLE students ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 1")
 
         defaults = {
             "default_template": "classic",
@@ -403,6 +417,72 @@ def is_valid_gmail(gmail):
     return bool(re.fullmatch(r"[^@\s]+@gmail\.com", gmail.strip(), re.I))
 
 
+def verification_configured():
+    required = ("SRGPC_SMTP_HOST", "SRGPC_SMTP_USER", "SRGPC_SMTP_PASSWORD", "SRGPC_SMTP_FROM")
+    return all(os.environ.get(key, "").strip() for key in required)
+
+
+def verification_url(token):
+    return url_for("verify_email", token=token, _external=True)
+
+
+def send_verification_email(gmail, name, token):
+    if not verification_configured():
+        raise RuntimeError("Email verification is not configured on the server.")
+    host = os.environ["SRGPC_SMTP_HOST"].strip()
+    user = os.environ["SRGPC_SMTP_USER"].strip()
+    password = os.environ["SRGPC_SMTP_PASSWORD"]
+    sender = os.environ["SRGPC_SMTP_FROM"].strip()
+    port = int(os.environ.get("SRGPC_SMTP_PORT", "587"))
+    use_ssl = os.environ.get("SRGPC_SMTP_SSL", "0").strip().lower() in {"1", "true", "yes"}
+    verify_link = verification_url(token)
+    msg = EmailMessage()
+    msg["Subject"] = "Verify your SRGPC student account"
+    msg["From"] = sender
+    msg["To"] = gmail
+    msg.set_content(
+        f"Hello {name},\n\n"
+        "You created a student account for the SRGPC Certificate Portal. Confirm that you own this Gmail address by opening the link below:\n\n"
+        f"{verify_link}\n\n"
+        "This verification link expires in 30 minutes. If you did not create this account, you can ignore this email.\n\n"
+        "SRGPC Certificate Portal"
+    )
+    msg.add_alternative(
+        f"""<div style="font-family:Arial,sans-serif;line-height:1.6;color:#172033">
+        <h2>Verify your SRGPC account</h2>
+        <p>Hello {clean(name, 80)},</p>
+        <p>Confirm that you own this Gmail address to activate your student account.</p>
+        <p><a href="{verify_link}" style="display:inline-block;padding:12px 18px;background:#2563eb;color:#fff;text-decoration:none;border-radius:8px">Verify Email Address</a></p>
+        <p style="font-size:13px;color:#64748b">This link expires in 30 minutes.</p>
+        </div>""",
+        subtype="html",
+    )
+    if use_ssl:
+        with smtplib.SMTP_SSL(host, port, timeout=20) as smtp:
+            smtp.login(user, password)
+            smtp.send_message(msg)
+    else:
+        with smtplib.SMTP(host, port, timeout=20) as smtp:
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.ehlo()
+            smtp.login(user, password)
+            smtp.send_message(msg)
+
+
+def create_email_verification(student_id):
+    token = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+    now = datetime.now()
+    from datetime import timedelta
+    expires = now.replace(microsecond=0) + timedelta(minutes=30)
+    with get_db() as db:
+        db.execute("UPDATE email_verifications SET used_at=? WHERE student_id=? AND used_at IS NULL", (now.isoformat(timespec="seconds"), student_id))
+        db.execute("INSERT INTO email_verifications(student_id,token_hash,expires_at,created_at) VALUES(?,?,?,?)", (student_id, token_hash, expires.isoformat(timespec="seconds"), now.isoformat(timespec="seconds")))
+        db.commit()
+    return token
+
+
 def save_signature_upload(kind, file_storage):
     if not file_storage or not file_storage.filename:
         raise ValueError("Choose an image file first.")
@@ -486,6 +566,9 @@ def do_login():
     if not student or not check_password_hash(student["password_hash"], password):
         flash("Invalid student username or password.", "error")
         return redirect(url_for("login"))
+    if not student["email_verified"]:
+        flash("Please verify your Gmail address before logging in. Check your inbox for the verification link.", "error")
+        return redirect(url_for("login"))
     session.clear(); session["role"] = "student"; session["student_id"] = student["id"]; session["username"] = student["username"]
     return redirect(url_for("student_dashboard"))
 
@@ -512,20 +595,88 @@ def register():
     if not is_valid_gmail(fields["gmail"]):
         flash("Please enter a valid Gmail address.", "error")
         return render_template("register.html", form=fields)
+    if not verification_configured():
+        flash("Student registration is temporarily unavailable because email verification is not configured by the administrator.", "error")
+        return render_template("register.html", form=fields)
+    student_id = None
     try:
+        now = datetime.now().isoformat(timespec="seconds")
         with get_db() as db:
-            db.execute(
-                "INSERT INTO students(username,password_hash,mobile,roll_number,gmail,name,department,academic_year,created_at) VALUES(?,?,?,?,?,?,?,?,?)",
-                (fields["username"], generate_password_hash(fields["password"]), fields["mobile"], fields["roll_number"], fields["gmail"], fields["name"], fields["department"], setting("default_academic_year", current_academic_year()), datetime.now().isoformat(timespec="seconds")),
+            cur = db.execute(
+                "INSERT INTO students(username,password_hash,mobile,roll_number,gmail,name,department,academic_year,created_at,email_verified) VALUES(?,?,?,?,?,?,?,?,?,?)",
+                (fields["username"], generate_password_hash(fields["password"]), fields["mobile"], fields["roll_number"], fields["gmail"], fields["name"], fields["department"], setting("default_academic_year", current_academic_year()), now, 0),
             )
+            student_id = cur.lastrowid
+            if student_id is None:
+                row = db.execute("SELECT id FROM students WHERE LOWER(username)=LOWER(?)", (fields["username"],)).fetchone()
+                student_id = row["id"] if row else None
             db.commit()
-        flash("Registration complete. You can now log in as a student.", "success")
+        if not student_id:
+            raise RuntimeError("Unable to create the student account.")
+        token = create_email_verification(student_id)
+        try:
+            send_verification_email(fields["gmail"], fields["name"], token)
+        except Exception:
+            with get_db() as db:
+                db.execute("DELETE FROM students WHERE id=?", (student_id,))
+                db.commit()
+            raise
+        flash("Account created. We sent a verification link to your Gmail. Verify it before logging in.", "success")
         return redirect(url_for("login"))
     except Exception as exc:
-        if not is_unique_violation(exc):
+        if is_unique_violation(exc):
+            flash("Username, roll number, or Gmail is already registered.", "error")
+        elif isinstance(exc, (smtplib.SMTPException, OSError, ValueError, RuntimeError)):
+            flash("We could not send the verification email. Please try again later.", "error")
+        else:
             raise
-        flash("Username, roll number, or Gmail is already registered.", "error")
         return render_template("register.html", form=fields)
+
+
+@app.route("/verify-email", methods=["GET"])
+def verify_email():
+    token = clean(request.args.get("token"), 200)
+    if not token:
+        flash("That verification link is invalid.", "error")
+        return redirect(url_for("login"))
+    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+    with get_db() as db:
+        row = db.execute(
+            "SELECT ev.id, ev.student_id, ev.expires_at, ev.used_at FROM email_verifications ev WHERE ev.token_hash=? LIMIT 1",
+            (token_hash,),
+        ).fetchone()
+        if not row or row["used_at"]:
+            flash("That verification link is invalid or has already been used.", "error")
+            return redirect(url_for("login"))
+        if datetime.fromisoformat(row["expires_at"]) < datetime.now():
+            flash("That verification link has expired. Request a new verification email.", "error")
+            return redirect(url_for("resend_verification"))
+        db.execute("UPDATE students SET email_verified=1 WHERE id=?", (row["student_id"],))
+        db.execute("UPDATE email_verifications SET used_at=? WHERE id=?", (datetime.now().isoformat(timespec="seconds"), row["id"]))
+        db.commit()
+    flash("Gmail verified successfully. You can now log in.", "success")
+    return redirect(url_for("login"))
+
+
+@app.route("/resend-verification", methods=["GET", "POST"])
+def resend_verification():
+    if request.method == "GET":
+        return render_template("resend_verification.html")
+    gmail = clean(request.form.get("gmail"), 120).lower()
+    if not is_valid_gmail(gmail):
+        flash("Enter a valid Gmail address.", "error")
+        return render_template("resend_verification.html", gmail=gmail)
+    try:
+        with get_db() as db:
+            student = db.execute("SELECT * FROM students WHERE LOWER(gmail)=LOWER(?) LIMIT 1", (gmail,)).fetchone()
+        if student and not student["email_verified"]:
+            token = create_email_verification(student["id"])
+            send_verification_email(student["gmail"], student["name"], token)
+        flash("If that Gmail belongs to an unverified SRGPC account, a new verification link has been sent.", "success")
+        return redirect(url_for("login"))
+    except Exception:
+        flash("We could not send a verification email right now. Please try again later.", "error")
+        return render_template("resend_verification.html", gmail=gmail)
 
 
 @app.get("/logout")
