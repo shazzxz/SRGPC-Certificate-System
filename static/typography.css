@@ -770,3 +770,61 @@ body.glass-ui,body.glass-auth{font-size:16px!important}
     grid-column:auto!important;
   }
 }
+
+/* =========================================================
+   Analytics page spacing — keep every major block visually separated
+   ========================================================= */
+.glass-ui .report-toolbar{
+  margin-top:0!important;
+  margin-bottom:24px!important;
+  padding:20px 22px!important;
+}
+.glass-ui .stats-grid{
+  margin-bottom:24px!important;
+  gap:16px!important;
+}
+.glass-ui .analytics-panels{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  column-gap:20px!important;
+  row-gap:20px!important;
+  margin-top:0!important;
+  margin-bottom:24px!important;
+}
+.glass-ui .analytics-panels>.panel{
+  margin:0!important;
+  min-width:0!important;
+}
+.glass-ui .analytics-panels + .history-panel{
+  margin-top:24px!important;
+}
+.glass-ui .history-panel{
+  margin-top:24px!important;
+}
+.glass-ui .history-panel + .history-panel{
+  margin-top:24px!important;
+}
+@media(max-width:900px){
+  .glass-ui .analytics-panels{
+    grid-template-columns:1fr!important;
+    gap:18px!important;
+  }
+  .glass-ui .stats-grid{
+    gap:14px!important;
+    margin-bottom:20px!important;
+  }
+}
+@media(max-width:620px){
+  .glass-ui .report-toolbar{
+    margin-bottom:18px!important;
+    padding:18px!important;
+  }
+  .glass-ui .analytics-panels{
+    gap:16px!important;
+    margin-bottom:18px!important;
+  }
+  .glass-ui .history-panel,
+  .glass-ui .history-panel + .history-panel{
+    margin-top:18px!important;
+  }
+}
