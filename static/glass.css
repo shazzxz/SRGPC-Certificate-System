@@ -492,3 +492,285 @@ body.public-verify{font-size:16px}
   .glass-ui .form-panel input,.glass-ui .form-panel select,.glass-ui .form-panel textarea{font-size:16px}
   .glass-ui .csv-example{font-size:12px}
 }
+
+
+/* =========================================================
+   SRGPC GLASS 2.0
+   Visual refresh only — existing routes, forms and behavior
+   remain unchanged.
+   ========================================================= */
+
+:root{
+  --g2-bg:#f4f7fc;
+  --g2-panel:rgba(255,255,255,.78);
+  --g2-panel-solid:#fff;
+  --g2-border:rgba(148,163,184,.20);
+  --g2-shadow:0 18px 50px rgba(15,23,42,.07);
+  --g2-shadow-soft:0 8px 24px rgba(15,23,42,.055);
+  --g2-blue:#2563eb;
+  --g2-blue-soft:#eaf2ff;
+  --g2-text:#0f172a;
+  --g2-muted:#64748b;
+}
+
+body.glass-ui{
+  background:
+    radial-gradient(circle at 8% 0%,rgba(59,130,246,.10),transparent 28%),
+    radial-gradient(circle at 92% 8%,rgba(99,102,241,.08),transparent 24%),
+    var(--g2-bg);
+  color:var(--g2-text);
+}
+
+/* Sidebar */
+.glass-ui .sidebar{
+  width:258px;
+  flex-basis:258px;
+  padding:22px 15px;
+  background:
+    radial-gradient(circle at 20% 0%,rgba(59,130,246,.16),transparent 30%),
+    linear-gradient(180deg,#0b1424 0%,#0c1729 55%,#0a1322 100%);
+  border-right:1px solid rgba(255,255,255,.055);
+  box-shadow:12px 0 40px rgba(15,23,42,.10);
+}
+.glass-ui .brand{padding:2px 9px 20px}
+.glass-ui .brand-mark{width:42px;height:42px;border-radius:13px}
+.glass-ui .brand-mark img{width:35px;height:35px}
+.glass-ui .brand-name{font-size:20px}
+.glass-ui .brand-sub{font-size:10px}
+.glass-ui .profile{
+  padding:13px 11px;
+  margin:2px 0 18px;
+  background:rgba(255,255,255,.065);
+  border:1px solid rgba(255,255,255,.06);
+  box-shadow:inset 0 1px rgba(255,255,255,.035);
+}
+.glass-ui .profile strong{font-size:14px}
+.glass-ui .profile span{font-size:11px}
+.glass-ui .nav-stack{gap:6px}
+.glass-ui .nav-item{
+  min-height:43px;
+  padding:10px 12px;
+  border:1px solid transparent;
+  font-size:14px;
+  border-radius:12px;
+  transition:background .18s ease,border-color .18s ease,transform .18s ease;
+}
+.glass-ui .nav-item:hover{transform:translateX(2px)}
+.glass-ui .nav-item.active{
+  background:linear-gradient(135deg,#2f73ed,#245bd0);
+  border-color:rgba(255,255,255,.10);
+  box-shadow:0 10px 25px rgba(37,99,235,.26);
+}
+.glass-ui .nav-count{font-size:11px;padding:3px 7px}
+.glass-ui .system-card{padding:11px;border-radius:13px}
+.glass-ui .system-card b{font-size:12px}
+.glass-ui .system-card small{font-size:10px}
+.glass-ui .logout{font-size:13px;padding:12px;border:1px solid rgba(255,255,255,.04)}
+
+/* Main shell */
+.glass-ui .main{padding:30px 34px 44px}
+.glass-ui .topbar{margin-bottom:25px}
+.glass-ui .eyebrow{font-size:11px;letter-spacing:.15em}
+.glass-ui .topbar h1{
+  font-size:30px;
+  line-height:1.12;
+  letter-spacing:-.045em;
+}
+.glass-ui .topbar p{font-size:14px;line-height:1.5}
+.glass-ui .top-actions{gap:9px}
+
+/* Glass surfaces */
+.glass-ui .panel,
+.glass-ui .stat-card,
+.glass-ui .request-card,
+.glass-ui .certificate-card,
+.glass-ui .info-card,
+.glass-ui .empty-card{
+  border-color:var(--g2-border);
+  box-shadow:var(--g2-shadow-soft);
+}
+.glass-ui .panel{
+  background:var(--g2-panel);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border-radius:20px;
+}
+.glass-ui .panel-head{padding:22px 23px 0}
+.glass-ui .panel-head h2{font-size:19px}
+.glass-ui .panel-head p{font-size:13px;line-height:1.5}
+
+/* Dashboard stats */
+.glass-ui .stats-grid{gap:16px}
+.glass-ui .stat-card{
+  position:relative;
+  overflow:hidden;
+  padding:20px;
+  border-radius:18px;
+  background:rgba(255,255,255,.82);
+}
+.glass-ui .stat-card:after{
+  content:"";
+  position:absolute;
+  width:100px;height:100px;
+  right:-45px;top:-45px;
+  border-radius:50%;
+  background:rgba(59,130,246,.07);
+}
+.glass-ui .stat-label{font-size:11px}
+.glass-ui .stat-card strong{font-size:28px}
+.glass-ui .stat-note{font-size:12px}
+
+/* Buttons */
+.glass-ui .primary-btn,
+.glass-ui .secondary-btn,
+.glass-ui .ghost-btn{
+  border-radius:12px;
+  transition:transform .16s ease,box-shadow .16s ease,background .16s ease;
+}
+.glass-ui .primary-btn{font-size:14px;padding:12px 14px}
+.glass-ui .secondary-btn,.glass-ui .ghost-btn{font-size:13px;padding:10px 13px}
+.glass-ui .primary-btn:hover,
+.glass-ui .secondary-btn:hover,
+.glass-ui .ghost-btn:hover{
+  transform:translateY(-1px);
+}
+
+/* Forms */
+.glass-ui input,.glass-ui select,.glass-ui textarea{
+  border-radius:11px;
+  padding:11px 12px;
+  font-size:15px;
+  background:rgba(255,255,255,.82);
+}
+.glass-ui label{font-size:13px}
+.glass-ui .subhead{font-size:12px}
+
+/* Requests */
+.glass-ui .filter-tabs{gap:8px;padding:20px 23px 0}
+.glass-ui .filter-tab{
+  font-size:13px;
+  padding:8px 12px;
+  border-radius:10px;
+}
+.glass-ui .request-cards{gap:14px;padding:20px 23px 15px}
+.glass-ui .request-card{
+  padding:18px;
+  border-radius:16px;
+  background:rgba(255,255,255,.74);
+}
+.glass-ui .request-card:hover{
+  box-shadow:0 14px 35px rgba(15,23,42,.08);
+}
+.glass-ui .request-card-head h3{font-size:18px}
+.glass-ui .request-card-head p,.glass-ui .request-card-head small{font-size:12px}
+.glass-ui .request-details{gap:10px;margin:15px 0}
+.glass-ui .request-details div{padding:12px}
+.glass-ui .request-details span,.glass-ui .request-note span{font-size:11px}
+.glass-ui .request-details b{font-size:14px}
+.glass-ui .request-note{font-size:13px;padding:11px 12px}
+
+/* Certificate cards / wallet */
+.glass-ui .student-cards{gap:16px}
+.glass-ui .certificate-card{
+  padding:18px;
+  border-radius:17px;
+}
+.glass-ui .certificate-card h3{font-size:18px}
+.glass-ui .certificate-card p{font-size:13px}
+.glass-ui .empty-card{font-size:13px}
+
+/* Tables */
+.glass-ui .table-wrap{padding:20px 22px 12px}
+.glass-ui table{font-size:13px}
+.glass-ui th{font-size:11px;padding:12px 9px}
+.glass-ui td{font-size:13px;padding:12px 9px}
+
+/* Template gallery */
+.glass-ui .template-studio-grid{gap:18px}
+.glass-ui .studio-template{
+  padding:16px;
+  border-radius:18px;
+}
+.glass-ui .studio-template-copy h3{font-size:17px}
+.glass-ui .studio-template-copy p{font-size:12px;line-height:1.5}
+.glass-ui .font-tag{font-size:11px}
+
+/* Certificate generator */
+.glass-ui .form-panel form{padding:20px 23px 0}
+.glass-ui .preview-frame{padding:20px 22px 22px}
+.glass-ui .template-option{padding:8px;border-radius:14px}
+.glass-ui .template-option strong{font-size:14px}
+.glass-ui .template-option>span{font-size:11px}
+
+/* Auth */
+.glass-auth .auth-card{
+  border-radius:24px;
+  box-shadow:0 25px 70px rgba(15,23,42,.14);
+}
+.glass-auth .auth-brand b{font-size:19px}
+.glass-auth .auth-title h1{font-size:28px}
+.glass-auth .auth-title p{font-size:14px}
+.glass-auth .role-tab{font-size:14px}
+
+/* Toasts / statuses */
+.glass-ui .flash{font-size:14px;border-radius:12px}
+.glass-ui .status-chip{font-size:12px}
+
+/* Dark mode */
+html.dark-mode body.glass-ui{
+  --g2-bg:#070d18;
+  --g2-panel:rgba(15,23,42,.76);
+  --g2-panel-solid:#0f172a;
+  --g2-border:rgba(148,163,184,.14);
+  --g2-shadow:0 18px 55px rgba(0,0,0,.25);
+  --g2-shadow-soft:0 12px 35px rgba(0,0,0,.22);
+  background:
+    radial-gradient(circle at 8% 0%,rgba(37,99,235,.15),transparent 30%),
+    radial-gradient(circle at 92% 8%,rgba(99,102,241,.12),transparent 28%),
+    var(--g2-bg);
+}
+html.dark-mode .glass-ui .panel,
+html.dark-mode .glass-ui .stat-card,
+html.dark-mode .glass-ui .request-card,
+html.dark-mode .glass-ui .certificate-card,
+html.dark-mode .glass-ui .info-card{
+  background:var(--g2-panel);
+  color:#e5edf7;
+}
+html.dark-mode .glass-ui input,
+html.dark-mode .glass-ui select,
+html.dark-mode .glass-ui textarea{
+  background:rgba(15,23,42,.72);
+  color:#e5edf7;
+  border-color:rgba(148,163,184,.20);
+}
+html.dark-mode .glass-ui td,
+html.dark-mode .glass-ui p,
+html.dark-mode .glass-ui .panel-head p,
+html.dark-mode .glass-ui .certificate-card p{
+  color:#a8b6c9;
+}
+
+/* Responsive */
+@media(max-width:1150px){
+  .glass-ui .sidebar{width:228px;flex-basis:228px}
+  .glass-ui .main{padding:26px 24px 38px}
+}
+@media(max-width:820px){
+  .glass-ui .sidebar{width:100%;padding:16px}
+  .glass-ui .main{padding:22px 18px 34px}
+  .glass-ui .topbar h1{font-size:28px}
+}
+@media(max-width:620px){
+  .glass-ui .main{padding:18px 13px 30px}
+  .glass-ui .topbar h1{font-size:25px}
+  .glass-ui .panel{border-radius:17px}
+  .glass-ui .panel-head{padding:19px 18px 0}
+  .glass-ui .request-cards{padding:17px 18px 12px}
+  .glass-ui .request-card{padding:15px}
+  .glass-ui .request-details{grid-template-columns:1fr}
+  .glass-ui .stats-grid{gap:12px}
+  .glass-ui .stat-card{padding:17px}
+  .glass-ui .stat-card strong{font-size:25px}
+  .glass-ui .table-wrap{padding:16px 15px 10px}
+}
