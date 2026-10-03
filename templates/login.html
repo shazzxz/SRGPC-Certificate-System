@@ -56,7 +56,7 @@
         <a href="{{ url_for('google_login') }}" id="googleSignIn" class="primary-btn" style="display:flex;align-items:center;justify-content:center;text-decoration:none;margin-top:10px;background:#fff;color:#172033;border:1px solid #d6dbe4">
           Continue with Google
         </a>
-        <div class="login-mode-note">New students can create their account through Google Sign-In.</div>
+        <div class="register-link" id="studentRegister">New students can create their account with the Google button above.</div>
       </div>
 
       <div id="loginAdminArea" style="display:none">
@@ -69,14 +69,10 @@
           <input name="password" id="adminPassword" type="password" placeholder="Admin password">
         </label>
         <button class="primary-btn" id="adminLoginSubmit" type="submit">Login as Admin →</button>
-        <div class="login-mode-note">Use your configured administrator username and password.</div>
-      </div>
+       </div>
     </form>
 
-    <div class="register-link" id="studentRegister">
-      New students can create their account with the Google button above.
-    </div>
-    <div class="admin-note" id="adminHint" style="display:none">
+     <div class="admin-note" id="adminHint" style="display:none">
       <b>Admin access</b>
       <span>Use the configured administrator username and password.</span>
     </div>
