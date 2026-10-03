@@ -404,6 +404,36 @@ def init_db():
         }
         for key, value in defaults.items():
             db.execute("INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO NOTHING", (key, value))
+        db.execute(
+            """UPDATE certificate_requests
+               SET department=(SELECT department FROM students s WHERE s.id=certificate_requests.student_id),
+                   programme=(SELECT programme FROM students s WHERE s.id=certificate_requests.student_id),
+                   semester=(SELECT semester FROM students s WHERE s.id=certificate_requests.student_id)
+               WHERE department='' OR programme='' OR semester=''"""
+        )
+        db.execute(
+            """UPDATE certificates
+               SET department=COALESCE((SELECT department FROM students s WHERE lower(s.roll_number)=lower(certificates.roll_number) LIMIT 1),''),
+                   programme=COALESCE((SELECT programme FROM students s WHERE lower(s.roll_number)=lower(certificates.roll_number) LIMIT 1),''),
+                   semester=COALESCE((SELECT semester FROM students s WHERE lower(s.roll_number)=lower(certificates.roll_number) LIMIT 1),'')
+               WHERE department='' OR programme='' OR semester=''"""
+        )
+        existing_certs = db.execute(
+            "SELECT certificate_id,created_by,created_at,status,revoke_reason FROM certificates WHERE certificate_id NOT IN (SELECT certificate_id FROM certificate_history)"
+        ).fetchall()
+        for cert in existing_certs:
+            event = "Generated"
+            details = "Existing certificate imported into lifecycle history."
+            if cert["status"] == "Revoked":
+                event = "Revoked"
+                details = cert["revoke_reason"] or "Certificate revoked."
+            elif cert["status"] == "Reissued":
+                event = "Reissued"
+                details = "Certificate marked as reissued."
+            db.execute(
+                "INSERT INTO certificate_history(certificate_id,event,details,actor_role,actor_name,created_at) VALUES(?,?,?,?,?,?)",
+                (cert["certificate_id"], event, details, "system", cert["created_by"] or "SRGPC", cert["created_at"]),
+            )
         db.commit()
 
 
@@ -474,6 +504,20 @@ def add_request_update(db, request_id, status, message, actor_role=None, actor_n
             actor_role or session.get("admin_role", session.get("role", "system")),
             actor_name or session.get("username", "system"),
             datetime.now().isoformat(timespec="seconds"),
+        ),
+    )
+
+
+def add_certificate_history(db, certificate_id, event, details="", actor_role=None, actor_name=None, created_at=None):
+    db.execute(
+        "INSERT INTO certificate_history(certificate_id,event,details,actor_role,actor_name,created_at) VALUES(?,?,?,?,?,?)",
+        (
+            certificate_id,
+            clean(event, 80),
+            clean(details, 500),
+            actor_role or session.get("admin_role", session.get("role", "system")),
+            actor_name or session.get("username", "system"),
+            created_at or datetime.now().isoformat(timespec="seconds"),
         ),
     )
 
