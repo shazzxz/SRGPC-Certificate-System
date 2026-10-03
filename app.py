@@ -602,14 +602,12 @@ def register():
     try:
         now = datetime.now().isoformat(timespec="seconds")
         with get_db() as db:
-            cur = db.execute(
+            db.execute(
                 "INSERT INTO students(username,password_hash,mobile,roll_number,gmail,name,department,academic_year,created_at,email_verified) VALUES(?,?,?,?,?,?,?,?,?,?)",
                 (fields["username"], generate_password_hash(fields["password"]), fields["mobile"], fields["roll_number"], fields["gmail"], fields["name"], fields["department"], setting("default_academic_year", current_academic_year()), now, 0),
             )
-            student_id = cur.lastrowid
-            if student_id is None:
-                row = db.execute("SELECT id FROM students WHERE LOWER(username)=LOWER(?)", (fields["username"],)).fetchone()
-                student_id = row["id"] if row else None
+            row = db.execute("SELECT id FROM students WHERE LOWER(username)=LOWER(?)", (fields["username"],)).fetchone()
+            student_id = row["id"] if row else None
             db.commit()
         if not student_id:
             raise RuntimeError("Unable to create the student account.")
