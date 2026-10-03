@@ -1163,13 +1163,34 @@ def student_certificate_detail(certificate_id):
 def admin_certificates():
     ctx = admin_base_context("certificates")
     search = clean(request.args.get("q"), 100)
+    department = clean(request.args.get("department"), 60)
+    programme = clean(request.args.get("programme"), 60)
+    semester = clean(request.args.get("semester"), 10)
+    academic_year = clean(request.args.get("academic_year"), 20)
+    certificate_type = clean(request.args.get("certificate_type"), 60)
+    cert_status = clean(request.args.get("cert_status"), 30)
+    from_date = clean(request.args.get("from_date"), 10)
+    to_date = clean(request.args.get("to_date"), 10)
+    where=[]; params=[]
+    if search:
+        like=f"%{search}%"
+        where.append("(LOWER(name) LIKE LOWER(?) OR LOWER(roll_number) LIKE LOWER(?) OR LOWER(certificate_id) LIKE LOWER(?) OR LOWER(activity) LIKE LOWER(?) OR LOWER(position) LIKE LOWER(?))")
+        params.extend([like,like,like,like,like])
+    if department in DEPARTMENTS: where.append("department=?"); params.append(department)
+    if programme in PROGRAMMES: where.append("programme=?"); params.append(programme)
+    if semester in SEMESTERS: where.append("semester=?"); params.append(semester)
+    if academic_year: where.append("academic_year=?"); params.append(academic_year)
+    if certificate_type in REQUEST_TYPES: where.append("certificate_type=?"); params.append(certificate_type)
+    if cert_status in {"Valid","Revoked","Reissued"}: where.append("status=?"); params.append(cert_status)
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", from_date): where.append("substr(created_at,1,10)>=?"); params.append(from_date)
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", to_date): where.append("substr(created_at,1,10)<=?"); params.append(to_date)
+    sql="SELECT * FROM certificates"
+    if where: sql += " WHERE " + " AND ".join(where)
+    sql += " ORDER BY id DESC"
     with get_db() as db:
-        if search:
-            like = f"%{search}%"
-            certs = db.execute("SELECT * FROM certificates WHERE name LIKE ? OR roll_number LIKE ? OR certificate_id LIKE ? ORDER BY id DESC", (like, like, like)).fetchall()
-        else:
-            certs = db.execute("SELECT * FROM certificates ORDER BY id DESC").fetchall()
-    return render_template("admin_certificates.html", **ctx, certs=certs, templates=TEMPLATES, search=search)
+        certs=db.execute(sql,tuple(params)).fetchall()
+        years=db.execute("SELECT DISTINCT academic_year FROM certificates WHERE academic_year<>'' ORDER BY academic_year DESC").fetchall()
+    return render_template("admin_certificates.html", **ctx, certs=certs, templates=TEMPLATES, search=search, department=department, programme=programme, semester=semester, academic_year=academic_year, certificate_type=certificate_type, cert_status=cert_status, from_date=from_date, to_date=to_date, departments=DEPARTMENTS, programmes=PROGRAMMES, semesters=SEMESTERS, request_types=REQUEST_TYPES, academic_years=[row["academic_year"] for row in years])
 
 
 @app.get("/admin/verify")
