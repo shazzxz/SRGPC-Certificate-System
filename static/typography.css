@@ -334,3 +334,29 @@ body.glass-ui,body.glass-auth{font-size:16px!important}
 .glass-auth .auth-form label{color:#111827!important}
 .glass-auth input::placeholder{color:#64748b!important}
 .glass-auth .admin-note{color:#334155!important}
+
+/* Checkbox controls are compact controls, not text inputs. */
+.glass-ui input[type="checkbox"],
+.glass-ui input[type="radio"]{
+  width:18px!important;
+  height:18px!important;
+  min-width:18px!important;
+  min-height:18px!important;
+  max-width:18px!important;
+  max-height:18px!important;
+  margin:0!important;
+  padding:0!important;
+  display:inline-block!important;
+  vertical-align:middle;
+  accent-color:#2563eb;
+}
+.glass-ui .checkbox-line{
+  display:flex!important;
+  align-items:center!important;
+  gap:10px!important;
+  font-size:14px!important;
+  font-weight:500!important;
+  line-height:1.4!important;
+  margin:14px 0!important;
+  color:#1f2937!important;
+}
