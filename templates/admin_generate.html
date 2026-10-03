@@ -22,6 +22,11 @@
         <label>Academic Year<input id="academic_year" name="academic_year" value="{{ academic_year }}" placeholder="2026-27"></label>
       </div>
       <div class="field-row">
+        <label>Department<select id="department" name="department">{% for item in departments %}<option value="{{ item }}">{{ item }}</option>{% endfor %}</select></label>
+        <label>Programme<select id="programme" name="programme">{% for item in programmes %}<option value="{{ item }}">{{ item }}</option>{% endfor %}</select></label>
+      </div>
+      <label>Semester<select id="semester" name="semester"><option value="">Not specified</option>{% for item in semesters %}<option value="{{ item }}">Semester {{ item }}</option>{% endfor %}</select></label>
+      <div class="field-row">
         <label>Font Family<select id="font_family" name="font_family">{% for key in font_options %}<option value="{{ key }}" {% if key==default_font %}selected{% endif %}>{{ key }}</option>{% endfor %}</select></label>
         <label>Template<select id="templateSelect" name="template">{% for key,tpl in templates.items() %}<option value="{{ key }}" {% if key==default_template %}selected{% endif %}>{{ tpl.name }}</option>{% endfor %}</select></label>
       </div>
