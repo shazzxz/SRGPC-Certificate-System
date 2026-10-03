@@ -1995,25 +1995,67 @@ def _send_pdf(filename, title, columns, rows):
 def admin_analytics():
     ctx = admin_base_context("analytics")
     with get_db() as db:
-        by_year = db.execute("SELECT academic_year, COUNT(*) c FROM certificates GROUP BY academic_year ORDER BY academic_year DESC").fetchall()
-        by_type = db.execute("SELECT certificate_type, COUNT(*) c FROM certificates GROUP BY certificate_type ORDER BY c DESC").fetchall()
-        by_department = db.execute("SELECT COALESCE(NULLIF(department,''),'Unknown') department, COUNT(*) c FROM certificates GROUP BY COALESCE(NULLIF(department,''),'Unknown') ORDER BY c DESC").fetchall()
-        by_programme = db.execute("SELECT COALESCE(NULLIF(programme,''),'Unknown') programme, COUNT(*) c FROM certificates GROUP BY COALESCE(NULLIF(programme,''),'Unknown') ORDER BY c DESC").fetchall()
-        by_status = db.execute("SELECT status, COUNT(*) c FROM certificates GROUP BY status ORDER BY c DESC").fetchall()
-        request_status = db.execute("SELECT status, COUNT(*) c FROM certificate_requests GROUP BY status ORDER BY c DESC").fetchall()
-        monthly = db.execute(
-            "SELECT substr(created_at,1,7) month, COUNT(*) c FROM certificates GROUP BY substr(created_at,1,7) ORDER BY month DESC LIMIT 12"
+        students = db.execute("SELECT COUNT(*) AS count FROM students").fetchone()["count"]
+        certificates = db.execute("SELECT COUNT(*) AS count FROM certificates").fetchone()["count"]
+        valid = db.execute("SELECT COUNT(*) AS count FROM certificates WHERE status='Valid'").fetchone()["count"]
+        requests = db.execute("SELECT COUNT(*) AS count FROM certificate_requests").fetchone()["count"]
+
+        def bucket(sql, key):
+            rows = db.execute(sql).fetchall()
+            data = [{"label": (row[key] or "Unknown"), "count": int(row["count"])} for row in rows]
+            maximum = max([item["count"] for item in data] or [1])
+            for item in data:
+                item["width"] = round(item["count"] / maximum * 100)
+            return data
+
+        by_department = bucket(
+            "SELECT COALESCE(NULLIF(department,''),'Unknown') AS department, COUNT(*) AS count "
+            "FROM certificates GROUP BY COALESCE(NULLIF(department,''),'Unknown') ORDER BY count DESC",
+            "department",
+        )
+        by_programme = bucket(
+            "SELECT COALESCE(NULLIF(programme,''),'Unknown') AS programme, COUNT(*) AS count "
+            "FROM certificates GROUP BY COALESCE(NULLIF(programme,''),'Unknown') ORDER BY count DESC",
+            "programme",
+        )
+        by_type = bucket(
+            "SELECT COALESCE(NULLIF(certificate_type,''),'Unknown') AS certificate_type, COUNT(*) AS count "
+            "FROM certificates GROUP BY COALESCE(NULLIF(certificate_type,''),'Unknown') ORDER BY count DESC",
+            "certificate_type",
+        )
+        request_status = bucket(
+            "SELECT COALESCE(NULLIF(status,''),'Unknown') AS status, COUNT(*) AS count "
+            "FROM certificate_requests GROUP BY COALESCE(NULLIF(status,''),'Unknown') ORDER BY count DESC",
+            "status",
+        )
+        monthly_rows = db.execute(
+            "SELECT substr(created_at,1,7) AS month, COUNT(*) AS count "
+            "FROM certificates GROUP BY substr(created_at,1,7) ORDER BY month DESC LIMIT 12"
         ).fetchall()
-        audit_rows = db.execute("SELECT * FROM audit_logs ORDER BY id DESC LIMIT 30").fetchall()
-        totals = {
-            "students": db.execute("SELECT COUNT(*) c FROM students").fetchone()["c"],
-            "certificates": db.execute("SELECT COUNT(*) c FROM certificates").fetchone()["c"],
-            "valid": db.execute("SELECT COUNT(*) c FROM certificates WHERE status='Valid'").fetchone()["c"],
-            "revoked": db.execute("SELECT COUNT(*) c FROM certificates WHERE status='Revoked'").fetchone()["c"],
-            "reissued": db.execute("SELECT COUNT(*) c FROM certificates WHERE status='Reissued'").fetchone()["c"],
-            "requests": db.execute("SELECT COUNT(*) c FROM certificate_requests").fetchone()["c"],
-        }
-    return render_template("admin_analytics.html", **ctx, **totals, by_year=by_year, by_type=by_type, by_department=by_department, by_programme=by_programme, by_status=by_status, request_status=request_status, monthly=monthly, audit_rows=audit_rows)
+        monthly = [{"label": row["month"], "count": int(row["count"])} for row in reversed(monthly_rows)]
+        maximum = max([item["count"] for item in monthly] or [1])
+        for item in monthly:
+            item["width"] = round(item["count"] / maximum * 100)
+
+        audit_rows = db.execute(
+            "SELECT created_at, actor_name, actor_role, action, entity_type, entity_id, details "
+            "FROM audit_logs ORDER BY id DESC LIMIT 30"
+        ).fetchall()
+
+    return render_template(
+        "admin_analytics.html",
+        **ctx,
+        students=students,
+        certificates=certificates,
+        valid=valid,
+        requests=requests,
+        by_department=by_department,
+        by_programme=by_programme,
+        by_type=by_type,
+        request_status=request_status,
+        monthly=monthly,
+        audit_rows=audit_rows,
+    )
 
 
 @app.get("/admin/reports/certificates")
