@@ -1423,8 +1423,33 @@ def admin_users():
     if session.get("admin_role") != "superadmin":
         return redirect(url_for("admin_dashboard"))
     ctx = admin_base_context("users")
-    with get_db() as db: users=db.execute("SELECT id,username,role,created_at,active FROM admin_users ORDER BY id DESC").fetchall()
-    return render_template("admin_users.html", **ctx, users=users)
+    student_query = clean(request.args.get("q"), 100)
+    with get_db() as db:
+        users = db.execute(
+            "SELECT id,username,role,created_at,active FROM admin_users ORDER BY id DESC"
+        ).fetchall()
+        if student_query:
+            like = f"%{student_query}%"
+            students = db.execute(
+                """SELECT id,username,name,roll_number,gmail,admin_enabled,admin_role
+                   FROM students
+                   WHERE LOWER(name) LIKE LOWER(?) OR LOWER(username) LIKE LOWER(?)
+                      OR LOWER(roll_number) LIKE LOWER(?) OR LOWER(gmail) LIKE LOWER(?)
+                   ORDER BY LOWER(name) LIMIT 100""",
+                (like, like, like, like),
+            ).fetchall()
+        else:
+            students = db.execute(
+                """SELECT id,username,name,roll_number,gmail,admin_enabled,admin_role
+                   FROM students ORDER BY id DESC LIMIT 100"""
+            ).fetchall()
+    return render_template(
+        "admin_users.html",
+        **ctx,
+        users=users,
+        students=students,
+        student_query=student_query,
+    )
 
 
 @app.post("/admin/users")
