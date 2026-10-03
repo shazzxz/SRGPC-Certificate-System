@@ -82,6 +82,9 @@ FONT_OPTIONS = {
 
 REQUEST_TYPES = ["Achievement", "Participation", "Sports", "Cultural", "Technical", "Workshop / Training", "Internship", "Academic", "Other"]
 REQUEST_STATUSES = ["Pending", "Under Review", "Generated", "Rejected"]
+DEPARTMENTS = ["CSE", "ECE", "EEE", "Mechanical", "Civil", "IT", "MCA", "Other"]
+PROGRAMMES = ["B.Tech", "M.Tech", "MCA", "Diploma", "BCA", "Other"]
+SEMESTERS = ["1", "2", "3", "4", "5", "6", "7", "8"]
 ADMIN_ROLES = {"superadmin", "manager", "verifier"}
 ROLE_PERMISSIONS = {
     "superadmin": {"*"},
@@ -215,6 +218,10 @@ def init_db():
                 roll_number TEXT NOT NULL UNIQUE{case_unique},
                 gmail TEXT NOT NULL UNIQUE{case_unique},
                 name TEXT NOT NULL,
+                department TEXT NOT NULL DEFAULT 'CSE',
+                programme TEXT NOT NULL DEFAULT 'B.Tech',
+                semester TEXT NOT NULL DEFAULT '1',
+                academic_year TEXT NOT NULL DEFAULT '2026-27',
                 created_at TEXT NOT NULL,
                 email_verified INTEGER NOT NULL DEFAULT 1,
                 google_sub TEXT UNIQUE{case_unique},
@@ -231,6 +238,15 @@ def init_db():
                 template TEXT NOT NULL,
                 font_family TEXT NOT NULL DEFAULT 'Helvetica',
                 filename TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )""",
+            f"""CREATE TABLE IF NOT EXISTS certificate_history (
+                id {id_pk},
+                certificate_id TEXT NOT NULL,
+                event TEXT NOT NULL,
+                details TEXT NOT NULL DEFAULT '',
+                actor_role TEXT NOT NULL,
+                actor_name TEXT NOT NULL,
                 created_at TEXT NOT NULL
             )""",
             f"""CREATE TABLE IF NOT EXISTS certificate_requests (
@@ -324,6 +340,9 @@ def init_db():
             "revoked_at": "ALTER TABLE certificates ADD COLUMN revoked_at TEXT",
             "revoke_reason": "ALTER TABLE certificates ADD COLUMN revoke_reason TEXT NOT NULL DEFAULT ''",
             "reissued_from": "ALTER TABLE certificates ADD COLUMN reissued_from TEXT NOT NULL DEFAULT ''",
+            "department": "ALTER TABLE certificates ADD COLUMN department TEXT NOT NULL DEFAULT ''",
+            "programme": "ALTER TABLE certificates ADD COLUMN programme TEXT NOT NULL DEFAULT ''",
+            "semester": "ALTER TABLE certificates ADD COLUMN semester TEXT NOT NULL DEFAULT ''",
         }
         for col, sql in migrations.items():
             if col not in cols:
@@ -332,6 +351,9 @@ def init_db():
         req_migrations = {
             "academic_year": "ALTER TABLE certificate_requests ADD COLUMN academic_year TEXT NOT NULL DEFAULT '2026-27'",
             "processed_by": "ALTER TABLE certificate_requests ADD COLUMN processed_by TEXT NOT NULL DEFAULT ''",
+            "department": "ALTER TABLE certificate_requests ADD COLUMN department TEXT NOT NULL DEFAULT ''",
+            "programme": "ALTER TABLE certificate_requests ADD COLUMN programme TEXT NOT NULL DEFAULT ''",
+            "semester": "ALTER TABLE certificate_requests ADD COLUMN semester TEXT NOT NULL DEFAULT ''",
         }
         for col, sql in req_migrations.items():
             if col not in req_cols:
@@ -339,6 +361,10 @@ def init_db():
 
         if "department" not in stu_cols:
             db.execute("ALTER TABLE students ADD COLUMN department TEXT NOT NULL DEFAULT 'CSE'")
+        if "programme" not in stu_cols:
+            db.execute("ALTER TABLE students ADD COLUMN programme TEXT NOT NULL DEFAULT 'B.Tech'")
+        if "semester" not in stu_cols:
+            db.execute("ALTER TABLE students ADD COLUMN semester TEXT NOT NULL DEFAULT '1'")
         if "academic_year" not in stu_cols:
             db.execute("ALTER TABLE students ADD COLUMN academic_year TEXT NOT NULL DEFAULT '2026-27'")
         if "email_verified" not in stu_cols:
