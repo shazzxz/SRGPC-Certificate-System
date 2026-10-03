@@ -1786,9 +1786,99 @@ def admin_analytics():
     with get_db() as db:
         by_year = db.execute("SELECT academic_year, COUNT(*) c FROM certificates GROUP BY academic_year ORDER BY academic_year DESC").fetchall()
         by_type = db.execute("SELECT certificate_type, COUNT(*) c FROM certificates GROUP BY certificate_type ORDER BY c DESC").fetchall()
-        by_department = db.execute("SELECT COALESCE(s.department,'CSE') department, COUNT(*) c FROM certificates c LEFT JOIN students s ON lower(s.roll_number)=lower(c.roll_number) GROUP BY department ORDER BY c DESC").fetchall()
+        by_department = db.execute("SELECT COALESCE(NULLIF(department,''),'Unknown') department, COUNT(*) c FROM certificates GROUP BY COALESCE(NULLIF(department,''),'Unknown') ORDER BY c DESC").fetchall()
+        by_programme = db.execute("SELECT COALESCE(NULLIF(programme,''),'Unknown') programme, COUNT(*) c FROM certificates GROUP BY COALESCE(NULLIF(programme,''),'Unknown') ORDER BY c DESC").fetchall()
+        by_status = db.execute("SELECT status, COUNT(*) c FROM certificates GROUP BY status ORDER BY c DESC").fetchall()
+        request_status = db.execute("SELECT status, COUNT(*) c FROM certificate_requests GROUP BY status ORDER BY c DESC").fetchall()
+        monthly = db.execute(
+            "SELECT substr(created_at,1,7) month, COUNT(*) c FROM certificates GROUP BY substr(created_at,1,7) ORDER BY month DESC LIMIT 12"
+        ).fetchall()
         audit_rows = db.execute("SELECT * FROM audit_logs ORDER BY id DESC LIMIT 30").fetchall()
-    return render_template("admin_analytics.html", **ctx, by_year=by_year, by_type=by_type, by_department=by_department, audit_rows=audit_rows)
+        totals = {
+            "students": db.execute("SELECT COUNT(*) c FROM students").fetchone()["c"],
+            "certificates": db.execute("SELECT COUNT(*) c FROM certificates").fetchone()["c"],
+            "valid": db.execute("SELECT COUNT(*) c FROM certificates WHERE status='Valid'").fetchone()["c"],
+            "revoked": db.execute("SELECT COUNT(*) c FROM certificates WHERE status='Revoked'").fetchone()["c"],
+            "reissued": db.execute("SELECT COUNT(*) c FROM certificates WHERE status='Reissued'").fetchone()["c"],
+            "requests": db.execute("SELECT COUNT(*) c FROM certificate_requests").fetchone()["c"],
+        }
+    return render_template("admin_analytics.html", **ctx, **totals, by_year=by_year, by_type=by_type, by_department=by_department, by_programme=by_programme, by_status=by_status, request_status=request_status, monthly=monthly, audit_rows=audit_rows)
+
+
+@app.get("/admin/reports/certificates")
+@admin_permission("certificates")
+def admin_report_certificates():
+    filters, where, params = _certificate_filter_sql(request.args)
+    sql="SELECT * FROM certificates"
+    if where: sql += " WHERE " + " AND ".join(where)
+    sql += " ORDER BY id DESC"
+    with get_db() as db:
+        rows=db.execute(sql,tuple(params)).fetchall()
+    report_format=request.args.get("format","csv").lower()
+    title="SRGPC Certificate Register"
+    headers=["Certificate ID","Student","Roll Number","Department","Programme","Semester","Type","Activity","Achievement","Academic Year","Status","Issued By","Issued At"]
+    data=[(
+        x["certificate_id"],x["name"],x["roll_number"],x["department"],x["programme"],x["semester"],
+        x["certificate_type"],x["activity"],x["position"],x["academic_year"],x["status"],x["created_by"],x["created_at"]
+    ) for x in rows]
+    stamp=datetime.now().strftime("%Y%m%d_%H%M")
+    if report_format=="pdf":
+        return _send_pdf(f"SRGPC_Certificate_Register_{stamp}.pdf",title,headers,data)
+    return _send_csv(f"SRGPC_Certificate_Register_{stamp}.csv",headers,data)
+
+
+@app.get("/admin/reports/requests")
+@admin_permission("requests")
+def admin_report_requests():
+    filters, where, params = _request_filter_sql(request.args)
+    sql="""SELECT r.*, s.gmail, s.name student_name, s.roll_number student_roll
+           FROM certificate_requests r JOIN students s ON s.id=r.student_id"""
+    if where: sql += " WHERE " + " AND ".join(where)
+    sql += " ORDER BY r.id DESC"
+    with get_db() as db:
+        rows=db.execute(sql,tuple(params)).fetchall()
+    report_format=request.args.get("format","csv").lower()
+    headers=["Request ID","Student","Roll Number","Department","Programme","Semester","Type","Activity","Achievement","Status","Academic Year","Submitted","Processed By"]
+    data=[(
+        x["id"],x["student_name"],x["student_roll"],x["department"],x["programme"],x["semester"],x["request_type"],
+        x["activity"],x["position"],x["status"],x["academic_year"],x["created_at"],x["processed_by"]
+    ) for x in rows]
+    stamp=datetime.now().strftime("%Y%m%d_%H%M")
+    if report_format=="pdf":
+        return _send_pdf(f"SRGPC_Request_Register_{stamp}.pdf","SRGPC Certificate Request Register",headers,data)
+    return _send_csv(f"SRGPC_Request_Register_{stamp}.csv",headers,data)
+
+
+@app.get("/admin/reports/audit")
+@admin_permission("analytics")
+def admin_report_audit():
+    actor=clean(request.args.get("actor"),80)
+    action=clean(request.args.get("action"),120)
+    entity=clean(request.args.get("entity"),80)
+    query=clean(request.args.get("q"),120)
+    from_date=clean(request.args.get("from_date"),10)
+    to_date=clean(request.args.get("to_date"),10)
+    where=[]; params=[]
+    if actor: where.append("LOWER(actor_name) LIKE LOWER(?)"); params.append(f"%{actor}%")
+    if action: where.append("LOWER(action) LIKE LOWER(?)"); params.append(f"%{action}%")
+    if entity: where.append("LOWER(entity_type)=LOWER(?)"); params.append(entity)
+    if query:
+        like=f"%{query}%"
+        where.append("(LOWER(details) LIKE LOWER(?) OR LOWER(entity_id) LIKE LOWER(?) OR LOWER(action) LIKE LOWER(?))")
+        params.extend([like,like,like])
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", from_date): where.append("substr(created_at,1,10)>=?"); params.append(from_date)
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", to_date): where.append("substr(created_at,1,10)<=?"); params.append(to_date)
+    sql="SELECT * FROM audit_logs"
+    if where: sql += " WHERE " + " AND ".join(where)
+    sql += " ORDER BY id DESC LIMIT 2000"
+    with get_db() as db: rows=db.execute(sql,tuple(params)).fetchall()
+    headers=["Time","Actor","Role","Action","Entity","Entity ID","Details"]
+    data=[(x["created_at"],x["actor_name"],x["actor_role"],x["action"],x["entity_type"],x["entity_id"],x["details"]) for x in rows]
+    report_format=request.args.get("format","csv").lower()
+    stamp=datetime.now().strftime("%Y%m%d_%H%M")
+    if report_format=="pdf":
+        return _send_pdf(f"SRGPC_Audit_Log_{stamp}.pdf","SRGPC Administrative Audit Log",headers,data)
+    return _send_csv(f"SRGPC_Audit_Log_{stamp}.csv",headers,data)
 
 
 @app.get("/admin/bulk")
