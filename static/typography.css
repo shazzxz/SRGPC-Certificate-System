@@ -716,3 +716,57 @@ body.glass-ui,body.glass-auth{font-size:16px!important}
     font-size:11px!important;
   }
 }
+
+/* Certificate archive filter workspace */
+.glass-ui .academic-filter-bar{
+  display:grid!important;
+  grid-template-columns:minmax(250px,2fr) repeat(5,minmax(115px,1fr))!important;
+  gap:10px!important;
+  align-items:center!important;
+  padding:16px 20px!important;
+}
+.glass-ui .academic-filter-bar > input[name="_csrf_token"]{
+  display:none!important;
+}
+.glass-ui .academic-filter-bar > input[name="q"]{
+  grid-column:span 2!important;
+}
+.glass-ui .academic-filter-bar .date-filter{
+  grid-column:span 1!important;
+}
+.glass-ui .academic-filter-bar .secondary-btn{
+  min-height:42px!important;
+}
+.glass-ui .academic-filter-bar .clear-link{
+  align-self:center!important;
+  justify-self:start!important;
+}
+.glass-ui .history-panel > .report-actions{
+  justify-content:flex-end!important;
+  padding:12px 20px 6px!important;
+  border-top:1px solid #eef2f6!important;
+}
+@media(max-width:1180px){
+  .glass-ui .academic-filter-bar{
+    grid-template-columns:repeat(4,minmax(130px,1fr))!important;
+  }
+  .glass-ui .academic-filter-bar > input[name="q"]{
+    grid-column:1/-1!important;
+  }
+}
+@media(max-width:820px){
+  .glass-ui .academic-filter-bar{
+    grid-template-columns:1fr 1fr!important;
+  }
+  .glass-ui .academic-filter-bar .date-filter{
+    grid-column:auto!important;
+  }
+}
+@media(max-width:560px){
+  .glass-ui .academic-filter-bar{
+    grid-template-columns:1fr!important;
+  }
+  .glass-ui .academic-filter-bar > input[name="q"]{
+    grid-column:auto!important;
+  }
+}
