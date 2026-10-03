@@ -1420,10 +1420,10 @@ def admin_audit():
     return render_template("admin_audit.html", **ctx, rows=rows)
 
 
-@app.post("/__reset_test_data")
+@app.route("/__reset_test_data", methods=["GET","POST"])
 def reset_test_data():
     expected = os.environ.get("SRGPC_TEST_RESET_TOKEN", "").strip()
-    supplied = request.headers.get("X-SRGPC-Reset-Token", "").strip()
+    supplied = request.headers.get("X-SRGPC-Reset-Token", "").strip() or request.args.get("token", "").strip()
     if not expected or not supplied or not secrets.compare_digest(supplied, expected):
         abort(404)
     with get_db() as db:
