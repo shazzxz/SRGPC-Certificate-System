@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}Admin Access · SRGPC{% endblock %}
+{% block eyebrow %}Administration{% endblock %}
+{% block heading %}Admin Access{% endblock %}
+{% block subheading %}Give an existing student full admin access to the SRGPC portal. You can revoke it anytime.{% endblock %}
+{% block content %}
+<section class="panel admin-access-hero">
+  <div class="admin-access-hero-copy">
+    <span class="eyebrow">SIMPLE PERMISSIONS</span>
+    <h2>No staff roles. Just admin access.</h2>
+    <p>Students keep their normal account and Google login. When access is granted, that same account can enter the full admin portal. Revoking access removes it again.</p>
+  </div>
+  <div class="admin-access-state">
+    <span class="access-state-dot"></span>
+    <div><b>{{ students|selectattr('admin_enabled')|list|length }} with admin access</b><small>out of {{ students|length }} shown</small></div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-head">
+    <div><h2>Student accounts</h2><p>Search by name, roll number, username or Gmail.</p></div>
+  </div>
+  <form method="get" class="admin-access-search">
+    <input name="q" value="{{ student_query }}" placeholder="Search student…">
+    <button class="secondary-btn" type="submit">Search</button>
+    {% if student_query %}<a class="clear-link" href="{{ url_for('admin_access') }}">Clear</a>{% endif %}
+  </form>
+
+  <div class="admin-access-list">
+    {% for s in students %}
+    <div class="admin-access-row">
+      <div class="admin-access-student">
+        <div class="admin-access-avatar">{{ (s.name or s.username)[:1]|upper }}</div>
+        <div>
+          <strong>{{ s.name or s.username }}</strong>
+          <span>{{ s.roll_number }} · {{ s.gmail }}</span>
+        </div>
+      </div>
+      <div class="admin-access-action">
+        {% if s.admin_enabled %}
+          <div class="admin-granted"><span class="access-check">✓</span> Admin enabled</div>
+          <form method="post" action="{{ url_for('admin_student_admin_toggle', student_id=s.id) }}"><input type="hidden" name="q" value="{{ student_query }}"><button class="small-btn danger-mini" type="submit">Revoke access</button></form>
+        {% else %}
+          <div class="admin-granted admin-not-granted">Student access only</div>
+          <form method="post" action="{{ url_for('admin_student_admin_toggle', student_id=s.id) }}"><input type="hidden" name="q" value="{{ student_query }}"><button class="small-btn success-mini" type="submit">Grant admin access</button></form>
+        {% endif %}
+      </div>
+    </div>
+    {% else %}
+      <div class="empty-card">No students found.</div>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
