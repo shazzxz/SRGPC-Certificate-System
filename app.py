@@ -1420,6 +1420,36 @@ def admin_audit():
     return render_template("admin_audit.html", **ctx, rows=rows)
 
 
+@app.post("/__reset_test_data")
+def reset_test_data():
+    expected = os.environ.get("SRGPC_TEST_RESET_TOKEN", "").strip()
+    supplied = request.headers.get("X-SRGPC-Reset-Token", "").strip()
+    if not expected or not supplied or not secrets.compare_digest(supplied, expected):
+        abort(404)
+    with get_db() as db:
+        for table in (
+            "notifications",
+            "email_verifications",
+            "certificate_requests",
+            "certificates",
+            "students",
+            "audit_logs",
+        ):
+            db.execute(f"DELETE FROM {table}")
+        db.commit()
+    for folder in (GENERATED_DIR, UPLOAD_DIR):
+        folder.mkdir(parents=True, exist_ok=True)
+        for item in folder.iterdir():
+            try:
+                if item.is_dir():
+                    shutil.rmtree(item)
+                else:
+                    item.unlink(missing_ok=True)
+            except OSError:
+                pass
+    return {"ok": True, "message": "Student accounts, certificates, requests, notifications, verification records, audit logs and generated files were cleared."}
+
+
 @app.get("/admin/access")
 @admin_permission("dashboard")
 def admin_access():
