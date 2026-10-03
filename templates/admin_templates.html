@@ -5,7 +5,7 @@
 {% block content %}
 <section class="panel settings-panel settings-modern">
   <div class="panel-head"><div><h2>College-wide defaults</h2><p>Choose the starting style used by the certificate generator.</p></div><span class="pill">Global Settings</span></div>
-  <form method="post" action="{{ url_for('admin_templates_save') }}" class="global-settings-form">
+  <form method="post" action="{{ url_for('admin_templates_save') }}" class="global-settings-form"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
     <div class="settings-choice">
       <div class="settings-choice-icon">▣</div>
       <div class="settings-choice-copy"><b>Default template</b><small>The certificate design used when an admin opens Generate Certificate.</small></div>
