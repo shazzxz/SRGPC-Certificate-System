@@ -238,6 +238,8 @@ class RequestJsonFormatter(logging.Formatter):
         request_id = getattr(record, "request_id", None)
         if request_id:
             payload["request_id"] = request_id
+        if record.exc_info:
+            payload["exception"] = self.formatException(record.exc_info)
         return json.dumps(payload, separators=(",", ":"))
 
 handler = logging.StreamHandler(sys.stdout)
