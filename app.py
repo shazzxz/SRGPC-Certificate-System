@@ -1,8 +1,13 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, send_file, abort
+from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, send_file, abort, g, jsonify
 from pathlib import Path
 from io import BytesIO
 from datetime import datetime, timedelta
 from functools import wraps
+import logging
+import sys
+import time
+import uuid
+import hmac
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from reportlab.pdfgen import canvas
@@ -35,33 +40,79 @@ from werkzeug.wsgi import get_current_url
 import qrcode
 import urllib.parse
 import urllib.request
+try:
+    import boto3
+except ImportError:
+    boto3 = None
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
-DB_PATH = DATA_DIR / "srgpc.db"
+DB_PATH = Path(os.environ.get("SRGPC_DB_PATH", str(DATA_DIR / "srgpc.db")))
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
-GENERATED_DIR = BASE_DIR / "generated"
-SIGNATURE_DIR = DATA_DIR / "signatures"
-UPLOAD_DIR = BASE_DIR / "static" / "uploads"
+GENERATED_DIR = Path(os.environ.get("SRGPC_GENERATED_DIR", str(BASE_DIR / "generated")))
+SIGNATURE_DIR = Path(os.environ.get("SRGPC_SIGNATURE_DIR", str(DATA_DIR / "signatures")))
+UPLOAD_DIR = Path(os.environ.get("SRGPC_UPLOAD_DIR", str(BASE_DIR / "static" / "uploads")))
 LOGO_PATH = BASE_DIR / "static" / "college_logo.png"
 for folder in (DATA_DIR, GENERATED_DIR, SIGNATURE_DIR, UPLOAD_DIR):
     folder.mkdir(parents=True, exist_ok=True)
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("SRGPC_SESSION_KEY", "srgpc-local-session-key-change-before-public-hosting")
+session_key = os.environ.get("SRGPC_SESSION_KEY", "").strip()
+production_mode = bool(DATABASE_URL or os.environ.get("SRGPC_PUBLIC_BASE_URL","").startswith("https://"))
+if production_mode and not session_key:
+    raise RuntimeError("SRGPC_SESSION_KEY must be configured in production.")
+app.secret_key = session_key or secrets.token_hex(32)
 app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024
-app.config["STATIC_VERSION"] = "6.3"
+app.config["STATIC_VERSION"] = "7.0"
+app.config["TESTING"] = os.environ.get("SRGPC_TESTING", "").strip().lower() in {"1","true","yes"}
 
 ADMIN_USERNAME = os.environ.get("SRGPC_ADMIN_USERNAME", "ADMIN")
 ADMIN_PASSWORD = os.environ.get("SRGPC_ADMIN_PASSWORD", "0000")
 PUBLIC_BASE_URL = os.environ.get("SRGPC_PUBLIC_BASE_URL", "")
 app.config.update(
+    SESSION_COOKIE_NAME="srgpc_session",
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
-    SESSION_COOKIE_SECURE=bool(DATABASE_URL or PUBLIC_BASE_URL.startswith("https://")),
+    SESSION_COOKIE_SECURE=production_mode,
+    SESSION_REFRESH_EACH_REQUEST=True,
     PERMANENT_SESSION_LIFETIME=timedelta(hours=8),
 )
 CERT_TITLE = "CERTIFICATE OF ACHIEVEMENT"
+
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
+
+rate_storage = os.environ.get("SRGPC_RATE_LIMIT_STORAGE_URI", os.environ.get("REDIS_URL", "memory://"))
+limiter = Limiter(
+    key_func=get_remote_address,
+    app=app,
+    storage_uri=rate_storage,
+    strategy="fixed-window",
+    default_limits=["240 per day", "60 per minute"],
+    headers_enabled=True,
+)
+
+class RequestJsonFormatter(logging.Formatter):
+    def format(self, record):
+        payload = {
+            "time": datetime.utcnow().isoformat(timespec="milliseconds") + "Z",
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+        }
+        request_id = getattr(record, "request_id", None)
+        if request_id:
+            payload["request_id"] = request_id
+        return json.dumps(payload, separators=(",", ":"))
+
+handler = logging.StreamHandler(sys.stdout)
+handler.setFormatter(RequestJsonFormatter())
+app.logger.handlers.clear()
+app.logger.addHandler(handler)
+app.logger.setLevel(logging.INFO)
+
 
 TEMPLATES = {
     "classic": {"name": "Classic Gold", "description": "Traditional academic certificate with gold borders."},
