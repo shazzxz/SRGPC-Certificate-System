@@ -764,6 +764,12 @@ def register_google():
     if not all([fields["username"], fields["mobile"], fields["roll_number"], fields["name"], fields["department"]]):
         flash("Please complete every college profile field.", "error")
         return render_template("register.html", form=fields, google_pending=pending)
+    if not re.fullmatch(r"\d{10}", fields["mobile"]):
+        flash("Enter a valid 10-digit mobile number.", "error")
+        return render_template("register.html", form=fields, google_pending=pending)
+    if len(fields["roll_number"]) < 4:
+        flash("Enter a valid college roll number.", "error")
+        return render_template("register.html", form=fields, google_pending=pending)
     try:
         with get_db() as db:
             db.execute(
@@ -1313,6 +1319,18 @@ def admin_request_generate(request_id):
     if req["status"] not in {"Pending", "Under Review"}:
         flash("This request has already been processed.", "error")
         return redirect(url_for("admin_requests"))
+    with get_db() as db:
+        duplicate = db.execute(
+            """SELECT certificate_id FROM certificates
+               WHERE lower(name)=lower(?) AND lower(roll_number)=lower(?)
+                 AND lower(activity)=lower(?) AND lower(position)=lower(?)
+                 AND status='Valid'""",
+            (req["name"], req["roll_number"], req["activity"], req["position"]),
+        ).fetchone()
+    if duplicate:
+        flash(f"A matching valid certificate already exists ({duplicate['certificate_id']}). Use the certificate archive to reissue if this is intentional.", "error")
+        return redirect(url_for("admin_request_detail", request_id=request_id))
+
     info = {
         "name": req["name"],
         "roll_number": req["roll_number"],
@@ -1457,6 +1475,16 @@ def student_request_submit():
         return redirect(url_for("student_request_page"))
     if not all([fields["name"], fields["roll_number"], fields["activity"], fields["position"]]):
         flash("Please fill in name, roll number, activity and position.", "error")
+        return redirect(url_for("student_request_page"))
+    with get_db() as db:
+        duplicate_request = db.execute(
+            """SELECT id FROM certificate_requests
+               WHERE student_id=? AND status IN ('Pending','Under Review')
+                 AND lower(activity)=lower(?) AND lower(position)=lower(?)""",
+            (student["id"], fields["activity"], fields["position"]),
+        ).fetchone()
+    if duplicate_request:
+        flash("You already have an active request for the same activity and achievement.", "error")
         return redirect(url_for("student_request_page"))
     created_at = datetime.now().isoformat(timespec="seconds")
     with get_db() as db:
