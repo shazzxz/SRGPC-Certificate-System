@@ -13,6 +13,24 @@ A Flask-based college certificate platform with student and admin portals, certi
 
 For deployment, set the admin credentials using the `SRGPC_ADMIN_USERNAME` and `SRGPC_ADMIN_PASSWORD` environment variables. Do not store credentials in this repository.
 
+## What's new
+
+### v6.2 — Deployment, database, security and UI updates
+- Migrated the production database from ephemeral SQLite storage to PostgreSQL for Render deployment.
+- Added PostgreSQL compatibility while keeping SQLite available for local development.
+- Added the PostgreSQL driver and Render database wiring through `DATABASE_URL`.
+- Added a modern glassmorphism UI across the portal with responsive cards, panels, tables, buttons and forms.
+- Added persistent light/dark theme switching with a compact icon-only theme control.
+- Added responsive mobile layouts for the glass UI so the sidebar and main content adapt correctly on phones.
+- Improved student login so username, roll number or Gmail can be used case-insensitively.
+- Added admin password reset controls for student accounts.
+- Added admin student-account deletion with confirmation; requests and notifications are removed while certificate records remain archived.
+- Fixed the admin student directory template after the account-management UI update.
+- Added automatic regeneration of a missing certificate PDF when a stored certificate is downloaded, protecting downloads from Render's ephemeral filesystem.
+- Redesigned the public QR certificate verification page to match the SRGPC glass UI.
+- The public verification page is now fully responsive on mobile while retaining no-login verification.
+- Updated the README so deployment credentials are configured through environment variables instead of being stored in the repository.
+
 ## v6 reliability fixes
 
 ### Certificate engine
@@ -109,7 +127,7 @@ Set these environment variables for a public deployment:
 
 ### Production storage note
 
-The app uses SQLite and stores generated PDFs/signatures on the local filesystem. A production college deployment should use persistent storage or migrate the database/file storage to managed services before relying on the system for long-term records.
+Render production uses PostgreSQL through `DATABASE_URL`. Generated PDFs/signatures are still stored on the web service filesystem, so the app regenerates a missing certificate PDF from its database record when a download is requested. For long-term production use, move generated files and uploaded signatures to persistent object storage.
 
 
 ## v6.1 UI improvements
