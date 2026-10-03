@@ -14,7 +14,7 @@
     <div class="auth-brand"><img src="{{ url_for('static',filename='college_logo.png') }}"><div><b>SRGPC</b><span>Email Verification</span></div></div>
     <div class="auth-title"><span>ACCOUNT VERIFICATION</span><h1>Resend verification email</h1><p>Enter the Gmail address used during registration. A fresh verification link will be sent if the account is still unverified.</p></div>
     {% with messages=get_flashed_messages(with_categories=true) %}{% for category,message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}{% endwith %}
-    <form method="post" class="auth-form">
+    <form method="post" class="auth-form"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
       <label>Gmail ID<input type="email" name="gmail" value="{{ gmail if gmail else '' }}" placeholder="student@gmail.com" required></label>
       <button class="primary-btn" type="submit">Send Verification Email →</button>
     </form>
