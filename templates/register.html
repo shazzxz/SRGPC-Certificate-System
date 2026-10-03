@@ -17,7 +17,9 @@
     <div class="register-grid">
       <label>Full Name<input name="name" value="{{ form.name if form else '' }}" required></label>
       <label>Roll Number<input name="roll_number" value="{{ form.roll_number if form else '' }}" required placeholder="e.g. 24039C04060"></label>
-      <label>Department<input name="department" value="{{ form.department if form else 'CSE' }}" required placeholder="e.g. CSE"></label>
+      <label>Department<select name="department" required>{% for item in departments %}<option value="{{ item }}" {% if (form.department if form else 'CSE')==item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></label>
+      <label>Programme<select name="programme" required>{% for item in programmes %}<option value="{{ item }}" {% if (form.programme if form else 'B.Tech')==item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></label>
+      <label>Semester<select name="semester" required>{% for item in semesters %}<option value="{{ item }}" {% if (form.semester if form else '1')==item %}selected{% endif %}>Semester {{ item }}</option>{% endfor %}</select></label>
       <label>Mobile Number<input name="mobile" value="{{ form.mobile if form else '' }}" inputmode="numeric" maxlength="10" required placeholder="10-digit mobile number"></label>
     </div>
     <div class="onboarding-note"><b>What happens next?</b><span>Your account username is created automatically from your roll number. Your academic year is assigned from the college portal settings.</span></div>
