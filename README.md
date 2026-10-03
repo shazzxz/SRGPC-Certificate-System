@@ -114,6 +114,15 @@ Optional columns:
 
 The Bulk Generation page contains a ready-to-copy example.
 
+## Authors & copyright
+
+- **Original author and maintainer:** Shashwat Solanki
+- **GitHub:** [@shazzxz](https://github.com/shazzxz)
+- **Copyright:** © 2026 Shashwat Solanki
+- **License:** MIT — see [LICENSE](LICENSE)
+
+The MIT License permits use, modification, distribution, private use and commercial use, provided the required copyright and license notices are retained. Third-party dependencies and assets remain subject to their own licenses and terms. citeturn0search12
+
 ## Deployment
 
 The repository includes `Procfile` and `render.yaml` as a starting point for Render-style deployment.
