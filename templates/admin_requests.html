@@ -12,7 +12,22 @@
 <section class="panel history-panel">
   <div class="panel-head"><div><h2>Request Queue</h2><p>Use filters to focus on the work that needs attention.</p></div></div>
   <div class="filter-tabs">
-    {% for s in ['All','Pending','Under Review','Generated','Rejected'] %}<a href="{{ url_for('admin_requests',status=s) }}" class="filter-tab {% if status==s %}active{% endif %}">{{ s }}</a>{% endfor %}
+    {% for s in ['All','Pending','Under Review','Generated','Rejected'] %}<a href="{{ url_for('admin_requests',status=s,q=query,department=department,programme=programme,semester=semester,from_date=from_date,to_date=to_date) }}" class="filter-tab {% if status==s %}active{% endif %}">{{ s }}</a>{% endfor %}
+  </div>
+  <form class="search-bar academic-filter-bar" method="get">
+    <input type="hidden" name="status" value="{{ status }}">
+    <input name="q" value="{{ query }}" placeholder="Search student, roll, activity or request type">
+    <select name="department"><option value="">Department</option>{% for item in departments %}<option value="{{ item }}" {% if department==item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select>
+    <select name="programme"><option value="">Programme</option>{% for item in programmes %}<option value="{{ item }}" {% if programme==item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select>
+    <select name="semester"><option value="">Semester</option>{% for item in semesters %}<option value="{{ item }}" {% if semester==item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select>
+    <label class="date-filter">From <input type="date" name="from_date" value="{{ from_date }}"></label>
+    <label class="date-filter">To <input type="date" name="to_date" value="{{ to_date }}"></label>
+    <button class="secondary-btn" type="submit">Filter</button>
+    {% if query or department or programme or semester or from_date or to_date %}<a class="clear-link" href="{{ url_for('admin_requests',status=status) }}">Clear</a>{% endif %}
+  </form>
+  <div class="report-actions">
+    <a class="secondary-btn inline-btn" href="{{ url_for('admin_report_requests',format='csv',status=status,q=query,department=department,programme=programme,semester=semester,from_date=from_date,to_date=to_date) }}">Export CSV</a>
+    <a class="secondary-btn inline-btn" href="{{ url_for('admin_report_requests',format='pdf',status=status,q=query,department=department,programme=programme,semester=semester,from_date=from_date,to_date=to_date) }}">Export PDF</a>
   </div>
   <div class="request-cards">
     {% for r in requests %}
