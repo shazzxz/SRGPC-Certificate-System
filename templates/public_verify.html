@@ -1,1 +1,229 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Verify Certificate · SRGPC</title><link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head><body class="public-body"><div class="public-shell"><div class="public-card"><div class="public-header"><img src="{{ url_for('static',filename='college_logo.png') }}"><div><h1 style="margin:0">SRGPC Certificate Verification</h1><p style="margin:3px 0;color:#64748b;font-size:11px">Public authenticity check — no login required</p></div></div><form class="verify-form" style="margin-top:22px" method="get" action="{{ url_for('public_verify') }}"><input name="certificate_id" value="{{ query }}" placeholder="Enter SRGPC certificate ID" required><button class="primary-btn inline-btn" type="submit">Verify Certificate</button></form>{% if query %}<div class="public-result {% if certificate and certificate.status=='Valid' %}valid{% else %}bad{% endif %}">{% if certificate %}<span class="verify-badge {% if certificate.status=='Valid' %}valid{% else %}invalid{% endif %}">{{ certificate.status|upper }}</span><h2 style="margin-bottom:6px">{% if certificate.status=='Valid' %}Certificate Verified{% elif certificate.status=='Revoked' %}Certificate Revoked{% else %}Certificate Replaced / Archived{% endif %}</h2><p style="margin:0;color:#64748b">SRGPC certificate record found for <strong>{{ certificate.name }}</strong>.</p><div class="public-grid"><div><span>Certificate ID</span><b>{{ certificate.certificate_id }}</b></div><div><span>Student</span><b>{{ certificate.name }}</b></div><div><span>Roll Number</span><b>{{ certificate.roll_number }}</b></div><div><span>Type</span><b>{{ certificate.certificate_type }}</b></div><div><span>Activity</span><b>{{ certificate.activity }}</b></div><div><span>Achievement</span><b>{{ certificate.position }}</b></div><div><span>Academic Year</span><b>{{ certificate.academic_year }}</b></div><div><span>Issued</span><b>{{ certificate.created_at }}</b></div></div>{% if certificate.revoke_reason %}<div class="request-note"><span>Record note</span>{{ certificate.revoke_reason }}</div>{% endif %}<p class="qr-note" style="margin-top:14px">This page validates the certificate record stored by SRGPC. The PDF also includes a QR code pointing back here.</p></div>{% else %}<div class="public-result bad"><span class="verify-badge invalid">NOT FOUND</span><h2>Certificate Not Found</h2><p>No SRGPC record matches <code>{{ query }}</code>.</p></div>{% endif %}{% endif %}<div class="footer-note">SRGPC Certificate Management System</div></div></div></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#eef3fb">
+  <title>Verify Certificate · SRGPC</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='glass.css') }}">
+  <style>
+    *{box-sizing:border-box}
+    body.public-verify{
+      min-height:100vh;margin:0;font-family:Arial,Helvetica,sans-serif;color:#0f172a;
+      background:
+        radial-gradient(circle at 8% 0%,rgba(99,102,241,.18),transparent 30%),
+        radial-gradient(circle at 92% 8%,rgba(14,165,233,.15),transparent 30%),
+        linear-gradient(135deg,#eef3fb 0%,#f8fafc 52%,#edf3fb 100%);
+      padding:34px 18px 42px;
+    }
+    .verify-shell{width:min(820px,100%);margin:0 auto}
+    .verify-brand{
+      display:flex;align-items:center;gap:13px;margin:0 auto 18px;width:fit-content;
+    }
+    .verify-brand-mark{
+      width:50px;height:50px;border-radius:15px;background:rgba(255,255,255,.86);
+      border:1px solid rgba(255,255,255,.9);display:grid;place-items:center;
+      box-shadow:0 10px 28px rgba(15,23,42,.10);backdrop-filter:blur(14px)
+    }
+    .verify-brand-mark img{width:42px;height:42px;object-fit:contain}
+    .verify-brand-copy b{display:block;font-size:18px;letter-spacing:-.04em}
+    .verify-brand-copy span{display:block;margin-top:2px;font-size:9px;color:#64748b}
+    .verify-hero{
+      text-align:center;margin-bottom:18px
+    }
+    .verify-kicker{
+      display:inline-flex;align-items:center;gap:7px;color:#4f46e5;font-size:9px;
+      font-weight:900;letter-spacing:.14em;text-transform:uppercase
+    }
+    .verify-kicker:before{content:"";width:7px;height:7px;border-radius:50%;background:#6366f1;box-shadow:0 0 0 4px rgba(99,102,241,.10)}
+    .verify-hero h1{margin:8px 0 5px;font-size:clamp(28px,5vw,42px);line-height:1.05;letter-spacing:-.06em}
+    .verify-hero p{margin:0;color:#64748b;font-size:12px}
+    .verify-card{
+      background:rgba(255,255,255,.68);border:1px solid rgba(255,255,255,.78);
+      border-radius:24px;box-shadow:0 24px 70px rgba(15,23,42,.12);
+      backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);overflow:hidden
+    }
+    .verify-search{padding:20px;border-bottom:1px solid rgba(148,163,184,.17)}
+    .verify-search form{display:flex;gap:10px}
+    .verify-search input{
+      flex:1;margin:0!important;padding:13px 14px!important;border-radius:13px!important;
+      border:1px solid rgba(148,163,184,.25)!important;background:rgba(255,255,255,.76)!important;
+      font-size:11px!important;box-shadow:none!important
+    }
+    .verify-search input:focus{border-color:rgba(79,70,229,.5)!important;box-shadow:0 0 0 4px rgba(79,70,229,.09)!important}
+    .verify-search button{
+      width:auto;min-width:155px;border:0;border-radius:13px;padding:12px 18px;
+      color:#fff;font-size:11px;font-weight:900;cursor:pointer;
+      background:linear-gradient(135deg,#6366f1,#2563eb);
+      box-shadow:0 10px 24px rgba(37,99,235,.22)
+    }
+    .verify-content{padding:24px}
+    .verify-status{
+      display:flex;align-items:center;gap:12px;padding:15px 16px;border-radius:16px;
+      background:rgba(236,253,245,.82);border:1px solid rgba(134,239,172,.48)
+    }
+    .verify-status-icon{
+      width:40px;height:40px;flex:0 0 40px;border-radius:13px;display:grid;place-items:center;
+      background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;font-size:19px;font-weight:900;
+      box-shadow:0 8px 20px rgba(22,163,74,.22)
+    }
+    .verify-status-copy{min-width:0}
+    .verify-status-copy b{display:block;font-size:14px;letter-spacing:-.02em;color:#166534}
+    .verify-status-copy span{display:block;margin-top:3px;color:#4b7b5b;font-size:9px}
+    .verify-status-badge{
+      margin-left:auto;flex:0 0 auto;border-radius:999px;padding:6px 9px;
+      background:#dcfce7;color:#15803d;border:1px solid #bbf7d0;font-size:8px;font-weight:900;letter-spacing:.08em
+    }
+    .verify-intro{margin:18px 2px 14px}
+    .verify-intro h2{margin:0 0 5px;font-size:18px;letter-spacing:-.035em}
+    .verify-intro p{margin:0;color:#64748b;font-size:10px;line-height:1.55}
+    .verify-grid{
+      display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px
+    }
+    .verify-field{
+      min-width:0;padding:13px 14px;border:1px solid rgba(148,163,184,.19);
+      background:rgba(255,255,255,.57);border-radius:14px
+    }
+    .verify-field.full{grid-column:1/-1}
+    .verify-field span{
+      display:block;color:#94a3b8;font-size:8px;font-weight:900;
+      text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px
+    }
+    .verify-field b{display:block;color:#172033;font-size:10px;line-height:1.45;overflow-wrap:anywhere}
+    .verify-id b{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#4f46e5}
+    .verify-note{
+      margin-top:14px;padding:12px 14px;border-radius:13px;
+      background:rgba(248,250,252,.72);border:1px dashed rgba(148,163,184,.32);
+      color:#64748b;font-size:9px;line-height:1.55
+    }
+    .verify-note b{color:#334155}
+    .verify-empty{
+      padding:34px 24px;text-align:center
+    }
+    .verify-empty-icon{
+      width:48px;height:48px;margin:0 auto 12px;border-radius:15px;
+      display:grid;place-items:center;background:#fee2e2;color:#b91c1c;font-size:20px;font-weight:900
+    }
+    .verify-empty h2{margin:0 0 5px;font-size:18px}
+    .verify-empty p{margin:0;color:#64748b;font-size:10px}
+    .verify-footer{text-align:center;margin-top:16px;color:#94a3b8;font-size:8px}
+    .verify-footer b{color:#64748b}
+    @media(max-width:620px){
+      body.public-verify{padding:20px 12px 28px}
+      .verify-brand{margin-bottom:15px}
+      .verify-brand-mark{width:44px;height:44px;border-radius:13px}
+      .verify-brand-mark img{width:37px;height:37px}
+      .verify-brand-copy b{font-size:16px}
+      .verify-hero h1{font-size:30px}
+      .verify-card{border-radius:20px}
+      .verify-search{padding:14px}
+      .verify-search form{display:block}
+      .verify-search button{width:100%;margin-top:9px}
+      .verify-content{padding:16px}
+      .verify-status{align-items:flex-start}
+      .verify-status-badge{display:none}
+      .verify-grid{grid-template-columns:1fr}
+      .verify-field.full{grid-column:auto}
+    }
+  </style>
+</head>
+<body class="public-verify">
+  <main class="verify-shell">
+    <div class="verify-brand">
+      <div class="verify-brand-mark"><img src="{{ url_for('static',filename='college_logo.png') }}" alt="SRGPC"></div>
+      <div class="verify-brand-copy"><b>SRGPC</b><span>Certificate Management System</span></div>
+    </div>
+
+    <section class="verify-hero">
+      <div class="verify-kicker">Public authenticity check</div>
+      <h1>Certificate Verification</h1>
+      <p>Verify an SRGPC certificate instantly — no login required.</p>
+    </section>
+
+    <section class="verify-card">
+      <div class="verify-search">
+        <form method="get" action="{{ url_for('public_verify') }}">
+          <input name="certificate_id" value="{{ query }}" placeholder="Enter certificate ID" autocomplete="off" required>
+          <button type="submit">Verify Certificate&nbsp; →</button>
+        </form>
+      </div>
+
+      {% if query %}
+        {% if certificate %}
+          {% if certificate.status == 'Valid' %}
+            <div class="verify-content">
+              <div class="verify-status">
+                <div class="verify-status-icon">✓</div>
+                <div class="verify-status-copy">
+                  <b>Certificate Verified</b>
+                  <span>This certificate matches a valid SRGPC record.</span>
+                </div>
+                <span class="verify-status-badge">VALID</span>
+              </div>
+
+              <div class="verify-intro">
+                <h2>{{ certificate.name }}</h2>
+                <p>Certificate record issued and stored by SRGPC.</p>
+              </div>
+
+              <div class="verify-grid">
+                <div class="verify-field full verify-id"><span>Certificate ID</span><b>{{ certificate.certificate_id }}</b></div>
+                <div class="verify-field"><span>Student</span><b>{{ certificate.name }}</b></div>
+                <div class="verify-field"><span>Roll Number</span><b>{{ certificate.roll_number }}</b></div>
+                <div class="verify-field"><span>Certificate Type</span><b>{{ certificate.certificate_type }}</b></div>
+                <div class="verify-field"><span>Academic Year</span><b>{{ certificate.academic_year }}</b></div>
+                <div class="verify-field"><span>Activity</span><b>{{ certificate.activity }}</b></div>
+                <div class="verify-field"><span>Achievement</span><b>{{ certificate.position }}</b></div>
+                <div class="verify-field full"><span>Issued</span><b>{{ certificate.created_at }}</b></div>
+              </div>
+
+              {% if certificate.revoke_reason %}
+                <div class="verify-note"><b>Record note:</b> {{ certificate.revoke_reason }}</div>
+              {% endif %}
+              <div class="verify-note"><b>Authenticity:</b> This page validates the certificate record stored by SRGPC. The certificate PDF contains a QR code that points back to this verification page.</div>
+            </div>
+          {% else %}
+            <div class="verify-content">
+              <div class="verify-status" style="background:rgba(254,242,242,.86);border-color:rgba(252,165,165,.48)">
+                <div class="verify-status-icon" style="background:linear-gradient(135deg,#ef4444,#dc2626);box-shadow:0 8px 20px rgba(220,38,38,.18)">!</div>
+                <div class="verify-status-copy">
+                  <b style="color:#991b1b">Certificate Record Found</b>
+                  <span style="color:#8b5b5b">The record is not currently marked as valid.</span>
+                </div>
+                <span class="verify-status-badge" style="background:#fee2e2;color:#b91c1c;border-color:#fecaca">{{ certificate.status|upper }}</span>
+              </div>
+              <div class="verify-intro">
+                <h2>{{ certificate.name }}</h2>
+                <p>SRGPC has a record for this certificate, but its current status is <strong>{{ certificate.status }}</strong>.</p>
+              </div>
+              <div class="verify-grid">
+                <div class="verify-field full verify-id"><span>Certificate ID</span><b>{{ certificate.certificate_id }}</b></div>
+                <div class="verify-field"><span>Student</span><b>{{ certificate.name }}</b></div>
+                <div class="verify-field"><span>Roll Number</span><b>{{ certificate.roll_number }}</b></div>
+                <div class="verify-field"><span>Activity</span><b>{{ certificate.activity }}</b></div>
+                <div class="verify-field"><span>Academic Year</span><b>{{ certificate.academic_year }}</b></div>
+              </div>
+              {% if certificate.revoke_reason %}<div class="verify-note"><b>Record note:</b> {{ certificate.revoke_reason }}</div>{% endif %}
+            </div>
+          {% endif %}
+        {% else %}
+          <div class="verify-empty">
+            <div class="verify-empty-icon">!</div>
+            <h2>Certificate Not Found</h2>
+            <p>No SRGPC certificate record matches <strong>{{ query }}</strong>.</p>
+          </div>
+        {% endif %}
+      {% else %}
+        <div class="verify-empty">
+          <div class="verify-empty-icon" style="background:#e0e7ff;color:#4f46e5">⌕</div>
+          <h2>Ready to verify</h2>
+          <p>Scan a certificate QR code or enter its certificate ID above.</p>
+        </div>
+      {% endif %}
+    </section>
+
+    <div class="verify-footer"><b>SRGPC</b> · Certificate Management System · Public Verification</div>
+  </main>
+</body>
+</html>
