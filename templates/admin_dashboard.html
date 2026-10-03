@@ -1,22 +1,22 @@
 {% extends 'base.html' %}
-{% block title %}Admin Dashboard · SRGPC{% endblock %}
-{% block heading %}SRGPC Administration{% endblock %}
-{% block subheading %}A clear working view of certificate requests, issuance and student activity.{% endblock %}
+{% block title %}HOD Dashboard · SRGPC{% endblock %}
+{% block heading %}HOD Office Dashboard{% endblock %}
+{% block subheading %}Official oversight of student requests, certificate issuance and academic records.{% endblock %}
 {% block topaction %}<a href="{{ url_for('admin_generate_page') }}" class="primary-btn">＋ New Certificate</a>{% endblock %}
 {% block content %}
-<section class="admin-hero panel">
-  <div><span class="eyebrow">TODAY AT A GLANCE</span><h2>What needs your attention?</h2><p>Review student requests first, then move approved work into certificate generation.</p></div>
+<section class="admin-hero panel" aria-labelledby="hod-overview-title">
+  <div><span class="eyebrow">SRGPC · OFFICE OF ACADEMIC RECORDS</span><h2 id="hod-overview-title">What needs your attention today?</h2><p>Review student requests, monitor issued records, and keep the official certificate register accurate.</p><div class="institutional-meta"><span>Head of Department view</span><span>Academic Year {{ academic_year }}</span><span>Audit tracking enabled</span></div></div>
   <div class="admin-hero-metrics"><div><b>{{ attention }}</b><span>Requests needing action</span></div><div><b>{{ under_review }}</b><span>Under review</span></div></div>
 </section>
 
-<section class="stats-grid">
+<section class="stats-grid" aria-label="Certificate office summary">
   <div class="stat-card"><span class="stat-label">Certificates Issued</span><strong>{{ total_certs }}</strong><span class="stat-note">All-time</span></div>
   <div class="stat-card"><span class="stat-label">Issued Today</span><strong>{{ today }}</strong><span class="stat-note">Local portal time</span></div>
   <div class="stat-card"><span class="stat-label">Registered Students</span><strong>{{ total_students }}</strong><span class="stat-note">Active student records</span></div>
   <div class="stat-card"><span class="stat-label">Valid Certificates</span><strong>{{ valid }}</strong><span class="stat-note">Current valid records</span></div>
 </section>
 
-<div class="dashboard-grid">
+<div class="dashboard-grid" aria-label="HOD work queue and office actions">
   <section class="panel">
     <div class="panel-head"><div><h2>Requests needing attention</h2><p>Open, review or fulfil the next certificate request.</p></div><a class="text-link" href="{{ url_for('admin_requests',status='All') }}">Open queue →</a></div>
     <div class="request-list">
