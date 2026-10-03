@@ -828,3 +828,152 @@ body.glass-ui,body.glass-auth{font-size:16px!important}
     margin-top:18px!important;
   }
 }
+
+/* =========================================================
+   Phase 4 — presentation, accessibility and responsive QA
+   ========================================================= */
+.skip-link{
+  position:fixed!important;
+  left:16px!important;
+  top:12px!important;
+  z-index:9999!important;
+  transform:translateY(-180%)!important;
+  background:#0f2a52!important;
+  color:#fff!important;
+  padding:10px 14px!important;
+  border-radius:8px!important;
+  font-size:14px!important;
+  font-weight:600!important;
+  text-decoration:none!important;
+  box-shadow:0 8px 22px rgba(15,42,82,.22)!important;
+}
+.skip-link:focus{transform:translateY(0)!important}
+.glass-ui :focus-visible,
+.glass-auth :focus-visible{
+  outline:3px solid #2563eb!important;
+  outline-offset:2px!important;
+  border-radius:6px;
+}
+.glass-ui button:disabled,
+.glass-ui .is-loading{
+  cursor:wait!important;
+  opacity:.72!important;
+}
+.glass-ui .main:focus{outline:none}
+.portal-footer{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:16px;
+  padding:26px 4px 4px;
+  margin-top:30px;
+  border-top:1px solid #dfe6ee;
+  color:#64748b;
+  font-size:12px;
+  line-height:1.45;
+}
+.institutional-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:14px;
+}
+.institutional-meta span{
+  display:inline-flex;
+  align-items:center;
+  padding:6px 9px;
+  border:1px solid #dbe4ee;
+  border-radius:999px;
+  background:#f8fafc;
+  color:#334155;
+  font-size:12px;
+  font-weight:500;
+}
+.empty-card{
+  min-height:96px!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  box-sizing:border-box!important;
+  padding:22px!important;
+  color:#475569!important;
+  background:#f8fafc!important;
+  border:1px dashed #cbd5e1!important;
+  line-height:1.55!important;
+}
+.empty-card::before{
+  content:"";
+  width:8px;
+  height:8px;
+  flex:0 0 8px;
+  margin-right:10px;
+  border-radius:50%;
+  background:#94a3b8;
+}
+.global-loading-bar{
+  position:fixed;
+  inset:0 0 auto 0;
+  z-index:10000;
+  height:3px;
+  background:linear-gradient(90deg,#2563eb,#7c3aed,#0ea5e9);
+  transform:scaleX(0);
+  transform-origin:left;
+  transition:transform .18s ease;
+  pointer-events:none;
+}
+body.page-loading .global-loading-bar{transform:scaleX(.72)}
+body.page-loading .global-loading-bar::after{
+  content:"";
+  display:block;
+  width:26%;
+  height:100%;
+  margin-left:74%;
+  background:rgba(255,255,255,.55);
+  animation:loading-slide 1s ease-in-out infinite;
+}
+@keyframes loading-slide{0%{transform:translateX(-120%)}100%{transform:translateX(380%)}}
+@media(max-width:900px){
+  .portal-footer{flex-direction:column;align-items:flex-start}
+  .institutional-meta{gap:6px}
+}
+@media(max-width:700px){
+  .glass-ui .sidebar{
+    width:100%!important;
+    max-width:none!important;
+    flex-basis:auto!important;
+    padding:14px!important;
+    box-sizing:border-box!important;
+  }
+  .glass-ui .app-shell{display:block!important;min-width:0!important}
+  .glass-ui .main{min-width:0!important;overflow-x:hidden!important}
+  .glass-ui .nav-stack{
+    display:flex!important;
+    grid-template-columns:none!important;
+    overflow-x:auto!important;
+    gap:7px!important;
+    padding:4px 0 8px!important;
+    scrollbar-width:thin;
+  }
+  .glass-ui .nav-stack .nav-item{
+    flex:0 0 auto!important;
+    white-space:nowrap!important;
+    min-height:44px!important;
+    padding:10px 13px!important;
+  }
+  .glass-ui .sidebar-bottom{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important}
+  .glass-ui .system-card{grid-column:1/-1!important}
+  .glass-ui table{min-width:720px}
+  .glass-ui .table-wrap{overflow-x:auto!important;-webkit-overflow-scrolling:touch!important}
+  .glass-ui .topbar-actions{width:100%!important;margin-top:12px!important}
+  .glass-ui .topbar-actions>*{width:100%!important;box-sizing:border-box!important}
+  .institutional-meta{display:grid!important;grid-template-columns:1fr!important}
+}
+@media(max-width:520px){
+  .glass-ui .brand-name{font-size:23px!important}
+  .glass-ui .profile{margin-top:10px}
+  .glass-ui .sidebar-bottom{grid-template-columns:1fr!important}
+  .portal-footer{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+}
