@@ -10,7 +10,7 @@
       <div><h2>Certificate Details</h2><p>All long values are auto-fitted before they reach the final PDF.</p></div>
       <span class="pill">{{ default_font }}</span>
     </div>
-    <form method="post" action="{{ url_for('admin_generate') }}" id="certForm">
+    <form method="post" action="{{ url_for('admin_generate') }}" id="certForm"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
       <div class="field-row">
         <label>Student Name<input id="name" name="name" required placeholder="e.g. Aryan Sharma"></label>
         <label>Roll Number<input id="roll" name="roll_number" required placeholder="e.g. CSE24017"></label>
