@@ -20,7 +20,7 @@
   <div class="panel-head">
     <div><h2>Student accounts</h2><p>Search by name, roll number, username or Gmail.</p></div>
   </div>
-  <form method="get" class="admin-access-search">
+  <form method="get" class="admin-access-search"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
     <input name="q" value="{{ student_query }}" placeholder="Search student…">
     <button class="secondary-btn" type="submit">Search</button>
     {% if student_query %}<a class="clear-link" href="{{ url_for('admin_access') }}">Clear</a>{% endif %}
@@ -39,10 +39,10 @@
       <div class="admin-access-action">
         {% if s.admin_enabled %}
           <div class="admin-granted"><span class="access-check">✓</span> Admin enabled</div>
-          <form method="post" action="{{ url_for('admin_student_admin_toggle', student_id=s.id) }}"><input type="hidden" name="q" value="{{ student_query }}"><button class="small-btn danger-mini" type="submit">Revoke access</button></form>
+          <form method="post" action="{{ url_for('admin_student_admin_toggle', student_id=s.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="q" value="{{ student_query }}"><button class="small-btn danger-mini" type="submit">Revoke access</button></form>
         {% else %}
           <div class="admin-granted admin-not-granted">Student access only</div>
-          <form method="post" action="{{ url_for('admin_student_admin_toggle', student_id=s.id) }}"><input type="hidden" name="q" value="{{ student_query }}"><button class="small-btn success-mini" type="submit">Grant admin access</button></form>
+          <form method="post" action="{{ url_for('admin_student_admin_toggle', student_id=s.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="q" value="{{ student_query }}"><button class="small-btn success-mini" type="submit">Grant admin access</button></form>
         {% endif %}
       </div>
     </div>
