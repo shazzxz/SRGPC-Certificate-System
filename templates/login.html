@@ -9,14 +9,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{{ url_for('static', filename='typography.css', v='10') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='typography.css', v='16') }}">
 <style>
 .glass-auth .auth-card{max-width:500px;width:100%;box-sizing:border-box}
 .login-mode-note{margin-top:10px;font-size:13px;color:#334155;text-align:center;line-height:1.5}
 </style>
 </head>
 <body class="auth-body glass-auth">
-<div class="auth-shell">
+<a class="skip-link" href="#login-main">Skip to login form</a>
+<main class="auth-shell" id="login-main" tabindex="-1">
   <div class="auth-card">
     <div class="auth-brand">
       <img src="{{ url_for('static', filename='college_logo.png') }}" alt="SRGPC">
@@ -40,8 +41,8 @@
       <input type="hidden" name="role" id="loginRole" value="student">
 
       <div class="role-switch">
-        <button class="role-tab active" type="button" data-role="student">Student Login</button>
-        <button class="role-tab" type="button" data-role="admin">Admin Login</button>
+        <button class="role-tab active" type="button" data-role="student" aria-pressed="true">Student Login</button>
+        <button class="role-tab" type="button" data-role="admin" aria-pressed="false">Admin Login</button>
       </div>
 
       <div id="loginStudentArea">
@@ -78,7 +79,7 @@
       <span>Use the configured administrator username and password.</span>
     </div>
   </div>
-</div>
+</main>
 
 <script>
 (function(){
@@ -96,7 +97,7 @@
   function setRole(next){
     const admin = next === 'admin';
     role.value = next;
-    tabs.forEach(tab => tab.classList.toggle('active', tab.dataset.role === next));
+    tabs.forEach(tab => { const active = tab.dataset.role === next; tab.classList.toggle('active', active); tab.setAttribute('aria-pressed', String(active)); });
     studentArea.style.display = admin ? 'none' : 'block';
     adminArea.style.display = admin ? 'block' : 'none';
 
@@ -118,6 +119,6 @@
   setRole('student');
 })();
 </script>
-<script src="{{ url_for('static', filename='app.js', v='9') }}"></script>
+<script src="{{ url_for('static', filename='app.js', v='10') }}"></script>
 </body>
 </html>
