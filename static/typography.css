@@ -496,3 +496,150 @@ body.glass-ui,body.glass-auth{font-size:16px!important}
   .glass-ui .report-actions{justify-content:flex-start!important;width:100%}
   .glass-ui .report-actions>*{flex:1 1 160px}
 }
+
+/* =========================================================
+   Spacing + alignment repair — request detail and dashboard
+   ========================================================= */
+
+/* Never stretch a short workflow panel to the height of its neighbour. */
+.glass-ui .dashboard-grid{
+  align-items:start!important;
+  margin-bottom:24px!important;
+}
+.glass-ui .dashboard-grid>.panel{
+  align-self:start!important;
+  height:fit-content!important;
+}
+
+/* Request detail fields need breathing room and a consistent vertical rhythm. */
+.glass-ui .detail-grid{
+  gap:0!important;
+}
+.glass-ui .detail-grid>div{
+  min-height:76px!important;
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:center!important;
+  padding:16px 20px!important;
+}
+.glass-ui .detail-grid>div.full{
+  min-height:74px!important;
+}
+
+/* Student dashboard request rows: status, request type and activity stay clearly separated. */
+.glass-ui .workflow-list{
+  padding:0 20px 8px!important;
+}
+.glass-ui .workflow-row{
+  display:grid!important;
+  grid-template-columns:minmax(0,1fr) 155px!important;
+  align-items:center!important;
+  gap:18px!important;
+  min-height:72px!important;
+  padding:16px 0!important;
+  box-sizing:border-box!important;
+}
+.glass-ui .workflow-main{
+  min-width:0!important;
+  display:grid!important;
+  grid-template-columns:auto auto minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:12px!important;
+}
+.glass-ui .workflow-main .status-chip{
+  justify-self:start!important;
+  white-space:nowrap!important;
+}
+.glass-ui .workflow-main strong{
+  min-width:0!important;
+  white-space:nowrap!important;
+  font-size:16px!important;
+  line-height:1.35!important;
+}
+.glass-ui .workflow-main>span:last-child{
+  min-width:0!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+  color:#334155!important;
+  font-size:14px!important;
+}
+.glass-ui .workflow-meta{
+  min-width:0!important;
+  width:auto!important;
+  align-items:flex-end!important;
+  justify-content:center!important;
+  gap:5px!important;
+}
+.glass-ui .workflow-meta small{
+  font-size:12px!important;
+  color:#64748b!important;
+  white-space:nowrap!important;
+}
+.glass-ui .workflow-meta b{
+  font-size:13px!important;
+  white-space:nowrap!important;
+}
+
+/* Give the wallet a deliberate separation from the dashboard row above it. */
+.glass-ui .dashboard-grid + .panel{
+  margin-top:0!important;
+}
+
+/* Keep both halves of the admin request workspace top-aligned. */
+.glass-ui .detail-hero + .dashboard-grid{
+  align-items:start!important;
+}
+.glass-ui .detail-hero + .dashboard-grid>.panel{
+  height:fit-content!important;
+}
+
+/* More intentional panel spacing on request/certificate pages. */
+.glass-ui .panel+.panel{
+  margin-top:0;
+}
+
+@media(max-width:760px){
+  .glass-ui .workflow-row{
+    grid-template-columns:1fr!important;
+    gap:9px!important;
+    align-items:flex-start!important;
+  }
+  .glass-ui .workflow-main{
+    grid-template-columns:auto 1fr!important;
+    gap:8px 10px!important;
+  }
+  .glass-ui .workflow-main .status-chip{
+    grid-row:auto;
+  }
+  .glass-ui .workflow-main strong{
+    white-space:normal!important;
+  }
+  .glass-ui .workflow-main>span:last-child{
+    grid-column:1/-1!important;
+    white-space:normal!important;
+  }
+  .glass-ui .workflow-meta{
+    width:100%!important;
+    flex-direction:row!important;
+    justify-content:space-between!important;
+    align-items:center!important;
+  }
+  .glass-ui .dashboard-grid{
+    margin-bottom:20px!important;
+  }
+}
+
+@media(max-width:560px){
+  .glass-ui .workflow-list{
+    padding-left:14px!important;
+    padding-right:14px!important;
+  }
+  .glass-ui .workflow-main strong{
+    font-size:15px!important;
+  }
+  .glass-ui .workflow-main>span:last-child{
+    font-size:13px!important;
+  }
+}
