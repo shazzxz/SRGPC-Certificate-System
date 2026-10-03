@@ -1,62 +1,126 @@
 <!doctype html>
-<html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SRGPC Certificate Portal</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='7') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='glass.css', v='4') }}">
-
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='typography.css', v='5') }}">
 <style>
-.auth-theme-toggle{position:fixed;top:18px;right:18px;z-index:5}
 .glass-auth .auth-card{max-width:500px;width:100%;box-sizing:border-box}
-
-
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="{{ url_for('static', filename='typography.css', v='5') }}"></head>
+.login-mode-note{margin-top:10px;font-size:13px;color:#334155;text-align:center;line-height:1.5}
+</style>
+</head>
 <body class="auth-body glass-auth">
-
 <div class="auth-shell">
-<div class="auth-card">
-<div class="auth-brand"><img src="{{ url_for('static', filename='college_logo.png') }}" alt="SRGPC"><div><b>SRGPC</b><span>Certificate Portal</span></div></div>
-<div class="auth-title"><span>WELCOME</span><h1>Login to your portal</h1><p>Choose how you want to access the SRGPC system.</p></div>
-{% with messages=get_flashed_messages(with_categories=true) %}{% for category,message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}{% endwith %}
-<form method="post" action="{{ url_for('do_login') }}" class="auth-form" id="loginForm">
-<input type="hidden" name="role" id="loginRole" value="student">
-<div class="role-switch"><button class="role-tab active" type="button" data-role="student">Student Login</button><button class="role-tab" type="button" data-role="admin">Admin Login</button></div>
-<div id="loginStudentArea">
-<label>Username<input name="username" id="loginUsername" required placeholder="Enter username"></label>
-<label>Password<input name="password" id="loginPassword" type="password" required placeholder="Enter password"></label>
-<button class="primary-btn" id="loginSubmit" type="submit">Login →</button>
-<a href="{{ url_for('google_login') }}" id="googleSignIn" class="primary-btn" style="display:flex;align-items:center;justify-content:center;text-decoration:none;margin-top:10px;background:#fff;color:#172033;border:1px solid #d6dbe4">Continue with Google</a>
-<div class="login-mode-note">New students can create their account through Google Sign-In.</div>
+  <div class="auth-card">
+    <div class="auth-brand">
+      <img src="{{ url_for('static', filename='college_logo.png') }}" alt="SRGPC">
+      <div><b>SRGPC</b><span>Certificate Portal</span></div>
+    </div>
+
+    <div class="auth-title">
+      <span>WELCOME</span>
+      <h1>Login to your portal</h1>
+      <p>Choose how you want to access the SRGPC system.</p>
+    </div>
+
+    {% with messages=get_flashed_messages(with_categories=true) %}
+      {% for category,message in messages %}
+        <div class="flash {{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <form method="post" action="{{ url_for('do_login') }}" class="auth-form" id="loginForm">
+      <input type="hidden" name="role" id="loginRole" value="student">
+
+      <div class="role-switch">
+        <button class="role-tab active" type="button" data-role="student">Student Login</button>
+        <button class="role-tab" type="button" data-role="admin">Admin Login</button>
+      </div>
+
+      <div id="loginStudentArea">
+        <label>
+          Username
+          <input name="username" id="loginUsername" required placeholder="Enter username">
+        </label>
+        <label>
+          Password
+          <input name="password" id="loginPassword" type="password" required placeholder="Enter password">
+        </label>
+        <button class="primary-btn" id="loginSubmit" type="submit">Login →</button>
+        <a href="{{ url_for('google_login') }}" id="googleSignIn" class="primary-btn" style="display:flex;align-items:center;justify-content:center;text-decoration:none;margin-top:10px;background:#fff;color:#172033;border:1px solid #d6dbe4">
+          Continue with Google
+        </a>
+        <div class="login-mode-note">New students can create their account through Google Sign-In.</div>
+      </div>
+
+      <div id="loginAdminArea" style="display:none">
+        <label>
+          Admin username
+          <input name="username" id="adminUsername" placeholder="Admin username">
+        </label>
+        <label>
+          Admin password
+          <input name="password" id="adminPassword" type="password" placeholder="Admin password">
+        </label>
+        <button class="primary-btn" id="adminLoginSubmit" type="submit">Login as Admin →</button>
+        <div class="login-mode-note">Use your configured administrator username and password.</div>
+      </div>
+    </form>
+
+    <div class="register-link" id="studentRegister">
+      New students can create their account with the Google button above.
+    </div>
+    <div class="admin-note" id="adminHint" style="display:none">
+      <b>Admin access</b>
+      <span>Use the configured administrator username and password.</span>
+    </div>
+  </div>
 </div>
-<div id="loginAdminArea" style="display:none">
-<label>Admin username<input name="username" id="adminUsername" placeholder="Admin username"></label>
-<label>Admin password<input name="password" id="adminPassword" type="password" placeholder="Admin password"></label>
-<button class="primary-btn" id="adminLoginSubmit" type="submit">Login as Admin →</button>
-<div class="login-mode-note">Use your configured administrator username and password.</div>
-</div>
-</form>
-<div class="register-link" id="studentRegister">New students can create their account with the Google button above.</div>
-<div class="admin-note" id="adminHint" style="display:none"><b>Admin access</b><span>Use the configured master/staff password or your granted Google admin access.</span></div>
-</div></div>
+
 <script>
 (function(){
- const role=document.getElementById('loginRole');
- const tabs=[...document.querySelectorAll('.role-tab')];
- const studentArea=document.getElementById('loginStudentArea'), adminArea=document.getElementById('loginAdminArea');
- const su=document.getElementById('loginUsername'),sp=document.getElementById('loginPassword');
- const au=document.getElementById('adminUsername'),ap=document.getElementById('adminPassword');
- const reg=document.getElementById('studentRegister'),hint=document.getElementById('adminHint');
- function setRole(next){
-   const admin=next==='admin'; role.value=next;
-   tabs.forEach(t=>t.classList.toggle('active',t.dataset.role===next));
-   studentArea.style.display=admin?'none':'block'; adminArea.style.display=admin?'block':'none';
-   su.disabled=admin; sp.disabled=admin; su.required=!admin; sp.required=!admin;
-   au.disabled=!admin; ap.disabled=!admin; au.required=admin; ap.required=admin;
-   reg.style.display=admin?'none':'block'; hint.style.display=admin?'flex':'none';
- }
- tabs.forEach(t=>t.addEventListener('click',()=>setRole(t.dataset.role)));
- setRole('student');
+  const role = document.getElementById('loginRole');
+  const tabs = [...document.querySelectorAll('.role-tab')];
+  const studentArea = document.getElementById('loginStudentArea');
+  const adminArea = document.getElementById('loginAdminArea');
+  const studentUser = document.getElementById('loginUsername');
+  const studentPass = document.getElementById('loginPassword');
+  const adminUser = document.getElementById('adminUsername');
+  const adminPass = document.getElementById('adminPassword');
+  const registerNote = document.getElementById('studentRegister');
+  const adminHint = document.getElementById('adminHint');
+
+  function setRole(next){
+    const admin = next === 'admin';
+    role.value = next;
+    tabs.forEach(tab => tab.classList.toggle('active', tab.dataset.role === next));
+    studentArea.style.display = admin ? 'none' : 'block';
+    adminArea.style.display = admin ? 'block' : 'none';
+
+    studentUser.disabled = admin;
+    studentPass.disabled = admin;
+    studentUser.required = !admin;
+    studentPass.required = !admin;
+
+    adminUser.disabled = !admin;
+    adminPass.disabled = !admin;
+    adminUser.required = admin;
+    adminPass.required = admin;
+
+    registerNote.style.display = admin ? 'none' : 'block';
+    adminHint.style.display = admin ? 'flex' : 'none';
+  }
+
+  tabs.forEach(tab => tab.addEventListener('click', () => setRole(tab.dataset.role)));
+  setRole('student');
 })();
 </script>
 <script src="{{ url_for('static', filename='app.js', v='8') }}"></script>
-</body></html>
+</body>
+</html>
