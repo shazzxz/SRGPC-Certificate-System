@@ -127,7 +127,7 @@
       .verify-field.full{grid-column:auto}
     }
   </style>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="{{ url_for('static', filename='typography.css', v='6') }}"></head>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="{{ url_for('static', filename='typography.css', v='7') }}"></head>
 <body class="public-verify">
   <main class="verify-shell">
     <div class="verify-brand">
@@ -175,13 +175,13 @@
                 <div class="verify-field"><span>Academic Year</span><b>{{ certificate.academic_year }}</b></div>
                 <div class="verify-field"><span>Activity</span><b>{{ certificate.activity }}</b></div>
                 <div class="verify-field"><span>Achievement</span><b>{{ certificate.position }}</b></div>
-                <div class="verify-field full"><span>Issued</span><b>{{ certificate.created_at }}</b></div>
+                <div class="verify-field"><span>Issued</span><b>{{ certificate.created_at }}</b></div><div class="verify-field"><span>Issued By</span><b>{{ certificate.created_by }}</b></div>
               </div>
 
               {% if certificate.revoke_reason %}
                 <div class="verify-note"><b>Record note:</b> {{ certificate.revoke_reason }}</div>
               {% endif %}
-              <div class="verify-note"><b>Authenticity:</b> This page validates the certificate record stored by SRGPC. The certificate PDF contains a QR code that points back to this verification page.</div>
+              <div class="verify-note"><b>Authenticity:</b> This page validates the certificate record stored by SRGPC. The PDF includes a QR verification route that points back to this record. {% if certificate.pdf_sha256 %}An integrity checksum is stored with the certificate record.{% endif %}</div>
             </div>
           {% else %}
             <div class="verify-content">
