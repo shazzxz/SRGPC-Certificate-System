@@ -127,8 +127,8 @@ def apply_security_headers(response):
     if request.endpoint != "healthz":
         duration_ms = round((time.perf_counter() - getattr(g, "request_started", time.perf_counter())) * 1000, 2)
         app.logger.info(
-            "request_complete",
-            extra={"request_id": getattr(g, "request_id", ""), "duration_ms": duration_ms},
+            f"request_complete method={request.method} path={request.path} status={response.status_code} duration_ms={duration_ms}",
+            extra={"request_id": getattr(g, "request_id", "")},
         )
     return response
 
