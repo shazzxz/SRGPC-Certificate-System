@@ -281,3 +281,34 @@ body.glass-ui.dark-mode{
 .theme-toggle:hover{transform:translateY(-1px);background:rgba(255,255,255,.88)}
 .theme-toggle .theme-icon{font-size:15px;line-height:1}
 
+
+
+/* Mobile glass layout fix: the base stylesheet makes the sidebar responsive,
+   so the glass layer must override its fixed desktop width too. */
+@media(max-width:820px){
+  .glass-ui .app-shell{display:block}
+  .glass-ui .sidebar{
+    position:relative;
+    top:auto;
+    width:100%;
+    flex-basis:auto;
+    height:auto;
+    min-height:0;
+    padding:14px;
+  }
+  .glass-ui .main{
+    width:100%;
+    min-width:0;
+    padding:18px 13px 30px;
+  }
+}
+@media(max-width:620px){
+  .glass-ui .sidebar{padding:12px}
+  .glass-ui .brand{padding:2px 7px 15px}
+  .glass-ui .profile{margin-bottom:12px}
+  .glass-ui .nav-stack{grid-template-columns:1fr}
+  .glass-ui .sidebar-bottom{display:block;margin-top:14px}
+  .glass-ui .logout{margin-top:9px}
+  .glass-ui .topbar{display:block}
+  .glass-ui .topbar-actions{margin-top:12px;justify-content:flex-start}
+}
