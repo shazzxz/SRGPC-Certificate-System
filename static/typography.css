@@ -107,3 +107,37 @@ h1,h2,h3,h4,h5,h6,b,strong{font-family:var(--ui-font)!important;font-weight:600!
   .glass-auth .auth-title h1{font-size:30px}
   .glass-auth .auth-title p{font-size:15px}
 }
+/* Admin Access page */
+.glass-ui .admin-access-hero{display:flex;justify-content:space-between;align-items:center;gap:24px;padding:24px 26px;margin-bottom:18px;background:linear-gradient(135deg,rgba(37,99,235,.08),rgba(124,58,237,.08));border:1px solid #dbe4ef;border-radius:16px}
+.glass-ui .admin-access-hero h2{margin:6px 0 7px;font-size:24px;font-weight:600!important}
+.glass-ui .admin-access-hero p{margin:0;max-width:760px;color:#64748b;font-size:14px;line-height:1.55}
+.glass-ui .admin-access-state{display:flex;align-items:center;gap:10px;min-width:190px;padding:12px 14px;background:#fff;border:1px solid #e1e8f0;border-radius:12px}
+.glass-ui .access-state-dot{width:10px;height:10px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 5px rgba(34,197,94,.10)}
+.glass-ui .admin-access-state b,.glass-ui .admin-access-state small{display:block}.glass-ui .admin-access-state b{font-size:14px;font-weight:600!important}.glass-ui .admin-access-state small{margin-top:2px;color:#64748b;font-size:12px}
+.glass-ui .admin-access-search{display:flex;gap:10px;padding:18px 21px;border-bottom:1px solid #e8edf3}
+.glass-ui .admin-access-search input{margin:0;flex:1}
+.glass-ui .admin-access-search .secondary-btn{width:auto;display:inline-flex;justify-content:center;align-items:center}
+.glass-ui .admin-access-list{padding:0 21px 18px}
+.glass-ui .admin-access-row{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:15px 0;border-bottom:1px solid #edf1f5}
+.glass-ui .admin-access-row:last-child{border-bottom:0}
+.glass-ui .admin-access-student{display:flex;align-items:center;gap:12px;min-width:0}
+.glass-ui .admin-access-avatar{width:42px;height:42px;flex:0 0 42px;border-radius:12px;display:grid;place-items:center;background:linear-gradient(135deg,#dbeafe,#ede9fe);color:#3730a3;font-size:16px;font-weight:600}
+.glass-ui .admin-access-student strong,.glass-ui .admin-access-student span{display:block}.glass-ui .admin-access-student strong{font-size:15px;font-weight:600!important}.glass-ui .admin-access-student span{margin-top:3px;color:#64748b;font-size:13px}
+.glass-ui .admin-access-action{display:flex;align-items:center;justify-content:flex-end;gap:10px;min-width:250px}
+.glass-ui .admin-granted{display:flex;align-items:center;gap:7px;color:#15803d;font-size:13px;font-weight:500}.glass-ui .admin-not-granted{color:#64748b}
+.glass-ui .access-check{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:#dcfce7;color:#15803d;font-size:13px;font-weight:600}
+.glass-ui .admin-access-action .small-btn{padding:9px 12px;font-size:13px;white-space:nowrap}
+html.dark-mode .glass-ui .admin-access-hero{background:linear-gradient(135deg,rgba(34,211,238,.08),rgba(139,92,246,.10));border-color:rgba(148,163,184,.16)}
+html.dark-mode .glass-ui .admin-access-hero p{color:#91a4bd}
+html.dark-mode .glass-ui .admin-access-state{background:rgba(15,23,42,.70);border-color:rgba(148,163,184,.15)}
+html.dark-mode .glass-ui .admin-access-state b{color:#eef6ff}
+html.dark-mode .glass-ui .admin-access-state small{color:#91a4bd}
+html.dark-mode .glass-ui .admin-access-search{border-color:rgba(148,163,184,.10)}
+html.dark-mode .glass-ui .admin-access-row{border-color:rgba(148,163,184,.10)}
+html.dark-mode .glass-ui .admin-access-student strong{color:#eef6ff}
+html.dark-mode .glass-ui .admin-access-student span{color:#91a4bd}
+html.dark-mode .glass-ui .admin-access-avatar{background:linear-gradient(135deg,rgba(34,211,238,.14),rgba(124,58,237,.18));color:#67e8f9}
+html.dark-mode .glass-ui .admin-granted{color:#86efac}
+html.dark-mode .glass-ui .admin-not-granted{color:#91a4bd}
+@media(max-width:800px){.glass-ui .admin-access-hero{align-items:flex-start;flex-direction:column}.glass-ui .admin-access-state{width:100%;box-sizing:border-box}.glass-ui .admin-access-row{align-items:flex-start;flex-direction:column}.glass-ui .admin-access-action{width:100%;justify-content:space-between;min-width:0}}
+@media(max-width:560px){.glass-ui .admin-access-search{flex-wrap:wrap}.glass-ui .admin-access-search input{flex-basis:100%}.glass-ui .admin-access-search .secondary-btn,.glass-ui .admin-access-search .clear-link{flex:1;justify-content:center}.glass-ui .admin-access-action{align-items:stretch;flex-direction:column}.glass-ui .admin-access-action form,.glass-ui .admin-access-action .small-btn{width:100%}}
