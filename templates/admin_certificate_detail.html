@@ -11,7 +11,7 @@
   <div class="panel-head"><div><h2>Certificate details</h2><p>Stored record used to regenerate and verify the PDF.</p></div></div>
   <div class="detail-grid">
     <div><span>Student</span><b>{{ certificate.name }}</b></div><div><span>Roll Number</span><b>{{ certificate.roll_number }}</b></div>
-    <div><span>Certificate Type</span><b>{{ certificate.certificate_type }}</b></div><div><span>Academic Year</span><b>{{ certificate.academic_year }}</b></div>
+    <div><span>Certificate Type</span><b>{{ certificate.certificate_type }}</b></div><div><span>Department</span><b>{{ certificate.department or '—' }}</b></div><div><span>Programme</span><b>{{ certificate.programme or '—' }}</b></div><div><span>Semester</span><b>{{ certificate.semester or '—' }}</b></div><div><span>Academic Year</span><b>{{ certificate.academic_year }}</b></div>
     <div class="full"><span>Activity</span><b>{{ certificate.activity }}</b></div><div class="full"><span>Achievement</span><b>{{ certificate.position }}</b></div>
     <div><span>Issued By</span><b>{{ certificate.created_by }}</b></div><div><span>Issued At</span><b>{{ certificate.created_at }}</b></div>
     <div class="full"><span>Certificate ID</span><b><code>{{ certificate.certificate_id }}</code></b></div>
