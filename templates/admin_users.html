@@ -9,7 +9,7 @@
   <form method="post" action="{{ url_for('admin_users_create') }}">
     <label>Username<input name="username" required placeholder="e.g. verifier01"></label>
     <label>Password<input type="password" name="password" required minlength="6"></label>
-    <label>Role<select name="role"><option value="manager">Manager</option><option value="verifier">Verifier</option></select></label>
+    <label>Role<select name="role"><option value="" selected disabled>Choose role…</option><option value="manager">Manager</option><option value="verifier">Verifier</option></select></label>
     <button class="primary-btn" type="submit">Create Staff Account →</button>
   </form>
 </section>
