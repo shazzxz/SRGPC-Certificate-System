@@ -36,11 +36,10 @@ html.dark-mode .login-mode-note{color:#91a4bd}
 <label>Admin username<input name="username" id="adminUsername" placeholder="Admin username"></label>
 <label>Admin password<input name="password" id="adminPassword" type="password" placeholder="Admin password"></label>
 <button class="primary-btn" id="adminLoginSubmit" type="submit">Login as Admin →</button>
-<a href="{{ url_for('google_admin_login') }}" id="googleAdminSignIn" class="login-google-admin primary-btn"><span class="google-mark">G</span> Continue with Google</a>
-<div class="login-mode-note">Google Admin Login works only for students granted admin access by the superadmin.</div>
+<div class="login-mode-note">Use your configured administrator username and password.</div>
 </div>
 </form>
-<div class="register-link" id="studentRegister"><span>New student?</span> <a href="{{ url_for('register') }}">Continue with Google</a></div>
+<div class="register-link" id="studentRegister">New students can create their account with the Google button above.</div>
 <div class="admin-note" id="adminHint" style="display:none"><b>Admin access</b><span>Use the configured master/staff password or your granted Google admin access.</span></div>
 </div></div>
 <script>
