@@ -348,29 +348,6 @@ def init_db():
             db.execute("INSERT INTO settings(key,value) VALUES(?,?) ON CONFLICT(key) DO NOTHING", (key, value))
         db.commit()
 
-        if os.environ.get("SRGPC_TEST_RESET_ON_STARTUP", "").strip() == "1":
-            print("SRGPC: performing requested test-data reset")
-            for table in (
-                "notifications",
-                "email_verifications",
-                "certificate_requests",
-                "certificates",
-                "students",
-                "audit_logs",
-            ):
-                db.execute(f"DELETE FROM {table}")
-            db.commit()
-            for folder in (GENERATED_DIR, UPLOAD_DIR):
-                folder.mkdir(parents=True, exist_ok=True)
-                for item in folder.iterdir():
-                    try:
-                        if item.is_dir():
-                            shutil.rmtree(item)
-                        else:
-                            item.unlink(missing_ok=True)
-                    except OSError:
-                        pass
-            print("SRGPC: test-data reset complete")
 
 
 # Initialize the database when the app is imported by Gunicorn/Render.
