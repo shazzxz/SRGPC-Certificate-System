@@ -141,6 +141,11 @@ def rate_limit_error(error):
     }), 429
 
 
+@app.errorhandler(404)
+def not_found(error):
+    return render_template("404.html"), 404
+
+
 @app.errorhandler(500)
 def server_error(error):
     app.logger.exception("Unhandled application error", extra={"request_id": getattr(g, "request_id", "")})
