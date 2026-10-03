@@ -92,6 +92,17 @@ def require_role(role):
                 if request.method == "GET":
                     return redirect(url_for("login"))
                 abort(403)
+            if role == "admin" and session.get("admin_source_student_id"):
+                with get_db() as db:
+                    source = db.execute(
+                        "SELECT admin_enabled, admin_role FROM students WHERE id=?",
+                        (session["admin_source_student_id"],),
+                    ).fetchone()
+                if not source or not source["admin_enabled"]:
+                    session.clear()
+                    flash("Your student admin access has been revoked.", "error")
+                    return redirect(url_for("login"))
+                session["admin_role"] = source["admin_role"] or "manager"
             return view(*args, **kwargs)
         return wrapped
     return decorator
@@ -198,7 +209,9 @@ def init_db():
                 name TEXT NOT NULL,
                 created_at TEXT NOT NULL,
                 email_verified INTEGER NOT NULL DEFAULT 1,
-                google_sub TEXT UNIQUE{case_unique}
+                google_sub TEXT UNIQUE{case_unique},
+                admin_enabled INTEGER NOT NULL DEFAULT 0,
+                admin_role TEXT NOT NULL DEFAULT ''
             )""",
             f"""CREATE TABLE IF NOT EXISTS certificates (
                 id {id_pk},
@@ -314,6 +327,12 @@ def init_db():
             db.execute("ALTER TABLE students ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 1")
         if "google_sub" not in stu_cols:
             db.execute("ALTER TABLE students ADD COLUMN google_sub TEXT UNIQUE")
+        if "admin_enabled" not in stu_cols:
+            db.execute("ALTER TABLE students ADD COLUMN admin_enabled INTEGER NOT NULL DEFAULT 0")
+        if "admin_role" not in stu_cols:
+            db.execute("ALTER TABLE students ADD COLUMN admin_role TEXT NOT NULL DEFAULT ''")
+        # Remove the legacy manager account requested by the administrator.
+        db.execute("DELETE FROM admin_users WHERE LOWER(username)=LOWER('MRGARG')")
 
         defaults = {
             "default_template": "classic",
@@ -604,6 +623,13 @@ def login():
 
 @app.get("/auth/google")
 def google_login():
+    session["google_login_mode"] = "student"
+    return google_signin_or_register()
+
+
+@app.get("/auth/google/admin")
+def google_admin_login():
+    session["google_login_mode"] = "admin"
     return google_signin_or_register()
 
 
@@ -647,16 +673,35 @@ def google_callback():
             (google_sub, gmail),
         ).fetchone()
 
+    login_mode = session.pop("google_login_mode", "student")
     if student:
         if not student["google_sub"]:
             with get_db() as db:
                 db.execute("UPDATE students SET google_sub=?, email_verified=1 WHERE id=?", (google_sub, student["id"]))
                 db.commit()
+            with get_db() as db:
+                student = db.execute("SELECT * FROM students WHERE id=?", (student["id"],)).fetchone()
+        if login_mode == "admin":
+            if not student["admin_enabled"]:
+                flash("This student account does not have admin access. Ask the superadmin to grant it first.", "error")
+                return redirect(url_for("login"))
+            session.clear()
+            session["role"] = "admin"
+            session["username"] = student["username"]
+            session["admin_role"] = student["admin_role"] or "manager"
+            session["admin_id"] = None
+            session["admin_source_student_id"] = student["id"]
+            audit("Admin Google login", "admin", student["username"], f"Student admin role: {session['admin_role']}")
+            return redirect(url_for("admin_dashboard"))
         session.clear()
         session["role"] = "student"
         session["student_id"] = student["id"]
         session["username"] = student["username"]
         return redirect(url_for("student_dashboard"))
+
+    if login_mode == "admin":
+        flash("That Google account is not registered as an SRGPC student yet. Sign in as a student first, then ask the superadmin to grant admin access.", "error")
+        return redirect(url_for("login"))
 
     session["pending_google"] = {"sub": google_sub, "gmail": gmail, "name": name}
     return redirect(url_for("register_google"))
@@ -1408,6 +1453,31 @@ def admin_users_toggle(user_id):
     if session.get("admin_role") != "superadmin": flash("Only the master admin can change staff accounts.","error"); return redirect(url_for("admin_users"))
     with get_db() as db: db.execute("UPDATE admin_users SET active=CASE active WHEN 1 THEN 0 ELSE 1 END WHERE id=?",(user_id,)); db.commit()
     audit("Toggle staff account","admin",user_id)
+    return redirect(url_for("admin_users"))
+
+
+@app.post("/admin/student-admin/<int:student_id>/toggle")
+@admin_permission("dashboard")
+def admin_student_admin_toggle(student_id):
+    if session.get("admin_role") != "superadmin":
+        flash("Only the superadmin can grant or revoke student admin access.", "error")
+        return redirect(url_for("admin_users"))
+    role = clean(request.form.get("admin_role"), 20)
+    if role not in {"manager", "verifier"}:
+        role = "manager"
+    with get_db() as db:
+        student = db.execute("SELECT id,username,name,admin_enabled,admin_role FROM students WHERE id=?", (student_id,)).fetchone()
+        if not student:
+            abort(404)
+        new_enabled = 0 if student["admin_enabled"] else 1
+        new_role = role if new_enabled else ""
+        db.execute("UPDATE students SET admin_enabled=?,admin_role=? WHERE id=?", (new_enabled,new_role,student_id))
+        db.commit()
+    audit("Student admin access changed", "student", student_id, f"enabled={new_enabled}; role={new_role or 'none'}")
+    flash(
+        f"Admin access {'granted' if new_enabled else 'revoked'} for {student['name'] or student['username']}.",
+        "success",
+    )
     return redirect(url_for("admin_users"))
 
 
