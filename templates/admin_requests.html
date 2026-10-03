@@ -14,7 +14,7 @@
   <div class="filter-tabs">
     {% for s in ['All','Pending','Under Review','Generated','Rejected'] %}<a href="{{ url_for('admin_requests',status=s,q=query,department=department,programme=programme,semester=semester,from_date=from_date,to_date=to_date) }}" class="filter-tab {% if status==s %}active{% endif %}">{{ s }}</a>{% endfor %}
   </div>
-  <form class="search-bar academic-filter-bar" method="get">
+  <form class="search-bar academic-filter-bar" method="get"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="status" value="{{ status }}">
     <input name="q" value="{{ query }}" placeholder="Search student, roll, activity or request type">
     <select name="department"><option value="">Department</option>{% for item in departments %}<option value="{{ item }}" {% if department==item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select>
@@ -42,11 +42,11 @@
       <div class="request-actions">
         <a class="secondary-btn inline-btn" href="{{ url_for('admin_request_detail',request_id=r.id) }}">Open request</a>
         {% if r.status=='Pending' %}
-        <form method="post" action="{{ url_for('admin_request_review',request_id=r.id) }}"><button class="secondary-btn inline-btn" type="submit">Start review</button></form>
+        <form method="post" action="{{ url_for('admin_request_review',request_id=r.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="secondary-btn inline-btn" type="submit">Start review</button></form>
         {% endif %}
         {% if r.status in ['Pending','Under Review'] %}
-        <form method="post" action="{{ url_for('admin_request_generate',request_id=r.id) }}"><select name="template"><option value="{{ default_template }}">Default template</option>{% for key,tpl in templates.items() %}<option value="{{ key }}">{{ tpl.name }}</option>{% endfor %}</select><select name="font_family"><option value="{{ default_font }}">Default font</option><option value="Helvetica">Helvetica</option><option value="Times">Times</option><option value="Courier">Courier</option></select><button class="primary-btn inline-btn" type="submit">Generate</button></form>
-        <form method="post" action="{{ url_for('admin_request_reject',request_id=r.id) }}"><input name="admin_note" placeholder="Reason (optional)"><button class="secondary-btn danger-btn inline-btn" type="submit">Reject</button></form>
+        <form method="post" action="{{ url_for('admin_request_generate',request_id=r.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><select name="template"><option value="{{ default_template }}">Default template</option>{% for key,tpl in templates.items() %}<option value="{{ key }}">{{ tpl.name }}</option>{% endfor %}</select><select name="font_family"><option value="{{ default_font }}">Default font</option><option value="Helvetica">Helvetica</option><option value="Times">Times</option><option value="Courier">Courier</option></select><button class="primary-btn inline-btn" type="submit">Generate</button></form>
+        <form method="post" action="{{ url_for('admin_request_reject',request_id=r.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input name="admin_note" placeholder="Reason (optional)"><button class="secondary-btn danger-btn inline-btn" type="submit">Reject</button></form>
         {% elif r.certificate_id %}
         <a class="primary-btn inline-btn" href="{{ url_for('admin_certificate_detail',certificate_id=r.certificate_id) }}">Open certificate</a>
         {% endif %}
