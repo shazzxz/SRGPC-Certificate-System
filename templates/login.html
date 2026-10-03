@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;650;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{{ url_for('static', filename='typography.css', v='7') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='typography.css', v='10') }}">
 <style>
 .glass-auth .auth-card{max-width:500px;width:100%;box-sizing:border-box}
 .login-mode-note{margin-top:10px;font-size:13px;color:#334155;text-align:center;line-height:1.5}
@@ -35,7 +35,8 @@
       {% endfor %}
     {% endwith %}
 
-    <form method="post"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"> action="{{ url_for('do_login') }}" class="auth-form" id="loginForm">
+    <form method="post" action="{{ url_for('do_login') }}" class="auth-form" id="loginForm">
+<input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="role" id="loginRole" value="student">
 
       <div class="role-switch">
@@ -117,6 +118,6 @@
   setRole('student');
 })();
 </script>
-<script src="{{ url_for('static', filename='app.js', v='8') }}"></script>
+<script src="{{ url_for('static', filename='app.js', v='9') }}"></script>
 </body>
 </html>
