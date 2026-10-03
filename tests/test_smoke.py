@@ -67,3 +67,20 @@ def test_security_headers(app):
     assert response.headers["X-Frame-Options"] == "DENY"
     assert "Content-Security-Policy" in response.headers
     assert "X-Request-ID" in response.headers
+
+def test_login_has_accessibility_and_branding_markers(app):
+    _, client = app
+    response = client.get("/")
+    html = response.get_data(as_text=True)
+    assert 'Skip to main content' in html
+    assert 'Certificate Management System' in html
+    assert 'college_logo.png' in html
+    assert 'aria-label="Portal navigation"' in html
+
+
+def test_custom_404_state(app):
+    _, client = app
+    response = client.get("/this-page-does-not-exist")
+    assert response.status_code == 404
+    html = response.get_data(as_text=True)
+    assert "This page isn't available" in html
