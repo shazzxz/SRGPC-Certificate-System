@@ -350,3 +350,83 @@ body.glass-ui{
   .glass-ui th{font-size:10px}
   .glass-ui input,.glass-ui select,.glass-ui textarea{font-size:16px}
 }
+
+
+/* Site-wide readability pass — balanced sizes so denser admin pages still fit. */
+.glass-ui .profile strong{font-size:14px}
+.glass-ui .profile span{font-size:11px}
+.glass-ui .system-card b{font-size:12px}
+.glass-ui .system-card small{font-size:10px}
+.glass-ui .logout{font-size:14px}
+.glass-ui .nav-count{font-size:11px}
+.glass-ui .ghost-btn,.glass-ui .small-btn{font-size:13px}
+.glass-ui label{font-size:12px}
+.glass-ui .pill,.glass-ui .count-pill,.glass-ui .preview-badge{font-size:11px}
+.glass-ui .subhead{font-size:12px}
+.glass-ui .bar-row{font-size:12px}
+.glass-ui .metric-big{font-size:30px}
+.glass-ui td small{font-size:10px}
+.glass-ui .action-cell{font-size:13px}
+.glass-ui .inline-form input{font-size:13px}
+.glass-ui .csv-example{font-size:12px}
+.glass-ui .csv-column-card b{font-size:11px}
+.glass-ui .csv-column-card span{font-size:10px}
+.glass-ui .settings-choice-copy b{font-size:12px}
+.glass-ui .settings-choice-copy small{font-size:10px}
+.glass-ui .settings-hint{font-size:10px}
+.glass-ui .template-card-top h3{font-size:15px}
+.glass-ui .template-kicker{font-size:10px}
+.glass-ui .redesigned-template-grid .studio-template>p{font-size:11px}
+.glass-ui .template-card-meta{font-size:10px}
+.glass-ui .preview-live-status{font-size:11px}
+.glass-ui .qr-note{font-size:11px}
+.glass-ui .notification{font-size:14px}
+.glass-ui .notification small{font-size:11px}
+
+/* Registration is also brought onto the same readable scale. */
+body.auth-body.glass-auth{font-size:16px}
+.glass-auth .auth-brand span{font-size:13px}
+.glass-auth .auth-title span{font-size:11px}
+.glass-auth .auth-title p{font-size:14px}
+.glass-auth .auth-form label{font-size:13px}
+.glass-auth .register-link{font-size:13px}
+.glass-auth .admin-note span{font-size:12px}
+
+/* Public verification page: larger text without making the card unnecessarily tall. */
+body.public-verify{font-size:16px}
+.public-verify .verify-brand-copy b{font-size:20px}
+.public-verify .verify-brand-copy span{font-size:11px}
+.public-verify .verify-kicker{font-size:11px}
+.public-verify .verify-hero p{font-size:14px}
+.public-verify .verify-search input{font-size:14px!important}
+.public-verify .verify-search button{font-size:14px}
+.public-verify .verify-status-copy b{font-size:17px}
+.public-verify .verify-status-copy span{font-size:12px}
+.public-verify .verify-status-badge{font-size:10px}
+.public-verify .verify-intro h2{font-size:20px}
+.public-verify .verify-intro p{font-size:12px}
+.public-verify .verify-field span{font-size:10px}
+.public-verify .verify-field b{font-size:13px}
+.public-verify .verify-note{font-size:11px}
+.public-verify .verify-empty h2{font-size:20px}
+.public-verify .verify-empty p{font-size:12px}
+.public-verify .verify-footer{font-size:10px}
+
+@media(max-width:820px){
+  .glass-ui .topbar h1{font-size:27px}
+  .glass-ui .panel-head h2{font-size:16px}
+  .glass-ui td{font-size:13px}
+}
+@media(max-width:620px){
+  .glass-ui .main{padding:18px 13px 30px}
+  .glass-ui .topbar h1{font-size:25px}
+  .glass-ui .nav-item{font-size:15px}
+  .glass-ui .panel-head h2{font-size:16px}
+  .glass-ui .panel-head p{font-size:11px}
+  .glass-ui label{font-size:12px}
+  .glass-ui td{font-size:13px}
+  .glass-ui .action-cell{font-size:13px}
+  .public-verify .verify-hero h1{font-size:30px}
+  .public-verify .verify-field b{font-size:13px}
+  .public-verify .verify-search input{font-size:16px!important}
+}
