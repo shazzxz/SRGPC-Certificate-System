@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1"><meta name="csrf-token" content="{{ csrf_token() }}">
 <title>SRGPC Certificate Portal</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css', v='8') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='glass.css', v='5') }}">
@@ -35,7 +35,7 @@
       {% endfor %}
     {% endwith %}
 
-    <form method="post" action="{{ url_for('do_login') }}" class="auth-form" id="loginForm">
+    <form method="post"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"> action="{{ url_for('do_login') }}" class="auth-form" id="loginForm">
       <input type="hidden" name="role" id="loginRole" value="student">
 
       <div class="role-switch">
