@@ -75,7 +75,8 @@ def test_login_has_accessibility_and_branding_markers(app):
     assert 'Skip to main content' in html
     assert 'Certificate Management System' in html
     assert 'college_logo.png' in html
-    assert 'aria-label="Portal navigation"' in html
+    assert 'id="login-main"' in html
+    assert 'aria-pressed="true"' in html
 
 
 def test_custom_404_state(app):
