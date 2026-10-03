@@ -1241,7 +1241,7 @@ def admin_dashboard():
                ORDER BY r.id DESC LIMIT 8"""
         ).fetchall()
         audit_rows = db.execute("SELECT * FROM audit_logs ORDER BY id DESC LIMIT 8").fetchall()
-    return render_template("admin_dashboard.html", **ctx, certs=certs, requests=requests, audit_rows=audit_rows, templates=TEMPLATES)
+    return render_template("admin_dashboard.html", **ctx, certs=certs, requests=requests, audit_rows=audit_rows, templates=TEMPLATES, academic_year=setting("default_academic_year", current_academic_year()))
 
 
 @app.get("/admin/generate")
