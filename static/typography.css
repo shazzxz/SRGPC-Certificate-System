@@ -141,3 +141,123 @@ html.dark-mode .glass-ui .admin-granted{color:#86efac}
 html.dark-mode .glass-ui .admin-not-granted{color:#91a4bd}
 @media(max-width:800px){.glass-ui .admin-access-hero{align-items:flex-start;flex-direction:column}.glass-ui .admin-access-state{width:100%;box-sizing:border-box}.glass-ui .admin-access-row{align-items:flex-start;flex-direction:column}.glass-ui .admin-access-action{width:100%;justify-content:space-between;min-width:0}}
 @media(max-width:560px){.glass-ui .admin-access-search{flex-wrap:wrap}.glass-ui .admin-access-search input{flex-basis:100%}.glass-ui .admin-access-search .secondary-btn,.glass-ui .admin-access-search .clear-link{flex:1;justify-content:center}.glass-ui .admin-access-action{align-items:stretch;flex-direction:column}.glass-ui .admin-access-action form,.glass-ui .admin-access-action .small-btn{width:100%}}
+
+/* =========================================================
+   Final readability pass — 100% browser zoom target
+   Designed for college-office desktop use and student phones.
+   ========================================================= */
+body.glass-ui,body.glass-auth{font-size:16px!important}
+.glass-ui .main{font-size:16px}
+.glass-ui .brand-name{font-size:25px!important}
+.glass-ui .brand-sub{font-size:13px!important}
+.glass-ui .profile strong{font-size:16px!important}
+.glass-ui .profile span{font-size:13px!important}
+.glass-ui .nav-item{font-size:16px!important;padding-top:12px;padding-bottom:12px}
+.glass-ui .system-card b{font-size:14px!important}
+.glass-ui .system-card small{font-size:12px!important}
+.glass-ui .logout{font-size:15px!important}
+.glass-ui .topbar h1{font-size:36px!important;line-height:1.12}
+.glass-ui .topbar p{font-size:16px!important}
+.glass-ui .eyebrow{font-size:13px!important}
+.glass-ui .ghost-btn,.glass-ui .secondary-btn,.glass-ui .primary-btn{font-size:16px!important;min-height:42px}
+.glass-ui .panel-head h2{font-size:22px!important}
+.glass-ui .panel-head p{font-size:14px!important}
+.glass-ui label{font-size:15px!important}
+.glass-ui input,.glass-ui select,.glass-ui textarea{font-size:16px!important;min-height:44px}
+.glass-ui textarea{min-height:120px}
+.glass-ui .stat-label{font-size:13px!important}
+.glass-ui .stat-card strong{font-size:38px!important}
+.glass-ui .stat-note{font-size:13px!important}
+.glass-ui .text-link,.glass-ui .download-link{font-size:15px!important}
+.glass-ui table{font-size:15px!important}
+.glass-ui th{font-size:12px!important}
+.glass-ui td{font-size:15px!important}
+.glass-ui td small{font-size:13px!important}
+.glass-ui code{font-size:13px!important}
+.glass-ui .request-row strong{font-size:16px!important}
+.glass-ui .request-row span:not(.status-chip){font-size:13px!important}
+.glass-ui .small-btn{font-size:14px!important;min-height:38px}
+.glass-ui .qr-note,.glass-ui .bar-row{font-size:13px!important}
+.glass-ui .search-bar input{font-size:16px!important}
+.glass-ui .clear-link{font-size:13px!important}
+.glass-ui .filter-tab{font-size:14px!important}
+.glass-ui .template-option strong{font-size:16px!important}
+.glass-ui .template-option>span{font-size:13px!important}
+.glass-ui .font-tag{font-size:12px!important}
+.glass-ui .request-card-head h3{font-size:20px!important}
+.glass-ui .request-card-head p,.glass-ui .request-card-head small{font-size:13px!important}
+.glass-ui .request-details span,.glass-ui .request-note span{font-size:12px!important}
+.glass-ui .request-details b{font-size:15px!important}
+.glass-ui .request-note{font-size:14px!important}
+.glass-ui .status-chip{font-size:12px!important;padding:6px 10px}
+.glass-ui .generated-note,.glass-ui .rejected-note{font-size:14px!important}
+.glass-ui .student-cta b{font-size:16px!important}
+.glass-ui .student-cta p{font-size:14px!important}
+.glass-ui .certificate-card h3{font-size:22px!important}
+.glass-ui .certificate-card p{font-size:14px!important}
+.glass-ui .profile-list span{font-size:12px!important}
+.glass-ui .profile-list b{font-size:15px!important}
+.glass-ui .info-card h3{font-size:20px!important}
+.glass-ui .info-card p{font-size:14px!important}
+.glass-ui .action-card span{font-size:15px!important}
+.glass-ui .action-card small{font-size:12px!important}
+.glass-ui .action-card b{font-size:15px!important}
+.glass-ui .table-wrap{font-size:15px}
+.glass-ui .preview-panel,.glass-ui .form-panel,.glass-ui .panel{font-size:15px}
+
+/* Bulk generation and signature-heavy pages */
+.glass-ui pre,.glass-ui .csv-preview,.glass-ui .code-block{font-size:14px!important;line-height:1.6!important}
+.glass-ui .upload-row input[type=file]{font-size:14px!important}
+.glass-ui .signature-status{font-size:14px!important}
+.glass-ui .subhead{font-size:14px!important}
+.glass-ui .certificate .cert-top small{font-size:10px!important}
+.glass-ui .certificate .cert-top span{font-size:26px!important}
+.glass-ui .certificate .cert-body>small{font-size:11px!important}
+.glass-ui .certificate .cert-body p{font-size:13px!important}
+.glass-ui .certificate .cert-sign>div{font-size:11px!important}
+.glass-ui .certificate .cert-id{font-size:10px!important}
+
+/* Login / registration */
+.glass-auth{font-size:16px!important}
+.glass-auth .auth-brand b{font-size:24px!important}
+.glass-auth .auth-brand span{font-size:14px!important}
+.glass-auth .auth-title span{font-size:13px!important}
+.glass-auth .auth-title h1{font-size:36px!important}
+.glass-auth .auth-title p{font-size:17px!important}
+.glass-auth .role-tab{font-size:16px!important;padding:13px 12px}
+.glass-auth .auth-form label{font-size:15px!important}
+.glass-auth .auth-form input{font-size:17px!important;padding:14px}
+.glass-auth .register-link{font-size:15px!important}
+.glass-auth .admin-note{font-size:14px!important}
+.glass-auth .admin-note b{font-size:15px!important}
+.glass-auth .login-mode-note{font-size:13px!important}
+
+/* Admin access page */
+.glass-ui .admin-access-hero h2{font-size:28px!important}
+.glass-ui .admin-access-hero p{font-size:15px!important}
+.glass-ui .admin-access-state b{font-size:16px!important}
+.glass-ui .admin-access-state small{font-size:13px!important}
+.glass-ui .admin-access-search input{font-size:16px!important}
+.glass-ui .admin-access-student strong{font-size:17px!important}
+.glass-ui .admin-access-student span{font-size:14px!important}
+.glass-ui .admin-granted{font-size:14px!important}
+.glass-ui .admin-access-action .small-btn{font-size:14px!important}
+
+/* Avoid desktop page feeling cramped at normal 100% zoom. */
+.glass-ui .dashboard-grid{gap:20px}
+.glass-ui .panel-head{padding-top:20px;padding-bottom:15px}
+@media(max-width:900px){
+  .glass-ui .main{padding:24px 20px 42px}
+  .glass-ui .topbar h1{font-size:32px!important}
+  .glass-ui .topbar p{font-size:15px!important}
+  .glass-ui .nav-item{font-size:15px!important}
+}
+@media(max-width:600px){
+  .glass-ui .main{padding:20px 14px 34px}
+  .glass-ui .topbar h1{font-size:29px!important}
+  .glass-ui .panel-head h2{font-size:20px!important}
+  .glass-auth{padding:14px!important}
+  .glass-auth .auth-card{padding:24px!important}
+  .glass-auth .auth-title h1{font-size:31px!important}
+  .glass-auth .auth-title p{font-size:16px!important}
+}
