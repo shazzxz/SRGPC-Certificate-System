@@ -1679,6 +1679,104 @@ def student_profile():
 
 
 
+def _certificate_filter_sql(args):
+    search = clean(args.get("q"), 100)
+    department = clean(args.get("department"), 60)
+    programme = clean(args.get("programme"), 60)
+    semester = clean(args.get("semester"), 10)
+    academic_year = clean(args.get("academic_year"), 20)
+    certificate_type = clean(args.get("certificate_type"), 60)
+    cert_status = clean(args.get("cert_status"), 30)
+    from_date = clean(args.get("from_date"), 10)
+    to_date = clean(args.get("to_date"), 10)
+    where=[]; params=[]
+    if search:
+        like=f"%{search}%"
+        where.append("(LOWER(name) LIKE LOWER(?) OR LOWER(roll_number) LIKE LOWER(?) OR LOWER(certificate_id) LIKE LOWER(?) OR LOWER(activity) LIKE LOWER(?) OR LOWER(position) LIKE LOWER(?))")
+        params.extend([like,like,like,like,like])
+    if department in DEPARTMENTS: where.append("department=?"); params.append(department)
+    if programme in PROGRAMMES: where.append("programme=?"); params.append(programme)
+    if semester in SEMESTERS: where.append("semester=?"); params.append(semester)
+    if academic_year: where.append("academic_year=?"); params.append(academic_year)
+    if certificate_type in REQUEST_TYPES: where.append("certificate_type=?"); params.append(certificate_type)
+    if cert_status in {"Valid","Revoked","Reissued"}: where.append("status=?"); params.append(cert_status)
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", from_date): where.append("substr(created_at,1,10)>=?"); params.append(from_date)
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", to_date): where.append("substr(created_at,1,10)<=?"); params.append(to_date)
+    return {"search":search,"department":department,"programme":programme,"semester":semester,"academic_year":academic_year,"certificate_type":certificate_type,"cert_status":cert_status,"from_date":from_date,"to_date":to_date}, where, params
+
+
+def _request_filter_sql(args):
+    status = clean(args.get("status"), 40) or "All"
+    query = clean(args.get("q"), 100)
+    department = clean(args.get("department"), 60)
+    programme = clean(args.get("programme"), 60)
+    semester = clean(args.get("semester"), 10)
+    from_date = clean(args.get("from_date"), 10)
+    to_date = clean(args.get("to_date"), 10)
+    where=[]; params=[]
+    if status in REQUEST_STATUSES: where.append("r.status=?"); params.append(status)
+    if query:
+        like=f"%{query}%"
+        where.append("(LOWER(r.name) LIKE LOWER(?) OR LOWER(r.roll_number) LIKE LOWER(?) OR LOWER(s.gmail) LIKE LOWER(?) OR LOWER(r.activity) LIKE LOWER(?) OR LOWER(r.request_type) LIKE LOWER(?))")
+        params.extend([like,like,like,like,like])
+    if department in DEPARTMENTS: where.append("r.department=?"); params.append(department)
+    if programme in PROGRAMMES: where.append("r.programme=?"); params.append(programme)
+    if semester in SEMESTERS: where.append("r.semester=?"); params.append(semester)
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", from_date): where.append("substr(r.created_at,1,10)>=?"); params.append(from_date)
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", to_date): where.append("substr(r.created_at,1,10)<=?"); params.append(to_date)
+    return {"status":status,"query":query,"department":department,"programme":programme,"semester":semester,"from_date":from_date,"to_date":to_date}, where, params
+
+
+def _send_csv(filename, headers, rows):
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(headers)
+    writer.writerows(rows)
+    data = BytesIO(buf.getvalue().encode("utf-8-sig"))
+    return send_file(data, mimetype="text/csv; charset=utf-8", as_attachment=True, download_name=filename, max_age=0)
+
+
+def _send_pdf(filename, title, columns, rows):
+    buf = BytesIO()
+    pdf = canvas.Canvas(buf, pagesize=landscape(A4))
+    width, height = landscape(A4)
+    pdf.setFont("Helvetica-Bold", 18)
+    pdf.drawString(34, height-38, title)
+    pdf.setFont("Helvetica", 9)
+    y = height-62
+    col_x = [34]
+    usable = width-68
+    step = usable / max(len(columns), 1)
+    for i in range(1, len(columns)):
+        col_x.append(34 + step*i)
+    def draw_header():
+        pdf.setFillColor(colors.HexColor("#eaf0f6"))
+        pdf.rect(30, y-6, width-60, 19, stroke=0, fill=1)
+        pdf.setFillColor(colors.HexColor("#0f172a"))
+        pdf.setFont("Helvetica-Bold", 8)
+        for idx, col in enumerate(columns):
+            pdf.drawString(col_x[idx], y, clean(str(col), 24))
+        pdf.setFont("Helvetica", 7)
+    draw_header()
+    current_y = y-23
+    for row in rows:
+        if current_y < 38:
+            pdf.showPage()
+            y = height-44
+            col_x = [34 + (width-68)/max(len(columns),1)*i for i in range(len(columns))]
+            draw_header()
+            current_y = y-23
+        pdf.setFillColor(colors.HexColor("#334155"))
+        for idx, value in enumerate(row):
+            pdf.drawString(col_x[idx], current_y, clean(str(value if value is not None else ""), 32))
+        current_y -= 15
+    pdf.setFont("Helvetica", 7)
+    pdf.setFillColor(colors.HexColor("#64748b"))
+    pdf.drawRightString(width-34, 20, f"SRGPC • Generated {datetime.now():%Y-%m-%d %H:%M}")
+    pdf.save()
+    buf.seek(0)
+    return send_file(buf, mimetype="application/pdf", as_attachment=True, download_name=filename, max_age=0)
+
 # ------------------------- ADVANCED ADMIN FEATURES -------------------------
 
 @app.get("/admin/analytics")
