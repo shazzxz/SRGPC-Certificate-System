@@ -33,6 +33,8 @@ import smtplib
 from email.message import EmailMessage
 from werkzeug.wsgi import get_current_url
 import qrcode
+import urllib.parse
+import urllib.request
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
@@ -48,7 +50,7 @@ for folder in (DATA_DIR, GENERATED_DIR, SIGNATURE_DIR, UPLOAD_DIR):
 app = Flask(__name__)
 app.secret_key = os.environ.get("SRGPC_SESSION_KEY", "srgpc-local-session-key-change-before-public-hosting")
 app.config["MAX_CONTENT_LENGTH"] = 8 * 1024 * 1024
-app.config["STATIC_VERSION"] = "6.2"
+app.config["STATIC_VERSION"] = "6.3"
 
 ADMIN_USERNAME = os.environ.get("SRGPC_ADMIN_USERNAME", "ADMIN")
 ADMIN_PASSWORD = os.environ.get("SRGPC_ADMIN_PASSWORD", "0000")
@@ -195,7 +197,8 @@ def init_db():
                 gmail TEXT NOT NULL UNIQUE{case_unique},
                 name TEXT NOT NULL,
                 created_at TEXT NOT NULL,
-                email_verified INTEGER NOT NULL DEFAULT 1
+                email_verified INTEGER NOT NULL DEFAULT 1,
+                google_sub TEXT UNIQUE{case_unique}
             )""",
             f"""CREATE TABLE IF NOT EXISTS certificates (
                 id {id_pk},
@@ -309,6 +312,8 @@ def init_db():
             db.execute("ALTER TABLE students ADD COLUMN academic_year TEXT NOT NULL DEFAULT '2026-27'")
         if "email_verified" not in stu_cols:
             db.execute("ALTER TABLE students ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 1")
+        if "google_sub" not in stu_cols:
+            db.execute("ALTER TABLE students ADD COLUMN google_sub TEXT UNIQUE")
 
         defaults = {
             "default_template": "classic",
@@ -415,6 +420,63 @@ def render_certificate(target, info, verification_url=None):
 
 def is_valid_gmail(gmail):
     return bool(re.fullmatch(r"[^@\s]+@gmail\.com", gmail.strip(), re.I))
+
+
+def google_configured():
+    return bool(os.environ.get("GOOGLE_CLIENT_ID", "").strip() and os.environ.get("GOOGLE_CLIENT_SECRET", "").strip())
+
+
+def google_redirect_uri():
+    return url_for("google_callback", _external=True)
+
+
+def google_authorize_url():
+    state = secrets.token_urlsafe(32)
+    session["google_oauth_state"] = state
+    params = {
+        "client_id": os.environ["GOOGLE_CLIENT_ID"].strip(),
+        "redirect_uri": google_redirect_uri(),
+        "response_type": "code",
+        "scope": "openid email profile",
+        "state": state,
+        "access_type": "online",
+        "prompt": "select_account",
+    }
+    return "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params)
+
+
+def google_exchange_code(code):
+    payload = urllib.parse.urlencode({
+        "code": code,
+        "client_id": os.environ["GOOGLE_CLIENT_ID"].strip(),
+        "client_secret": os.environ["GOOGLE_CLIENT_SECRET"],
+        "redirect_uri": google_redirect_uri(),
+        "grant_type": "authorization_code",
+    }).encode()
+    req = urllib.request.Request(
+        "https://oauth2.googleapis.com/token",
+        data=payload,
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=20) as response:
+        return json.loads(response.read().decode())
+
+
+def google_userinfo(access_token):
+    req = urllib.request.Request(
+        "https://openidconnect.googleapis.com/v1/userinfo",
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+    with urllib.request.urlopen(req, timeout=20) as response:
+        return json.loads(response.read().decode())
+
+
+def google_signin_or_register():
+    if not google_configured():
+        flash("Google Sign-In is not configured yet. Ask the administrator to add the Google OAuth credentials in Render.", "error")
+        return redirect(url_for("login"))
+    return redirect(google_authorize_url())
 
 
 def verification_configured():
@@ -538,6 +600,110 @@ def login():
     if session.get("role") == "student":
         return redirect(url_for("student_dashboard"))
     return render_template("login.html")
+
+
+@app.get("/auth/google")
+def google_login():
+    return google_signin_or_register()
+
+
+@app.get("/auth/google/callback")
+def google_callback():
+    if not google_configured():
+        flash("Google Sign-In is not configured.", "error")
+        return redirect(url_for("login"))
+    state = request.args.get("state", "")
+    if not state or not secrets.compare_digest(state, session.pop("google_oauth_state", "")):
+        flash("Google sign-in could not be verified. Please try again.", "error")
+        return redirect(url_for("login"))
+    if request.args.get("error"):
+        flash("Google sign-in was cancelled.", "error")
+        return redirect(url_for("login"))
+    code = request.args.get("code", "")
+    if not code:
+        flash("Google did not return an authorization code.", "error")
+        return redirect(url_for("login"))
+    try:
+        tokens = google_exchange_code(code)
+        profile = google_userinfo(tokens["access_token"])
+    except Exception:
+        flash("Google sign-in failed. Please try again.", "error")
+        return redirect(url_for("login"))
+
+    google_sub = clean(profile.get("sub"), 160)
+    gmail = clean(profile.get("email"), 120).lower()
+    email_verified = str(profile.get("email_verified", "")).lower() == "true"
+    name = clean(profile.get("name"), 80)
+    if not google_sub or not gmail or not email_verified:
+        flash("Google could not confirm this account's email address.", "error")
+        return redirect(url_for("login"))
+    if not is_valid_gmail(gmail):
+        flash("Only Gmail accounts can be used for student access.", "error")
+        return redirect(url_for("login"))
+
+    with get_db() as db:
+        student = db.execute(
+            "SELECT * FROM students WHERE google_sub=? OR LOWER(gmail)=LOWER(?) LIMIT 1",
+            (google_sub, gmail),
+        ).fetchone()
+
+    if student:
+        if not student["google_sub"]:
+            with get_db() as db:
+                db.execute("UPDATE students SET google_sub=?, email_verified=1 WHERE id=?", (google_sub, student["id"]))
+                db.commit()
+        session.clear()
+        session["role"] = "student"
+        session["student_id"] = student["id"]
+        session["username"] = student["username"]
+        return redirect(url_for("student_dashboard"))
+
+    session["pending_google"] = {"sub": google_sub, "gmail": gmail, "name": name}
+    return redirect(url_for("register_google"))
+
+
+@app.route("/register/google", methods=["GET", "POST"])
+def register_google():
+    pending = session.get("pending_google")
+    if not pending:
+        return redirect(url_for("login"))
+    if request.method == "GET":
+        return render_template("register.html", google_pending=pending, form={"name": pending.get("name",""), "gmail": pending["gmail"]})
+    fields = {
+        "username": clean(request.form.get("username"), 40),
+        "password": request.form.get("password", ""),
+        "mobile": clean(request.form.get("mobile"), 20),
+        "roll_number": clean(request.form.get("roll_number"), 40),
+        "gmail": pending["gmail"],
+        "name": clean(request.form.get("name"), 80) or pending.get("name",""),
+        "department": clean(request.form.get("department"), 60) or "CSE",
+    }
+    if not all([fields["username"], fields["mobile"], fields["roll_number"], fields["name"], fields["department"]]):
+        flash("Please complete every college profile field.", "error")
+        return render_template("register.html", form=fields, google_pending=pending)
+    if len(fields["password"]) < 4:
+        fields["password"] = secrets.token_urlsafe(18)
+    try:
+        with get_db() as db:
+            db.execute(
+                "INSERT INTO students(username,password_hash,mobile,roll_number,gmail,name,department,academic_year,created_at,email_verified,google_sub) VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                (fields["username"], generate_password_hash(fields["password"]), fields["mobile"], fields["roll_number"], fields["gmail"], fields["name"], fields["department"], setting("default_academic_year", current_academic_year()), datetime.now().isoformat(timespec="seconds"), 1, pending["sub"]),
+            )
+            row = db.execute("SELECT id FROM students WHERE google_sub=?", (pending["sub"],)).fetchone()
+            student_id = row["id"] if row else None
+            db.commit()
+        session.pop("pending_google", None)
+        session.clear()
+        session["role"] = "student"
+        session["student_id"] = student_id
+        session["username"] = fields["username"]
+        flash("Google account connected. Your SRGPC student account is ready.", "success")
+        return redirect(url_for("student_dashboard"))
+    except Exception as exc:
+        if is_unique_violation(exc):
+            flash("That username or roll number is already registered.", "error")
+            return render_template("register.html", form=fields, google_pending=pending)
+        raise
 
 
 @app.post("/login")
