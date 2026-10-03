@@ -1997,7 +1997,7 @@ def admin_analytics():
     with get_db() as db:
         students = db.execute("SELECT COUNT(*) AS count FROM students").fetchone()["count"]
         certificates = db.execute("SELECT COUNT(*) AS count FROM certificates").fetchone()["count"]
-        valid = db.execute("SELECT COUNT(*) AS count FROM certificates WHERE status='Valid'").fetchone()["count"]
+        analytics_valid = db.execute("SELECT COUNT(*) AS count FROM certificates WHERE status='Valid'").fetchone()["count"]
         requests = db.execute("SELECT COUNT(*) AS count FROM certificate_requests").fetchone()["count"]
 
         def bucket(sql, key):
@@ -2047,7 +2047,7 @@ def admin_analytics():
         **ctx,
         students=students,
         certificates=certificates,
-        valid=valid,
+        analytics_valid=analytics_valid,
         requests=requests,
         by_department=by_department,
         by_programme=by_programme,
