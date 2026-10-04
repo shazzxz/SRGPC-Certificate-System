@@ -19,8 +19,7 @@ const PREVIEW_THEMES={
   charcoal_gold:{bg:'#171a1f',ink:'#f8fafc',muted:'#b5b8bf',accent:'#d2ad5f',soft:'#3a3325'},
   coastal:{bg:'#f4fbfd',ink:'#173a4f',muted:'#68808c',accent:'#0b82a5',soft:'#d9f0f6'},
   geometric:{bg:'#fbfcff',ink:'#20273a',muted:'#707a8e',accent:'#4056a1',soft:'#e8ebf8'},
-  monochrome:{bg:'#ffffff',ink:'#1f2933',muted:'#737b86',accent:'#20252b',soft:'#edf0f2'},
-  nss_seven_day:{bg:'#ffffff',ink:'#17345f',muted:'#5f6f85',accent:'#173f93',soft:'#f5e9d1'}
+  monochrome:{bg:'#ffffff',ink:'#1f2933',muted:'#737b86',accent:'#20252b',soft:'#edf0f2'}
 };
 const PREVIEW_FONTS={Helvetica:'Arial, Helvetica, sans-serif',Times:'Times New Roman, Times, serif',Courier:'Courier New, Courier, monospace'};
 function svgEl(tag,attrs={}){const s=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const[k,v]of Object.entries(attrs))s.setAttribute(k,String(v));return s;}
@@ -76,25 +75,6 @@ function drawPreviewFrame(svg,t){
   else if(activePreviewTemplate==='monochrome'){addRect(svg,0,0,11,595,{fill:'#20252b'});addRect(svg,0,0,842,8,{fill:'#20252b'});addRect(svg,30,30,782,535,{fill:'none',stroke:'#20252b','stroke-width':0.9});addRect(svg,42,42,758,511,{fill:'none',stroke:'#dfe3e7','stroke-width':0.7});addLine(svg,160,491,682,491,{stroke:'#20252b','stroke-width':0.7});}
   else {addRect(svg,34,34,774,527,{fill:'none',stroke:'#cbd5e1','stroke-width':0.9});addRect(svg,34,34,774,3,{fill:'#111827'});}
 }
-function nssDateLabel(v){if(!v)return 'Date';const d=new Date(v+'T00:00:00');return Number.isNaN(d.getTime())?'Date':d.toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});}
-function renderNssPreview(svg,stage,ff){
-  addImage(svg,stage.dataset.nssReferenceUrl,0,0,842,595);
-  const name=document.getElementById('name')?.value?.trim()||'Student Name';
-  const cert='SRGPC-PREVIEW';
-  const from=document.getElementById('date_from')?.value||'';
-  const to=document.getElementById('date_to')?.value||'';
-  const dateText=v=>{if(!v)return 'Date';const d=new Date(v+'T00:00:00');return Number.isNaN(d.getTime())?'Date':d.toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});};
-  const range=from||to?dateText(from)+' – '+dateText(to):'DATE RANGE';
-
-  // Cover only the three placeholders in the supplied artwork.
-  addRect(svg,842*.835,595*.700,842*.145,595*.055,{fill:'#fff'});
-  addRect(svg,842*.440,595*.390,842*.280,595*.070,{fill:'#fff'});
-  addRect(svg,842*.685,595*.205,842*.285,595*.075,{fill:'#fff'});
-
-  addText(svg,cert,842*.907,595*.727,{font:'Times New Roman, Times, serif',size:8.6,weight:700,fill:'#173b93',anchor:'middle'});
-  addText(svg,name,842*.580,595*.417,{font:ff,size:16,weight:700,fill:'#b51e27',anchor:'middle',length:206});
-  addText(svg,range,842*.825,595*.245,{font:'Times New Roman, Times, serif',size:11.2,weight:700,fill:'#b51e27',anchor:'middle',length:214});
-}
 function renderLiveCertificate(){
   const stage=document.getElementById('certificateLivePreview');const svg=document.getElementById('certificateLiveSvg');if(!stage||!svg)return;
   const get=id=>document.getElementById(id)?.value?.trim()||'';
@@ -102,7 +82,7 @@ function renderLiveCertificate(){
   const type=get('certificate_type')||'Achievement', year=get('academic_year')||'2026-27', font=get('font_family')||'Helvetica';
   const tpl=get('templateSelect')||'classic'; activePreviewTemplate=tpl;
   const t=PREVIEW_THEMES[tpl]||PREVIEW_THEMES.classic; const ff=PREVIEW_FONTS[font]||PREVIEW_FONTS.Helvetica;
-  svg.replaceChildren(); if(tpl==='nss_seven_day'){renderNssPreview(svg,stage,ff);return;} drawPreviewFrame(svg,t);
+  svg.replaceChildren(); drawPreviewFrame(svg,t);
   const cx=tpl==='skyline'?480:421;
   addImage(svg,stage.dataset.logoUrl,cx-38,49,76,80);
   addText(svg,'SRGPC',cx,139,{font:ff,size:13.5,weight:700,fill:t.accent,letterSpacing:'.6'});
@@ -132,17 +112,10 @@ function renderLiveCertificate(){
 let activePreviewTemplate='classic';let previewFrameTimer=null;
 function bindCertificateLivePreview(){
   const form=document.getElementById('certForm');const stage=document.getElementById('certificateLivePreview');if(!form||!stage)return;
-  const ids=['name','roll','activity','position','certificate_type','academic_year','date_from','date_to','font_family','templateSelect'];
+  const ids=['name','roll','activity','position','certificate_type','academic_year','font_family','templateSelect'];
   const refresh=()=>{cancelAnimationFrame(previewFrameTimer);previewFrameTimer=requestAnimationFrame(renderLiveCertificate);};
   ids.forEach(id=>{const el=document.getElementById(id);if(el){el.addEventListener('input',refresh);el.addEventListener('change',refresh);}});
   document.querySelectorAll('.template-option').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.template-option').forEach(b=>b.classList.remove('selected'));btn.classList.add('selected');const select=document.getElementById('templateSelect');if(select){select.value=btn.dataset.template;select.dispatchEvent(new Event('change',{bubbles:true}));}}));
-  const applyNssDefaults=()=>{
-    const tpl=document.getElementById('templateSelect')?.value,isNss=tpl==='nss_seven_day';
-    const type=document.getElementById('certificate_type'),activity=document.getElementById('activity'),position=document.getElementById('position'),hint=document.getElementById('nssDateHint');
-    if(isNss){if(type)type.value='NSS';if(activity&&!activity.value)activity.value='NSS Seven-Day Special Camp';if(position&&!position.value)position.value='Volunteer';}
-    if(hint)hint.classList.toggle('hidden',!isNss);
-  };
-  document.getElementById('templateSelect')?.addEventListener('change',applyNssDefaults);applyNssDefaults();
   renderLiveCertificate();
 }
 function setupSignatureCanvas(kind){const c=document.getElementById('canvas-'+kind);if(!c)return;const ctx=c.getContext('2d');ctx.lineWidth=3;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#0f172a';let drawing=false;function pos(e){const r=c.getBoundingClientRect();return{x:(e.clientX-r.left)*(c.width/r.width),y:(e.clientY-r.top)*(c.height/r.height)}}function start(e){e.preventDefault();drawing=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);liveSignature(kind,c.toDataURL('image/png'));}function move(e){if(!drawing)return;e.preventDefault();const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();liveSignature(kind,c.toDataURL('image/png'));}function end(){drawing=false;}c.addEventListener('pointerdown',start);c.addEventListener('pointermove',move);window.addEventListener('pointerup',end);}
