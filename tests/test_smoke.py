@@ -211,7 +211,7 @@ def test_nss_reference_artwork_is_used(app, tmp_path):
     from pathlib import Path
     from certificate_renderer import draw_certificate
 
-    reference = Path("static/nss_reference.png")
+    reference = Path("static/nss_ref.jpg")
     assert reference.exists()
     assert reference.stat().st_size > 10_000
 
