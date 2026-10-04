@@ -21,6 +21,11 @@
         <label>Certificate Type<select id="certificate_type" name="certificate_type">{% for t in request_types %}<option>{{ t }}</option>{% endfor %}</select></label>
         <label>Academic Year<input id="academic_year" name="academic_year" value="{{ academic_year }}" placeholder="2026-27"></label>
       </div>
+      <div class="field-row date-range-fields">
+        <label>Date From<input id="date_from" name="date_from" type="date"></label>
+        <label>Date To<input id="date_to" name="date_to" type="date"></label>
+      </div>
+      <div id="nssDateHint" class="field-hint hidden">NSS certificates require both dates. The range is printed directly on the seven-day camp certificate.</div>
       <div class="field-row">
         <label>Department<select id="department" name="department">{% for item in departments %}<option value="{{ item }}">{{ item }}</option>{% endfor %}</select></label>
         <label>Programme<select id="programme" name="programme">{% for item in programmes %}<option value="{{ item }}">{{ item }}</option>{% endfor %}</select></label>

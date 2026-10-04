@@ -275,6 +275,7 @@ TEMPLATES = {
     "coastal": {"name": "Coastal Horizon", "description": "Fresh blue-and-coral certificate with a light coastal wave motif."},
     "geometric": {"name": "Geometric Grid", "description": "Modern academic geometry with indigo framing and diamond corner marks."},
     "monochrome": {"name": "Monochrome Executive", "description": "Crisp black-and-white certificate built for a formal executive look."},
+    "nss_seven_day": {"name": "NSS Seven-Day Camp", "description": "NSS certificate inspired by the college-issued seven-day special camp design with date-range support."},
 }
 
 FONT_OPTIONS = {
@@ -283,7 +284,7 @@ FONT_OPTIONS = {
     "Courier": {"regular": "Courier", "bold": "Courier-Bold", "italic": "Courier-Oblique"},
 }
 
-REQUEST_TYPES = ["Achievement", "Participation", "Sports", "Cultural", "Technical", "Workshop / Training", "Internship", "Academic", "Other"]
+REQUEST_TYPES = ["Achievement", "Participation", "Sports", "Cultural", "Technical", "Workshop / Training", "Internship", "Academic", "NSS", "Other"]
 REQUEST_STATUSES = ["Pending", "Under Review", "Generated", "Rejected"]
 DEPARTMENTS = ["CSE", "ECE", "EEE", "Mechanical", "Civil", "IT", "MCA", "Other"]
 PROGRAMMES = ["B.Tech", "M.Tech", "MCA", "Diploma", "BCA", "Other"]
@@ -555,6 +556,8 @@ def init_db():
             "department": "ALTER TABLE certificates ADD COLUMN department TEXT NOT NULL DEFAULT ''",
             "programme": "ALTER TABLE certificates ADD COLUMN programme TEXT NOT NULL DEFAULT ''",
             "semester": "ALTER TABLE certificates ADD COLUMN semester TEXT NOT NULL DEFAULT ''",
+            "date_from": "ALTER TABLE certificates ADD COLUMN date_from TEXT NOT NULL DEFAULT ''",
+            "date_to": "ALTER TABLE certificates ADD COLUMN date_to TEXT NOT NULL DEFAULT ''",
         }
         for col, sql in migrations.items():
             if col not in cols:
@@ -767,8 +770,26 @@ def begin_session(**values):
 
 
 def cert_payload_hash(info):
-    raw = "|".join(str(info.get(k, "")) for k in ("name","roll_number","department","programme","semester","activity","position","certificate_type","academic_year"))
+    raw = "|".join(
+        str(info.get(k, ""))
+        for k in ("name","roll_number","department","programme","semester","activity","position","certificate_type","academic_year","date_from","date_to")
+    )
     return hashlib.sha256(raw.encode("utf-8")).hexdigest().upper()
+
+
+def valid_iso_date(value):
+    return bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", value or ""))
+
+
+def validate_date_range(date_from, date_to, required=False):
+    if not date_from and not date_to:
+        if required:
+            raise ValueError("NSS certificates require both a start date and an end date.")
+        return
+    if not valid_iso_date(date_from) or not valid_iso_date(date_to):
+        raise ValueError("Use valid start and end dates.")
+    if date_from > date_to:
+        raise ValueError("The end date cannot be before the start date.")
 
 
 def file_sha256(path):
@@ -1358,11 +1379,18 @@ def admin_generate():
         "department": clean(request.form.get("department"), 60) or "Other",
         "programme": clean(request.form.get("programme"), 60) or "Other",
         "semester": clean(request.form.get("semester"), 10) or "",
+        "date_from": clean(request.form.get("date_from"), 10),
+        "date_to": clean(request.form.get("date_to"), 10),
         "template": allowed_template(request.form.get("template")),
         "font_family": allowed_font(request.form.get("font_family")),
     }
     if not all([info["name"], info["roll_number"], info["activity"], info["position"]]):
         flash("Fill in name, roll number, activity and position before generating.", "error")
+        return redirect(url_for("admin_generate_page"))
+    try:
+        validate_date_range(info["date_from"], info["date_to"], required=info["template"] == "nss_seven_day")
+    except ValueError as exc:
+        flash(str(exc), "error")
         return redirect(url_for("admin_generate_page"))
     with get_db() as db:
         duplicate = db.execute("SELECT certificate_id FROM certificates WHERE lower(name)=lower(?) AND lower(roll_number)=lower(?) AND lower(activity)=lower(?) AND lower(position)=lower(?) AND status='Valid'", (info['name'], info['roll_number'], info['activity'], info['position'])).fetchone()
@@ -1379,8 +1407,8 @@ def admin_generate():
     pdf_hash = file_sha256(GENERATED_DIR / filename)
     with get_db() as db:
         db.execute(
-            "INSERT INTO certificates(certificate_id,name,roll_number,activity,position,template,font_family,filename,created_at,certificate_type,academic_year,status,payload_hash,pdf_sha256,created_by,department,programme,semester) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-            (info["certificate_id"], info["name"], info["roll_number"], info["activity"], info["position"], info["template"], info["font_family"], filename, info["created_at"], info["certificate_type"], info["academic_year"], "Valid", info["payload_hash"], pdf_hash, info["created_by"], info["department"], info["programme"], info["semester"]),
+            "INSERT INTO certificates(certificate_id,name,roll_number,activity,position,template,font_family,filename,created_at,certificate_type,academic_year,status,payload_hash,pdf_sha256,created_by,department,programme,semester,date_from,date_to) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (info["certificate_id"], info["name"], info["roll_number"], info["activity"], info["position"], info["template"], info["font_family"], filename, info["created_at"], info["certificate_type"], info["academic_year"], "Valid", info["payload_hash"], pdf_hash, info["created_by"], info["department"], info["programme"], info["semester"], info["date_from"], info["date_to"]),
         )
         add_certificate_history(db, info["certificate_id"], "Generated", "Manual certificate generation.", session.get("admin_role","admin"), session.get("username",ADMIN_USERNAME), info["created_at"])
         db.commit()
@@ -1399,6 +1427,8 @@ def admin_certificate_preview():
         "position": clean(request.args.get("position"), 80) or "Position / Achievement",
         "certificate_type": clean(request.args.get("certificate_type"), 60) or "Achievement",
         "academic_year": clean(request.args.get("academic_year"), 20) or setting("default_academic_year", current_academic_year()),
+        "date_from": clean(request.args.get("date_from"), 10),
+        "date_to": clean(request.args.get("date_to"), 10),
         "template": allowed_template(request.args.get("template")),
         "font_family": allowed_font(request.args.get("font_family")),
         "certificate_id": "SRGPC-PREVIEW",
@@ -1853,19 +1883,26 @@ def admin_request_generate(request_id):
         "department": req["department"] if "department" in req.keys() else "",
         "programme": req["programme"] if "programme" in req.keys() else "",
         "semester": req["semester"] if "semester" in req.keys() else "",
-        "template": allowed_template(request.form.get("template") or setting("default_template", "classic")),
+        "date_from": clean(request.form.get("date_from"), 10),
+        "date_to": clean(request.form.get("date_to"), 10),
+        "template": allowed_template(request.form.get("template") or ("nss_seven_day" if req["request_type"] == "NSS" else setting("default_template", "classic"))),
         "font_family": allowed_font(request.form.get("font_family") or setting("default_font", "Helvetica")),
         "certificate_id": make_certificate_id(),
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "created_by": session.get("username", ADMIN_USERNAME),
     }
+    try:
+        validate_date_range(info.get("date_from", ""), info.get("date_to", ""), required=info["template"] == "nss_seven_day")
+    except ValueError as exc:
+        flash(str(exc), "error")
+        return redirect(url_for("admin_request_detail", request_id=request_id))
     info["payload_hash"] = cert_payload_hash(info)
     slug = re.sub(r"[^a-zA-Z0-9]+", "_", info["name"]).strip("_").lower() or "student"
     filename = f"{slug}_{info['certificate_id']}.pdf"
     render_certificate(GENERATED_DIR / filename, info, public_verify_url(info["certificate_id"]))
     pdf_hash = file_sha256(GENERATED_DIR / filename)
     with get_db() as db:
-        db.execute("INSERT INTO certificates(certificate_id,name,roll_number,activity,position,template,font_family,filename,created_at,certificate_type,academic_year,status,payload_hash,pdf_sha256,created_by,request_id,department,programme,semester) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (info["certificate_id"], info["name"], info["roll_number"], info["activity"], info["position"], info["template"], info["font_family"], filename, info["created_at"], info["certificate_type"], info["academic_year"], "Valid", info["payload_hash"], pdf_hash, info["created_by"], request_id, info["department"], info["programme"], info["semester"]))
+        db.execute("INSERT INTO certificates(certificate_id,name,roll_number,activity,position,template,font_family,filename,created_at,certificate_type,academic_year,status,payload_hash,pdf_sha256,created_by,request_id,department,programme,semester,date_from,date_to) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (info["certificate_id"], info["name"], info["roll_number"], info["activity"], info["position"], info["template"], info["font_family"], filename, info["created_at"], info["certificate_type"], info["academic_year"], "Valid", info["payload_hash"], pdf_hash, info["created_by"], request_id, info["department"], info["programme"], info["semester"], info["date_from"], info["date_to"]))
         db.execute("UPDATE certificate_requests SET status='Generated', processed_at=?, processed_by=?, certificate_id=? WHERE id=?", (info["created_at"], session.get("username", ADMIN_USERNAME), info["certificate_id"], request_id))
         add_certificate_history(db, info["certificate_id"], "Generated", "Certificate generated from request.", session.get("admin_role","admin"), session.get("username", ADMIN_USERNAME), info["created_at"])
         add_request_update(db, request_id, "Generated", f"Certificate generated: {info['certificate_id']}.", session.get("admin_role","admin"), session.get("username", ADMIN_USERNAME))
@@ -2296,7 +2333,7 @@ def admin_bulk_generate():
         reader = csv.DictReader(io.StringIO(text))
         required = {"Name","Roll Number","Activity","Position"}
         if not reader.fieldnames or not required.issubset(set(reader.fieldnames)):
-            flash("CSV must contain: Name, Roll Number, Activity, Position. Optional: Certificate Type, Academic Year, Template, Font Family.", "error")
+            flash("CSV must contain: Name, Roll Number, Activity, Position. Optional: Certificate Type, Academic Year, Template, Font Family, Date From, Date To.", "error")
             return redirect(url_for("admin_bulk"))
         tmpdir = Path(tempfile.mkdtemp(prefix="srgpc_bulk_"))
         generated = []
@@ -2313,9 +2350,16 @@ def admin_bulk_generate():
                     "department": clean(row.get("Department"),60),
                     "programme": clean(row.get("Programme"),60),
                     "semester": clean(row.get("Semester"),10),
+                    "date_from": clean(row.get("Date From"),10),
+                    "date_to": clean(row.get("Date To"),10),
                 }
                 if not all([info["name"],info["roll_number"],info["activity"],info["position"]]):
                     skipped.append(f"Row {idx}: missing required field")
+                    continue
+                try:
+                    validate_date_range(info["date_from"], info["date_to"], required=info["template"] == "nss_seven_day")
+                except ValueError as exc:
+                    skipped.append(f"Row {idx}: {exc}")
                     continue
                 if not info["department"] or not info["programme"]:
                     with get_db() as db:
@@ -2341,7 +2385,7 @@ def admin_bulk_generate():
                 final = GENERATED_DIR / filename
                 shutil.copy2(outpath, final)
                 with get_db() as db:
-                    db.execute("INSERT INTO certificates(certificate_id,name,roll_number,activity,position,template,font_family,filename,created_at,certificate_type,academic_year,status,payload_hash,pdf_sha256,created_by,department,programme,semester) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (info["certificate_id"],info["name"],info["roll_number"],info["activity"],info["position"],info["template"],info["font_family"],filename,info["created_at"],info["certificate_type"],info["academic_year"],"Valid",info["payload_hash"],pdf_hash,info["created_by"],info["department"],info["programme"],info["semester"]))
+                    db.execute("INSERT INTO certificates(certificate_id,name,roll_number,activity,position,template,font_family,filename,created_at,certificate_type,academic_year,status,payload_hash,pdf_sha256,created_by,department,programme,semester,date_from,date_to) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (info["certificate_id"],info["name"],info["roll_number"],info["activity"],info["position"],info["template"],info["font_family"],filename,info["created_at"],info["certificate_type"],info["academic_year"],"Valid",info["payload_hash"],pdf_hash,info["created_by"],info["department"],info["programme"],info["semester"],info.get("date_from",""),info.get("date_to","")))
                     add_certificate_history(db, info["certificate_id"], "Generated", f"Bulk CSV row {idx}.", session.get("admin_role","admin"), session.get("username",ADMIN_USERNAME), info["created_at"])
                     db.commit()
                 generated.append(filename)
@@ -2386,7 +2430,7 @@ def admin_reissue_certificate(certificate_id):
         old = db.execute("SELECT * FROM certificates WHERE certificate_id=?", (certificate_id,)).fetchone()
     if not old:
         flash("Certificate not found.","error"); return redirect(url_for("admin_certificates"))
-    info = {k: old[k] for k in ["name","roll_number","activity","position","template","font_family","certificate_type","academic_year","department","programme","semester"]}
+    info = {k: old[k] for k in ["name","roll_number","activity","position","template","font_family","certificate_type","academic_year","department","programme","semester","date_from","date_to"]}
     info["certificate_id"] = make_certificate_id(); info["payload_hash"] = cert_payload_hash(info); info["created_at"] = datetime.now().isoformat(timespec="seconds"); info["created_by"] = session.get("username",ADMIN_USERNAME); info["reissued_from"] = old["certificate_id"]
     slug = re.sub(r"[^a-zA-Z0-9]+","_",info["name"]).strip("_").lower() or "student"
     filename = f"{slug}_{info['certificate_id']}.pdf"
@@ -2396,7 +2440,7 @@ def admin_reissue_certificate(certificate_id):
     with get_db() as db:
         db.execute("UPDATE certificates SET status='Reissued' WHERE certificate_id=?", (certificate_id,))
         add_certificate_history(db, certificate_id, "Reissued", f"Replaced by {info['certificate_id']}.", session.get("admin_role","admin"), session.get("username",ADMIN_USERNAME), info["created_at"])
-        db.execute("INSERT INTO certificates(certificate_id,name,roll_number,activity,position,template,font_family,filename,created_at,certificate_type,academic_year,status,payload_hash,pdf_sha256,created_by,reissued_from,department,programme,semester) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (info["certificate_id"],info["name"],info["roll_number"],info["activity"],info["position"],info["template"],info["font_family"],filename,info["created_at"],info["certificate_type"],info["academic_year"],"Valid",info["payload_hash"],pdf_hash,info["created_by"],certificate_id,info["department"],info["programme"],info["semester"]))
+        db.execute("INSERT INTO certificates(certificate_id,name,roll_number,activity,position,template,font_family,filename,created_at,certificate_type,academic_year,status,payload_hash,pdf_sha256,created_by,reissued_from,department,programme,semester,date_from,date_to) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (info["certificate_id"],info["name"],info["roll_number"],info["activity"],info["position"],info["template"],info["font_family"],filename,info["created_at"],info["certificate_type"],info["academic_year"],"Valid",info["payload_hash"],pdf_hash,info["created_by"],certificate_id,info["department"],info["programme"],info["semester"],info.get("date_from",""),info.get("date_to","")))
         add_certificate_history(db, info["certificate_id"], "Generated as Replacement", f"Replacement for {certificate_id}.", session.get("admin_role","admin"), session.get("username",ADMIN_USERNAME), info["created_at"])
         student = db.execute("SELECT id FROM students WHERE lower(roll_number)=lower(?)", (info["roll_number"],)).fetchone()
         db.commit()
