@@ -91,7 +91,7 @@ def test_all_certificate_templates_render(app, tmp_path):
     from app import TEMPLATES as APP_TEMPLATES
     from certificate_renderer import TEMPLATES as RENDER_TEMPLATES, draw_certificate
 
-    assert len(APP_TEMPLATES) == 20
+    assert len(APP_TEMPLATES) == 21
     assert set(APP_TEMPLATES) == set(RENDER_TEMPLATES)
 
     sample = {
@@ -176,3 +176,32 @@ def test_named_signature_survives_logout_and_login(app):
     assert "Saved Signature Library" in html
     assert "Currently active" in html
 
+
+
+def test_nss_certificate_uses_date_range(app, tmp_path):
+    from certificate_renderer import draw_certificate
+    output = tmp_path / "nss.pdf"
+    info = {
+        "name": "Aarav Sharma",
+        "roll_number": "CSE24017",
+        "certificate_type": "NSS",
+        "academic_year": "2026-27",
+        "activity": "NSS Seven-Day Special Camp",
+        "position": "Volunteer",
+        "date_from": "2026-03-05",
+        "date_to": "2026-03-11",
+        "certificate_id": "SRGPC-NSS-TEST01",
+        "template": "nss_seven_day",
+        "font_family": "Helvetica",
+    }
+    draw_certificate(output, info, "https://example.com/verify/SRGPC-NSS-TEST01")
+    pdf = output.read_bytes()
+    assert pdf.startswith(b"%PDF")
+    assert len(pdf) > 5000
+
+
+def test_certificate_schema_has_date_range_columns(app):
+    from app import get_db
+    with get_db() as db:
+        columns = {row[1] for row in db.execute("PRAGMA table_info(certificates)").fetchall()}
+    assert {"date_from", "date_to"}.issubset(columns)
