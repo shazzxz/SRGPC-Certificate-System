@@ -43,7 +43,6 @@
       <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
       <input type="hidden" name="kind" value="{{ kind }}">
       <input type="hidden" name="signature_data" id="data-{{ kind }}">
-      <input type="hidden" name="signature_name" id="name-{{ kind }}">
       <button class="primary-btn inline-btn" type="submit">Save Drawing</button>
     </form>
   </div>
@@ -87,7 +86,7 @@
       {% if rows %}
       <div class="signature-library-list">
         {% for row in rows %}
-        {% set is_active = ((kind == 'teacher' and row['filename'] == (teacher_url.split('/')[-1] if teacher_url else '')) or (kind == 'principal' and row['filename'] == (principal_url.split('/')[-1] if principal_url else ''))) %}
+        {% set is_active = ((kind == 'teacher' and row['filename'] == teacher_active_filename) or (kind == 'principal' and row['filename'] == principal_active_filename)) %}
         <article class="signature-library-item {% if is_active %}is-active{% endif %}">
           <div class="signature-library-preview"><img src="{{ url_for('signature_library_preview', signature_id=row['id']) }}" alt="{{ row['name'] }}"></div>
           <div class="signature-library-copy">
