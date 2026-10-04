@@ -141,3 +141,38 @@ def test_signature_library_persists_named_drawings(app, tmp_path):
     assert restored.read_bytes() == base64.b64decode(png)
 
     set_setting("teacher_signature", "")
+
+
+def test_named_signature_survives_logout_and_login(app):
+    import base64
+    from app import save_signature_data
+
+    _, client = app
+    png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+    save_signature_data("principal", "data:image/png;base64," + png, "Principal Office Signature")
+
+    login_page = client.get("/")
+    token = csrf(login_page.get_data(as_text=True))
+    logged_in = client.post(
+        "/login",
+        data={"role": "admin", "username": "ADMIN", "password": "0000", "_csrf_token": token},
+        follow_redirects=False,
+    )
+    assert logged_in.status_code == 302
+    client.get("/logout")
+
+    relogin_page = client.get("/")
+    relogin_token = csrf(relogin_page.get_data(as_text=True))
+    relogin = client.post(
+        "/login",
+        data={"role": "admin", "username": "ADMIN", "password": "0000", "_csrf_token": relogin_token},
+        follow_redirects=False,
+    )
+    assert relogin.status_code == 302
+    page = client.get("/admin/signatures")
+    assert page.status_code == 200
+    html = page.get_data(as_text=True)
+    assert "Principal Office Signature" in html
+    assert "Saved Signature Library" in html
+    assert "Currently active" in html
+
