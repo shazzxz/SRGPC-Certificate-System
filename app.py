@@ -1891,6 +1891,11 @@ def admin_request_generate(request_id):
         "created_at": datetime.now().isoformat(timespec="seconds"),
         "created_by": session.get("username", ADMIN_USERNAME),
     }
+    try:
+        validate_date_range(info.get("date_from", ""), info.get("date_to", ""), required=info["template"] == "nss_seven_day")
+    except ValueError as exc:
+        flash(str(exc), "error")
+        return redirect(url_for("admin_request_detail", request_id=request_id))
     info["payload_hash"] = cert_payload_hash(info)
     slug = re.sub(r"[^a-zA-Z0-9]+", "_", info["name"]).strip("_").lower() or "student"
     filename = f"{slug}_{info['certificate_id']}.pdf"
