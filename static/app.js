@@ -78,24 +78,22 @@ function drawPreviewFrame(svg,t){
 }
 function nssDateLabel(v){if(!v)return 'Date';const d=new Date(v+'T00:00:00');return Number.isNaN(d.getTime())?'Date':d.toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});}
 function renderNssPreview(svg,stage,ff){
-  addRect(svg,0,0,842,595,{fill:'#fff'});addRect(svg,14,12,814,571,{fill:'none',stroke:'#17345f','stroke-width':1.5});addRect(svg,20,18,802,559,{fill:'none',stroke:'#17345f','stroke-width':0.7});
-  addPath(svg,'M20 18 L180 18 L78 102 L20 118 Z',{fill:'#173b93'});addImage(svg,stage.dataset.logoUrl,33,24,74,74);
-  addText(svg,'सहोद्रा राय शासकीय पॉलीटेक्निक महाविद्यालय सागर (म.प्र.)',421,62,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:21,weight:800,fill:'#17345f',length:760});
-  addText(svg,'An ISO 9001:2015 Certified Institution',421,91,{font:'Arial',size:10.5,fill:'#333'});
-  addText(svg,'युवा कार्यक्रम और खेल मंत्रालय',182,40,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:7.5,fill:'#1f2b3d',anchor:'start'});
-  addText(svg,'MINISTRY OF YOUTH AFFAIRS AND SPORTS',182,54,{font:'Arial',size:7,fill:'#1f2b3d',anchor:'start'});
-  addCircle(svg,300,58,31,{fill:'#8b1e1e'});addCircle(svg,300,58,24,{fill:'#fff'});addCircle(svg,300,58,17,{fill:'#f47a1f'});
-  addLine(svg,300,34,300,82,{stroke:'#fff','stroke-width':2});addLine(svg,276,58,324,58,{stroke:'#fff','stroke-width':2});addLine(svg,283,41,317,75,{stroke:'#fff','stroke-width':2});addLine(svg,317,41,283,75,{stroke:'#fff','stroke-width':2});
-  addText(svg,'NATIONAL SERVICE SCHEME',300,96,{font:'Arial',size:6.5,weight:700,fill:'#17345f'});
-  addText(svg,'my',472,57,{font:'Arial',size:27,weight:800,fill:'#ef3f2f'});addText(svg,'भारत',522,57,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:17,weight:800,fill:'#1a7a49'});
-  addCircle(svg,760,58,29,{fill:'#fff',stroke:'#bb8a31','stroke-width':5});addCircle(svg,760,58,20,{fill:'#ae2235'});addText(svg,'MP',760,58,{font:'Arial',size:8,weight:700,fill:'#fff'});
-  addText(svg,'Certificate No.',680,116,{font:'Arial',size:8,fill:'#111',anchor:'start'});addText(svg,'SRGPC-PREVIEW',736,116,{font:'Arial',size:8,weight:700,fill:'#17345f',anchor:'start'});
-  addText(svg,'राष्ट्रीय सेवा योजना',421,147,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:26,weight:900,fill:'#173b93'});addText(svg,'सात दिवसीय विशेष शिविर',421,177,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:19,weight:800,fill:'#1a4b9c'});
-  addPath(svg,'M250 210 L296 210 L314 224 L296 238 L250 238 L268 224 Z',{fill:'#b3202b'});addPath(svg,'M592 210 L546 210 L528 224 L546 238 L592 238 L574 224 Z',{fill:'#b3202b'});addRect(svg,296,205,250,44,{fill:'#c9272d',stroke:'#b89a5a','stroke-width':1.2,rx:4});addText(svg,'प्रमाण पत्र',421,226,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:23,weight:900,fill:'#fff'});
-  const name=document.getElementById('name')?.value?.trim()||'Student Name', dateFrom=nssDateLabel(document.getElementById('date_from')?.value||''), dateTo=nssDateLabel(document.getElementById('date_to')?.value||'');
-  addText(svg,'प्रमाणित किया जाता है, कि',55,282,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:12.5,weight:700,fill:'#1a2c4c',anchor:'start'});addLine(svg,205,289,790,289,{stroke:'#17345f','stroke-width':1.1,'stroke-dasharray':'2 3'});addText(svg,name,500,279,{font:ff,size:15,weight:800,fill:'#1b54ad',length:250});addText(svg,'ने',790,282,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:12.5,weight:700,fill:'#1a2c4c'});
-  addText(svg,'राष्ट्रीय सेवा योजना (छात्र इकाई) के तत्वावधान में',55,318,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:11.7,weight:700,fill:'#1a2c4c',anchor:'start'});addText(svg,'‘मेरा युवा भारत एवं डिजिटल साक्षरता',350,318,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:11.7,weight:800,fill:'#16743f',anchor:'start'});addText(svg,'के साथ युवाओं की सामाजिक सहभागिता’',55,346,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:11.7,weight:800,fill:'#16743f',anchor:'start'});addText(svg,'परिप्रेक्ष्य में आयोजित पूर्णकालिक सात-दिवसीय विशेष शिविर ग्राम मैनपानी, तहसील/जिला-सागर (म.प्र.) में',330,346,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:11.2,weight:700,fill:'#1a2c4c',anchor:'start'});addText(svg,dateFrom,525,374,{font:'Arial',size:11.7,weight:800,fill:'#c92a2f'});addText(svg,'से',660,374,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:11.7,weight:700,fill:'#1a2c4c'});addText(svg,dateTo,705,374,{font:'Arial',size:11.7,weight:800,fill:'#c92a2f'});addText(svg,'तक स्वयं सेवक / सहयोगी के रूप में योगदान दिया।',55,402,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:11.7,weight:700,fill:'#1a2c4c',anchor:'start'});
-  const teacher=stage.dataset.teacherUrl, principal=stage.dataset.principalUrl;if(teacher)addImage(svg,teacher,98,418,160,48);if(principal)addImage(svg,principal,584,418,160,48);addLine(svg,78,470,278,470,{stroke:'#17345f','stroke-width':0.9});addLine(svg,564,470,764,470,{stroke:'#17345f','stroke-width':0.9});addText(svg,'कार्यक्रम अधिकारी, रासेयो',178,488,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:10.5,weight:800,fill:'#b51e27'});addText(svg,'प्राचार्य',664,488,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:10.5,weight:800,fill:'#173b93'});addRect(svg,391,465,60,60,{fill:'#fff',stroke:'#d5dce8',rx:6});addImage(svg,stage.dataset.qrUrl,398,472,46,46);addText(svg,'SCAN TO VERIFY',421,536,{font:'Arial',size:6.2,weight:700,fill:'#17345f'});
+  addImage(svg,stage.dataset.nssReferenceUrl,0,0,842,595);
+  const name=document.getElementById('name')?.value?.trim()||'Student Name';
+  const cert='SRGPC-PREVIEW';
+  const from=document.getElementById('date_from')?.value||'';
+  const to=document.getElementById('date_to')?.value||'';
+  const dateText=v=>{if(!v)return 'Date';const d=new Date(v+'T00:00:00');return Number.isNaN(d.getTime())?'Date':d.toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});};
+  const range=from||to?dateText(from)+' – '+dateText(to):'DATE RANGE';
+
+  // Cover only the three placeholders in the supplied artwork.
+  addRect(svg,842*.835,595*.700,842*.145,595*.055,{fill:'#fff'});
+  addRect(svg,842*.440,595*.390,842*.280,595*.070,{fill:'#fff'});
+  addRect(svg,842*.685,595*.205,842*.285,595*.075,{fill:'#fff'});
+
+  addText(svg,cert,842*.907,595*.727,{font:'Times New Roman, Times, serif',size:8.6,weight:700,fill:'#173b93',anchor:'middle'});
+  addText(svg,name,842*.580,595*.417,{font:ff,size:16,weight:700,fill:'#b51e27',anchor:'middle',length:206});
+  addText(svg,range,842*.825,595*.245,{font:'Times New Roman, Times, serif',size:11.2,weight:700,fill:'#b51e27',anchor:'middle',length:214});
 }
 function renderLiveCertificate(){
   const stage=document.getElementById('certificateLivePreview');const svg=document.getElementById('certificateLiveSvg');if(!stage||!svg)return;
