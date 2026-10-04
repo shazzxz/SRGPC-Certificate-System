@@ -1,16 +1,124 @@
-{% extends 'base.html' %}{% block title %}Signature Studio · SRGPC{% endblock %}
-{% block heading %}Signature Studio{% endblock %}{% block subheading %}Upload or draw the teacher and principal signatures used on generated PDFs.{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Signature Studio · SRGPC{% endblock %}
+{% block heading %}Signature Studio{% endblock %}
+{% block subheading %}Create reusable signatures once, give each one a name, and select the exact signature you want on future certificates.{% endblock %}
 {% block content %}
 <div class="signature-layout">
 <section class="signature-grid">
-{% for kind,label,has_sig,url in [('teacher','Teacher / Coordinator',teacher_sig,teacher_url),('principal','Principal / Head of Institution',principal_sig,principal_url)] %}
-<div class="panel signature-card"><div class="panel-head"><div><h2>{{ label }}</h2><p>Draw or upload a transparent PNG/JPG signature.</p></div><span class="pill">{{ 'Saved' if has_sig else 'Not Set' }}</span></div>
-<div class="signature-status">{% if has_sig %}<img src="{{ url }}" alt="{{ label }} signature">{% else %}<span>No signature saved yet</span>{% endif %}</div>
-<form class="upload-row" method="post" action="{{ url_for('signature_upload') }}" enctype="multipart/form-data"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="kind" value="{{ kind }}"><input class="signature-file" data-kind="{{ kind }}" type="file" name="signature" accept="image/png,image/jpeg"><button class="secondary-btn" type="submit">Upload</button></form>
-<div class="draw-label">Or draw digitally</div><canvas class="signature-canvas" id="canvas-{{ kind }}" width="700" height="180"></canvas><div class="draw-actions"><button type="button" class="secondary-btn" onclick="clearSignature('{{ kind }}')">Clear</button><form method="post" action="{{ url_for('signature_draw') }}" onsubmit="return saveSignature('{{ kind }}')"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="kind" value="{{ kind }}"><input type="hidden" name="signature_data" id="data-{{ kind }}"><button class="primary-btn inline-btn" type="submit">Save Drawing</button></form></div>{% if has_sig %}<form method="post" action="{{ url_for('signature_remove') }}" class="remove-form"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="kind" value="{{ kind }}"><button class="danger-link" type="submit">Remove current signature</button></form>{% endif %}</div>
+{% for kind,label,has_sig,url,active_name in [('teacher','Teacher / Coordinator',teacher_sig,teacher_url,teacher_active_name),('principal','Principal / Head of Institution',principal_sig,principal_url,principal_active_name)] %}
+<div class="panel signature-card">
+  <div class="panel-head">
+    <div><h2>{{ label }}</h2><p>Save transparent PNG/JPG signatures to your permanent library.</p></div>
+    <span class="pill">{{ 'Active' if has_sig else 'Not Set' }}</span>
+  </div>
+
+  <div class="signature-status {% if has_sig %}has-signature{% endif %}">
+    {% if has_sig %}
+      <img src="{{ url }}" alt="{{ label }} signature">
+    {% else %}
+      <span>No active signature selected</span>
+    {% endif %}
+  </div>
+
+  {% if has_sig %}
+  <div class="active-signature-label"><span>Currently using</span><b>{{ active_name or label ~ ' signature' }}</b></div>
+  {% endif %}
+
+  <form class="signature-name-row" method="post" action="{{ url_for('signature_upload') }}" enctype="multipart/form-data">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="kind" value="{{ kind }}">
+    <label class="sr-only" for="{{ kind }}-upload-name">Signature name</label>
+    <input id="{{ kind }}-upload-name" name="signature_name" type="text" maxlength="80" placeholder="Signature name · e.g. Dr. R. K. Sharma" required>
+    <input class="signature-file" data-kind="{{ kind }}" type="file" name="signature" accept="image/png,image/jpeg" required>
+    <button class="secondary-btn" type="submit">Save to Library</button>
+  </form>
+
+  <div class="draw-label">Or draw a new signature</div>
+  <canvas class="signature-canvas" id="canvas-{{ kind }}" width="700" height="180"></canvas>
+  <div class="signature-name-row draw-signature-row">
+    <label class="sr-only" for="{{ kind }}-draw-name">Signature name</label>
+    <input id="{{ kind }}-draw-name" form="draw-form-{{ kind }}" name="signature_name" type="text" maxlength="80" placeholder="Signature name · e.g. Principal Signature" required>
+    <button type="button" class="secondary-btn" onclick="clearSignature('{{ kind }}')">Clear</button>
+    <form id="draw-form-{{ kind }}" method="post" action="{{ url_for('signature_draw') }}" onsubmit="return saveSignature('{{ kind }}')">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="kind" value="{{ kind }}">
+      <input type="hidden" name="signature_data" id="data-{{ kind }}">
+      <input type="hidden" name="signature_name" id="name-{{ kind }}">
+      <button class="primary-btn inline-btn" type="submit">Save Drawing</button>
+    </form>
+  </div>
+  {% if has_sig %}
+  <form method="post" action="{{ url_for('signature_remove') }}" class="remove-form">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="kind" value="{{ kind }}">
+    <button class="danger-link" type="submit">Clear active signature</button>
+  </form>
+  {% endif %}
+</div>
 {% endfor %}
 </section>
-<section class="panel signature-preview-panel"><div class="panel-head"><div><h2>Live Certificate Preview</h2><p>The signature appears here while you draw, before you save it.</p></div><span class="preview-badge">Live</span></div>
-<div class="preview-frame signature-live-frame"><div class="certificate classic"><div class="cert-logo"><img src="{{ url_for('static', filename='college_logo.png') }}"></div><div class="cert-top"><small>SRGPC</small><span>CERTIFICATE OF ACHIEVEMENT</span></div><div class="cert-body"><small>Presented to</small><h3>Student Name</h3><div class="cert-rule"></div><p>for securing <b>1st Position</b> in <span>Sample Activity</span>.</p></div><div class="cert-sign"><div><img id="previewTeacherSignature" class="preview-signature {% if not teacher_sig %}hidden{% endif %}" src="{{ teacher_url }}"><span>Faculty / Coordinator</span></div><div><img id="previewPrincipalSignature" class="preview-signature {% if not principal_sig %}hidden{% endif %}" src="{{ principal_url }}"><span>Principal / Head</span></div></div><div class="cert-id">LIVE PREVIEW · hash assigned at generation</div></div></div></section>
+
+<section class="panel signature-preview-panel">
+  <div class="panel-head"><div><h2>Live Certificate Preview</h2><p>The active signatures appear here exactly as they will be used during certificate generation.</p></div><span class="preview-badge">Live</span></div>
+  <div class="preview-frame signature-live-frame">
+    <div class="certificate classic">
+      <div class="cert-logo"><img src="{{ url_for('static', filename='college_logo.png') }}" alt=""></div>
+      <div class="cert-top"><small>SRGPC</small><span>CERTIFICATE OF ACHIEVEMENT</span></div>
+      <div class="cert-body"><small>Presented to</small><h3>Student Name</h3><div class="cert-rule"></div><p>for securing <b>1st Position</b> in <span>Sample Activity</span>.</p></div>
+      <div class="cert-sign">
+        <div><img id="previewTeacherSignature" class="preview-signature {% if not teacher_sig %}hidden{% endif %}" src="{{ teacher_url }}" alt=""><span>Faculty / Coordinator</span></div>
+        <div><img id="previewPrincipalSignature" class="preview-signature {% if not principal_sig %}hidden{% endif %}" src="{{ principal_url }}" alt=""><span>Principal / Head</span></div>
+      </div>
+      <div class="cert-id">LIVE PREVIEW · signatures selected from library</div>
+    </div>
+  </div>
+</section>
 </div>
+
+<section class="panel signature-library-panel">
+  <div class="panel-head">
+    <div><h2>Saved Signature Library</h2><p>Keep multiple authorized signatures and switch the active one without redrawing or re-uploading.</p></div>
+    <span class="pill">{{ teacher_library|length + principal_library|length }} saved</span>
+  </div>
+  <div class="signature-library-grid">
+    {% for kind,label,rows in [('teacher','Teacher / Coordinator',teacher_library),('principal','Principal / Head of Institution',principal_library)] %}
+    <div class="signature-library-group">
+      <div class="signature-library-group-head"><h3>{{ label }}</h3><span>{{ rows|length }} saved</span></div>
+      {% if rows %}
+      <div class="signature-library-list">
+        {% for row in rows %}
+        {% set is_active = ((kind == 'teacher' and row['filename'] == (teacher_url.split('/')[-1] if teacher_url else '')) or (kind == 'principal' and row['filename'] == (principal_url.split('/')[-1] if principal_url else ''))) %}
+        <article class="signature-library-item {% if is_active %}is-active{% endif %}">
+          <div class="signature-library-preview"><img src="{{ url_for('signature_library_preview', signature_id=row['id']) }}" alt="{{ row['name'] }}"></div>
+          <div class="signature-library-copy">
+            <strong>{{ row['name'] }}</strong>
+            <small>Saved {{ row['created_at'] }}</small>
+            {% if is_active %}<span class="status-chip generated">Currently active</span>{% endif %}
+          </div>
+          <div class="signature-library-actions">
+            {% if not is_active %}
+            <form method="post" action="{{ url_for('signature_use') }}">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="kind" value="{{ kind }}">
+              <input type="hidden" name="signature_id" value="{{ row['id'] }}">
+              <button class="primary-btn inline-btn" type="submit">Use</button>
+            </form>
+            {% endif %}
+            <form method="post" action="{{ url_for('signature_delete') }}" onsubmit="return confirm('Delete {{ row['name']|e }} from the signature library?')">
+              <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="kind" value="{{ kind }}">
+              <input type="hidden" name="signature_id" value="{{ row['id'] }}">
+              <button class="danger-link" type="submit">Delete</button>
+            </form>
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="signature-library-empty">No saved signatures yet. Draw or upload one above.</div>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
 {% endblock %}
