@@ -103,7 +103,7 @@
               <button class="primary-btn inline-btn" type="submit">Use</button>
             </form>
             {% endif %}
-            <form method="post" action="{{ url_for('signature_delete') }}" onsubmit="return confirm('Delete {{ row['name']|e }} from the signature library?')">
+            <form method="post" action="{{ url_for('signature_delete') }}" onsubmit='return confirm("Delete {{ row["name"]|e }} from the signature library?")'>
               <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
               <input type="hidden" name="kind" value="{{ kind }}">
               <input type="hidden" name="signature_id" value="{{ row['id'] }}">
