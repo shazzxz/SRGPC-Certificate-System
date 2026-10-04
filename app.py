@@ -677,7 +677,7 @@ def current_signature_path(kind):
         return None
     path = Path(filename)
     if not path.is_absolute():
-        path = BASE_DIR / filename
+        path = SIGNATURE_DIR / filename if len(path.parts) == 1 else BASE_DIR / filename
     if path.exists():
         return path
     # Restore the active signature from object storage after an ephemeral deploy.
@@ -942,7 +942,7 @@ def _save_signature_record(kind, name, path, raw, mime_type):
         raise ValueError("Signature image is too large. Keep it under 2 MB.")
     encoded = base64.b64encode(raw).decode("ascii")
     created_at = datetime.now().isoformat(timespec="seconds")
-    relative = str(path.relative_to(BASE_DIR))
+    relative = path.name
     with get_db() as db:
         db.execute(
             "INSERT INTO signature_library(kind,name,filename,mime_type,data_base64,created_at) VALUES(?,?,?,?,?,?)",
@@ -1584,7 +1584,7 @@ def signature_use():
         if not storage_restore_file("signatures", path.name, path):
             flash("The saved signature could not be restored.", "error")
             return redirect(url_for("admin_signatures"))
-    set_setting(f"{kind}_signature", str(path.relative_to(BASE_DIR)))
+    set_setting(f"{kind}_signature", path.name)
     flash(f"{row['name']} is now the active {kind} signature.", "success")
     return redirect(url_for("admin_signatures"))
 
