@@ -1883,7 +1883,9 @@ def admin_request_generate(request_id):
         "department": req["department"] if "department" in req.keys() else "",
         "programme": req["programme"] if "programme" in req.keys() else "",
         "semester": req["semester"] if "semester" in req.keys() else "",
-        "template": allowed_template(request.form.get("template") or setting("default_template", "classic")),
+        "date_from": clean(request.form.get("date_from"), 10),
+        "date_to": clean(request.form.get("date_to"), 10),
+        "template": allowed_template(request.form.get("template") or ("nss_seven_day" if req["request_type"] == "NSS" else setting("default_template", "classic"))),
         "font_family": allowed_font(request.form.get("font_family") or setting("default_font", "Helvetica")),
         "certificate_id": make_certificate_id(),
         "created_at": datetime.now().isoformat(timespec="seconds"),
@@ -1895,7 +1897,7 @@ def admin_request_generate(request_id):
     render_certificate(GENERATED_DIR / filename, info, public_verify_url(info["certificate_id"]))
     pdf_hash = file_sha256(GENERATED_DIR / filename)
     with get_db() as db:
-        db.execute("INSERT INTO certificates(certificate_id,name,roll_number,activity,position,template,font_family,filename,created_at,certificate_type,academic_year,status,payload_hash,pdf_sha256,created_by,request_id,department,programme,semester) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (info["certificate_id"], info["name"], info["roll_number"], info["activity"], info["position"], info["template"], info["font_family"], filename, info["created_at"], info["certificate_type"], info["academic_year"], "Valid", info["payload_hash"], pdf_hash, info["created_by"], request_id, info["department"], info["programme"], info["semester"]))
+        db.execute("INSERT INTO certificates(certificate_id,name,roll_number,activity,position,template,font_family,filename,created_at,certificate_type,academic_year,status,payload_hash,pdf_sha256,created_by,request_id,department,programme,semester,date_from,date_to) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (info["certificate_id"], info["name"], info["roll_number"], info["activity"], info["position"], info["template"], info["font_family"], filename, info["created_at"], info["certificate_type"], info["academic_year"], "Valid", info["payload_hash"], pdf_hash, info["created_by"], request_id, info["department"], info["programme"], info["semester"], info["date_from"], info["date_to"]))
         db.execute("UPDATE certificate_requests SET status='Generated', processed_at=?, processed_by=?, certificate_id=? WHERE id=?", (info["created_at"], session.get("username", ADMIN_USERNAME), info["certificate_id"], request_id))
         add_certificate_history(db, info["certificate_id"], "Generated", "Certificate generated from request.", session.get("admin_role","admin"), session.get("username", ADMIN_USERNAME), info["created_at"])
         add_request_update(db, request_id, "Generated", f"Certificate generated: {info['certificate_id']}.", session.get("admin_role","admin"), session.get("username", ADMIN_USERNAME))
@@ -2326,7 +2328,7 @@ def admin_bulk_generate():
         reader = csv.DictReader(io.StringIO(text))
         required = {"Name","Roll Number","Activity","Position"}
         if not reader.fieldnames or not required.issubset(set(reader.fieldnames)):
-            flash("CSV must contain: Name, Roll Number, Activity, Position. Optional: Certificate Type, Academic Year, Template, Font Family.", "error")
+            flash("CSV must contain: Name, Roll Number, Activity, Position. Optional: Certificate Type, Academic Year, Template, Font Family, Date From, Date To.", "error")
             return redirect(url_for("admin_bulk"))
         tmpdir = Path(tempfile.mkdtemp(prefix="srgpc_bulk_"))
         generated = []
@@ -2343,6 +2345,8 @@ def admin_bulk_generate():
                     "department": clean(row.get("Department"),60),
                     "programme": clean(row.get("Programme"),60),
                     "semester": clean(row.get("Semester"),10),
+                    "date_from": clean(row.get("Date From"),10),
+                    "date_to": clean(row.get("Date To"),10),
                 }
                 if not all([info["name"],info["roll_number"],info["activity"],info["position"]]):
                     skipped.append(f"Row {idx}: missing required field")
@@ -2371,7 +2375,7 @@ def admin_bulk_generate():
                 final = GENERATED_DIR / filename
                 shutil.copy2(outpath, final)
                 with get_db() as db:
-                    db.execute("INSERT INTO certificates(certificate_id,name,roll_number,activity,position,template,font_family,filename,created_at,certificate_type,academic_year,status,payload_hash,pdf_sha256,created_by,department,programme,semester) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (info["certificate_id"],info["name"],info["roll_number"],info["activity"],info["position"],info["template"],info["font_family"],filename,info["created_at"],info["certificate_type"],info["academic_year"],"Valid",info["payload_hash"],pdf_hash,info["created_by"],info["department"],info["programme"],info["semester"]))
+                    db.execute("INSERT INTO certificates(certificate_id,name,roll_number,activity,position,template,font_family,filename,created_at,certificate_type,academic_year,status,payload_hash,pdf_sha256,created_by,department,programme,semester,date_from,date_to) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (info["certificate_id"],info["name"],info["roll_number"],info["activity"],info["position"],info["template"],info["font_family"],filename,info["created_at"],info["certificate_type"],info["academic_year"],"Valid",info["payload_hash"],pdf_hash,info["created_by"],info["department"],info["programme"],info["semester"],info.get("date_from",""),info.get("date_to","")))
                     add_certificate_history(db, info["certificate_id"], "Generated", f"Bulk CSV row {idx}.", session.get("admin_role","admin"), session.get("username",ADMIN_USERNAME), info["created_at"])
                     db.commit()
                 generated.append(filename)
