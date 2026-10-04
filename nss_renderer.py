@@ -63,7 +63,7 @@ def render_nss_certificate(target, info: dict, verification_url: Optional[str],
         except Exception:
             return value or "Date"
 
-    date_range = f"{date_text(date_from)} से {date_text(date_to)}" if date_from or date_to else "DATE RANGE"
+    date_range = f"{date_text(date_from)} – {date_text(date_to)}" if date_from or date_to else "DATE RANGE"
 
     _draw_centered(
         c, cert_id, page_width * 0.907, page_height * 0.727,
