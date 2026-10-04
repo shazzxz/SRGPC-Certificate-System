@@ -263,6 +263,18 @@ TEMPLATES = {
     "burgundy": {"name": "Burgundy Honor", "description": "Refined wine-and-ivory certificate with restrained gold detailing."},
     "skyline": {"name": "Skyline", "description": "Contemporary geometric blue certificate."},
     "minimal": {"name": "Pure Minimal", "description": "Ultra-clean design for a modern college identity."},
+    "academic_blueprint": {"name": "Academic Blueprint", "description": "Structured collegiate frame with drafting-line details and deep blue accents."},
+    "heritage_seal": {"name": "Heritage Seal", "description": "Traditional green-and-gold design with ceremonial corner seals."},
+    "teal_arch": {"name": "Teal Arch", "description": "Contemporary teal certificate with a distinctive architectural arch motif."},
+    "copper_ledger": {"name": "Copper Ledger", "description": "Warm parchment-inspired layout with copper rules and ledger detailing."},
+    "ivory_ribbon": {"name": "Ivory Ribbon", "description": "Elegant ivory certificate framed by navy and restrained gold ribbons."},
+    "crimson_sash": {"name": "Crimson Sash", "description": "Bold academic presentation with crimson diagonal corner sashes."},
+    "cobalt_wave": {"name": "Cobalt Wave", "description": "Clean blue presentation with a flowing wave footer and rounded frame."},
+    "sage_garden": {"name": "Sage Garden", "description": "Soft botanical-inspired certificate with calm sage-green detailing."},
+    "charcoal_gold": {"name": "Charcoal Gold", "description": "Premium dark certificate combining charcoal depth with metallic-gold accents."},
+    "coastal": {"name": "Coastal Horizon", "description": "Fresh blue-and-coral certificate with a light coastal wave motif."},
+    "geometric": {"name": "Geometric Grid", "description": "Modern academic geometry with indigo framing and diamond corner marks."},
+    "monochrome": {"name": "Monochrome Executive", "description": "Crisp black-and-white certificate built for a formal executive look."},
 }
 
 FONT_OPTIONS = {
