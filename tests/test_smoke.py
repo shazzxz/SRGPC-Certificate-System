@@ -85,3 +85,29 @@ def test_custom_404_state(app):
     assert response.status_code == 404
     html = response.get_data(as_text=True)
     assert "This page isn't available" in html
+
+
+def test_all_certificate_templates_render(app, tmp_path):
+    from app import TEMPLATES as APP_TEMPLATES
+    from certificate_renderer import TEMPLATES as RENDER_TEMPLATES, draw_certificate
+
+    assert len(APP_TEMPLATES) == 20
+    assert set(APP_TEMPLATES) == set(RENDER_TEMPLATES)
+
+    sample = {
+        "name": "Aarav Sharma",
+        "roll_number": "CSE24017",
+        "activity": "National Technical Innovation Challenge",
+        "position": "First Position",
+        "certificate_type": "Achievement",
+        "academic_year": "2026-27",
+        "certificate_id": "SRGPC-2026-TEST01",
+        "font_family": "Helvetica",
+        "title": "CERTIFICATE OF ACHIEVEMENT",
+    }
+    for template in RENDER_TEMPLATES:
+        output = tmp_path / f"{template}.pdf"
+        draw_certificate(output, {**sample, "template": template}, "https://example.com/verify/SRGPC-2026-TEST01")
+        pdf = output.read_bytes()
+        assert pdf.startswith(b"%PDF")
+        assert len(pdf) > 2000
