@@ -60,7 +60,7 @@
            data-qr-url="{{ url_for('static', filename='preview_qr.png') }}"
            data-teacher-url="{{ url_for('signature_preview', kind='teacher') if teacher_sig else '' }}"
            data-principal-url="{{ url_for('signature_preview', kind='principal') if principal_sig else '' }}"
-           data-nss-reference-url="{{ url_for('static', filename='nss_reference.png') }}">
+           data-nss-reference-url="{{ url_for('static', filename='nss_reference.jpg') }}">
         <svg id="certificateLiveSvg" class="certificate-live-svg" viewBox="0 0 842 595" role="img" aria-label="Live certificate preview" preserveAspectRatio="xMidYMid meet"></svg>
       </div>
       <div class="preview-live-status"><span class="status-dot"></span>Live preview · updates instantly as you type</div>
