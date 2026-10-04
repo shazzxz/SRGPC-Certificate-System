@@ -8,7 +8,7 @@ from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 
-REFERENCE_IMAGE = Path(__file__).resolve().parent / "static" / "nss_reference.png"
+REFERENCE_IMAGE = Path(__file__).resolve().parent / "static" / "nss_ref.jpg"
 
 
 def _fit_size(text: str, font: str, max_size: float, min_size: float, max_width: float) -> float:
