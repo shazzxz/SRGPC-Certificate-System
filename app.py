@@ -1532,6 +1532,8 @@ def admin_signatures():
         principal_sig=bool(principal_path),
         teacher_active_name=teacher_active["name"] if teacher_active else "",
         principal_active_name=principal_active["name"] if principal_active else "",
+        teacher_active_filename=teacher_active["filename"] if teacher_active else "",
+        principal_active_filename=principal_active["filename"] if principal_active else "",
         teacher_url=url_for("signature_preview", kind="teacher") if teacher_path else "",
         principal_url=url_for("signature_preview", kind="principal") if principal_path else "",
         teacher_library=_signature_library_rows("teacher"),
