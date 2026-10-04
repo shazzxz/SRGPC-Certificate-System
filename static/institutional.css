@@ -824,3 +824,6 @@ body.glass-auth{
   html{scroll-behavior:auto}
   *,*:before,*:after{transition:none!important;animation:none!important}
 }
+
+.glass-ui .nav-icon{display:inline-flex!important;align-items:center;justify-content:center;flex:0 0 19px;width:19px!important;height:19px;color:currentColor!important;opacity:.95!important}
+.glass-ui .nav-icon svg{display:block;width:18px;height:18px;overflow:visible}
