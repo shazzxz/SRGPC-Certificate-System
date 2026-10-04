@@ -6,7 +6,6 @@ from typing import BinaryIO, Optional
 
 import qrcode
 from reportlab.lib import colors
-from nss_renderer import render_nss_certificate
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas
@@ -53,7 +52,6 @@ TEMPLATES = {
     "coastal": {"bg": "#f4fbfd", "ink": "#173a4f", "muted": "#68808c", "accent": "#0b82a5", "accent_soft": "#d9f0f6"},
     "geometric": {"bg": "#fbfcff", "ink": "#20273a", "muted": "#707a8e", "accent": "#4056a1", "accent_soft": "#e8ebf8"},
     "monochrome": {"bg": "#ffffff", "ink": "#1f2933", "muted": "#737b86", "accent": "#20252b", "accent_soft": "#edf0f2"},
-    "nss_seven_day": {"bg": "#ffffff", "ink": "#142a56", "muted": "#5f6f85", "accent": "#173f93", "accent_soft": "#f5e9d1"},
 }
 
 
@@ -394,10 +392,6 @@ def draw_certificate(target, info: dict, verification_url: Optional[str] = None,
     stream = str(target) if close_stream else target
     c = canvas.Canvas(stream, pagesize=(PAGE_W, PAGE_H))
     tpl = info.get("template") if info.get("template") in TEMPLATES else "classic"
-    if tpl == "nss_seven_day":
-        return render_nss_certificate(
-            target, info, verification_url, logo_path, teacher_sig, principal_sig, PAGE_W, PAGE_H
-        )
     theme = TEMPLATES[tpl]
     font = _font_family(info.get("font_family", "Helvetica"))
     cx = content_center(tpl)
