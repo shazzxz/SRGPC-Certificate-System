@@ -24,8 +24,6 @@
     <form method="post" action="{{ url_for('admin_request_generate',request_id=request.id) }}" class="admin-generate-request"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
       <label>Template<select name="template"><option value="{{ default_template }}">Default template</option>{% for key,tpl in templates.items() %}<option value="{{ key }}">{{ tpl.name }}</option>{% endfor %}</select></label>
       <label>Font<select name="font_family"><option value="{{ default_font }}">Default font</option><option value="Helvetica">Helvetica</option><option value="Times">Times</option><option value="Courier">Courier</option></select></label>
-      <label>Date From<input type="date" name="date_from"></label>
-      <label>Date To<input type="date" name="date_to"></label>
       <button class="primary-btn" type="submit">Generate Certificate →</button>
     </form>
     <form method="post" action="{{ url_for('admin_request_reject',request_id=request.id) }}" class="reject-inline"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input name="admin_note" placeholder="Reason for rejection (optional)"><button class="secondary-btn danger-btn" type="submit">Reject Request</button></form>
