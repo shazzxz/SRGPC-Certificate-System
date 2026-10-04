@@ -827,3 +827,17 @@ body.glass-auth{
 
 .glass-ui .nav-icon{display:inline-flex!important;align-items:center;justify-content:center;flex:0 0 19px;width:19px!important;height:19px;color:currentColor!important;opacity:.95!important}
 .glass-ui .nav-icon svg{display:block;width:18px;height:18px;overflow:visible}
+
+/* New certificate template thumbnails */
+.glass-ui .mini-cert.academic_blueprint,.glass-ui .certificate.academic_blueprint{background:#f7fbff;color:#16324f;border:1px solid #1f5f9a;box-shadow:inset 0 0 0 4px #e1effb}
+.glass-ui .mini-cert.heritage_seal,.glass-ui .certificate.heritage_seal{background:#fbf8f0;color:#273a30;border:1px solid #2f6b4f;box-shadow:inset 0 0 0 5px #e4eee7}
+.glass-ui .mini-cert.teal_arch,.glass-ui .certificate.teal_arch{background:#f7fcfb;color:#123b3a;border-left:6px solid #0f766e;border-right:6px solid #0f766e}
+.glass-ui .mini-cert.copper_ledger,.glass-ui .certificate.copper_ledger{background:#fbf4ea;color:#422b20;border:1px solid #a85b2a;box-shadow:inset 0 0 0 4px #f1dfd0}
+.glass-ui .mini-cert.ivory_ribbon,.glass-ui .certificate.ivory_ribbon{background:#fffdf6;color:#24354a;border-top:8px solid #24354a;border-bottom:8px solid #24354a}
+.glass-ui .mini-cert.crimson_sash,.glass-ui .certificate.crimson_sash{background:#fffafa;color:#3e171c;border:1px solid #b4232f;box-shadow:inset 0 0 0 8px #f3d9dd}
+.glass-ui .mini-cert.cobalt_wave,.glass-ui .certificate.cobalt_wave{background:#f5f9ff;color:#10284a;border:1px solid #2458c7}
+.glass-ui .mini-cert.sage_garden,.glass-ui .certificate.sage_garden{background:#f8fbf6;color:#263b2b;border:1px solid #5f7f51;border-radius:14px}
+.glass-ui .mini-cert.charcoal_gold,.glass-ui .certificate.charcoal_gold{background:#171a1f;color:#f8fafc;border:1px solid #d2ad5f}
+.glass-ui .mini-cert.coastal,.glass-ui .certificate.coastal{background:#f4fbfd;color:#173a4f;border-left:9px solid #e49b7e;border-top:1px solid #0b82a5}
+.glass-ui .mini-cert.geometric,.glass-ui .certificate.geometric{background:#fbfcff;color:#20273a;border:1px solid #4056a1;box-shadow:inset 0 0 0 4px #e8ebf8}
+.glass-ui .mini-cert.monochrome,.glass-ui .certificate.monochrome{background:#fff;color:#1f2933;border-left:8px solid #20252b;border-right:1px solid #20252b}

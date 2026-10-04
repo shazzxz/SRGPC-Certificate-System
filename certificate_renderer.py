@@ -40,6 +40,18 @@ TEMPLATES = {
     "burgundy": {"bg": "#fffaf7", "ink": "#3f1719", "muted": "#8b6d6e", "accent": "#8f2027", "accent_soft": "#f2e0d8"},
     "skyline": {"bg": "#f6fbff", "ink": "#10233c", "muted": "#6e8197", "accent": "#0ea5e9", "accent_soft": "#dff4ff"},
     "minimal": {"bg": "#ffffff", "ink": "#111827", "muted": "#6b7280", "accent": "#334155", "accent_soft": "#f1f5f9"},
+    "academic_blueprint": {"bg": "#f7fbff", "ink": "#16324f", "muted": "#60758c", "accent": "#1f5f9a", "accent_soft": "#e1effb"},
+    "heritage_seal": {"bg": "#fbf8f0", "ink": "#273a30", "muted": "#758078", "accent": "#2f6b4f", "accent_soft": "#e4eee7"},
+    "teal_arch": {"bg": "#f7fcfb", "ink": "#123b3a", "muted": "#6a8382", "accent": "#0f766e", "accent_soft": "#dcefeb"},
+    "copper_ledger": {"bg": "#fbf4ea", "ink": "#422b20", "muted": "#826a5c", "accent": "#a85b2a", "accent_soft": "#f1dfd0"},
+    "ivory_ribbon": {"bg": "#fffdf6", "ink": "#24354a", "muted": "#738092", "accent": "#8b6a1f", "accent_soft": "#f5e9c5"},
+    "crimson_sash": {"bg": "#fffafa", "ink": "#3e171c", "muted": "#866d72", "accent": "#b4232f", "accent_soft": "#f3d9dd"},
+    "cobalt_wave": {"bg": "#f5f9ff", "ink": "#10284a", "muted": "#657a96", "accent": "#2458c7", "accent_soft": "#dbe6fb"},
+    "sage_garden": {"bg": "#f8fbf6", "ink": "#263b2b", "muted": "#6e806f", "accent": "#5f7f51", "accent_soft": "#e4eddf"},
+    "charcoal_gold": {"bg": "#171a1f", "ink": "#f8fafc", "muted": "#b5b8bf", "accent": "#d2ad5f", "accent_soft": "#3a3325"},
+    "coastal": {"bg": "#f4fbfd", "ink": "#173a4f", "muted": "#68808c", "accent": "#0b82a5", "accent_soft": "#d9f0f6"},
+    "geometric": {"bg": "#fbfcff", "ink": "#20273a", "muted": "#707a8e", "accent": "#4056a1", "accent_soft": "#e8ebf8"},
+    "monochrome": {"bg": "#ffffff", "ink": "#1f2933", "muted": "#737b86", "accent": "#20252b", "accent_soft": "#edf0f2"},
 }
 
 
@@ -250,6 +262,90 @@ def draw_frame(c: canvas.Canvas, tpl: str, theme: dict):
         for x, h in [(18, 90), (38, 135), (58, 108), (78, 160)]:
             c.setFillColor(colors.HexColor("#14508d")); c.rect(x, 28, 13, h, fill=1, stroke=0)
         c.setStrokeColor(colors.HexColor("#cbd5e1")); c.setLineWidth(0.7); c.rect(118, 24, PAGE_W-142, PAGE_H-48, fill=0, stroke=1)
+    elif tpl == "academic_blueprint":
+        navy = colors.HexColor("#16324f")
+        blue = colors.HexColor("#1f5f9a")
+        c.setStrokeColor(navy); c.setLineWidth(1.6); c.rect(24, 24, PAGE_W-48, PAGE_H-48, fill=0, stroke=1)
+        c.setStrokeColor(colors.HexColor("#9db8d1")); c.setLineWidth(0.7); c.setDash(3, 2); c.rect(34, 34, PAGE_W-68, PAGE_H-68, fill=0, stroke=1); c.setDash()
+        c.setStrokeColor(blue); c.setLineWidth(1.2)
+        c.line(50, PAGE_H-58, 182, PAGE_H-58); c.line(PAGE_W-182, PAGE_H-58, PAGE_W-50, PAGE_H-58)
+        c.line(50, 58, 182, 58); c.line(PAGE_W-182, 58, PAGE_W-50, 58)
+        for x in (54, PAGE_W-54):
+            c.line(x, PAGE_H-58, x, PAGE_H-86); c.line(x, 58, x, 86)
+    elif tpl == "heritage_seal":
+        green = colors.HexColor("#2f6b4f")
+        gold = colors.HexColor("#b49755")
+        c.setStrokeColor(green); c.setLineWidth(2.0); c.roundRect(24, 24, PAGE_W-48, PAGE_H-48, 10, fill=0, stroke=1)
+        c.setStrokeColor(gold); c.setLineWidth(0.8); c.roundRect(36, 36, PAGE_W-72, PAGE_H-72, 8, fill=0, stroke=1)
+        for x, y in [(56,56),(PAGE_W-56,56),(56,PAGE_H-56),(PAGE_W-56,PAGE_H-56)]:
+            c.setFillColor(colors.HexColor("#e4eee7")); c.circle(x,y,14,fill=1,stroke=0)
+            c.setStrokeColor(gold); c.setLineWidth(0.7); c.circle(x,y,8,fill=0,stroke=1)
+            c.line(x-5,y,x+5,y); c.line(x,y-5,x,y+5)
+    elif tpl == "teal_arch":
+        teal = colors.HexColor("#0f766e")
+        c.setFillColor(colors.HexColor("#eaf7f4")); c.rect(0,0,18,PAGE_H,fill=1,stroke=0); c.rect(PAGE_W-18,0,18,PAGE_H,fill=1,stroke=0)
+        c.setStrokeColor(teal); c.setLineWidth(1.5); c.rect(29,29,PAGE_W-58,PAGE_H-58,fill=0,stroke=1)
+        c.setLineWidth(0.9); c.arc(PAGE_W/2-96, PAGE_H-122, PAGE_W/2+96, PAGE_H+70, 0, 180)
+        c.setStrokeColor(colors.HexColor("#9fcfc7")); c.setLineWidth(0.7); c.arc(PAGE_W/2-82, PAGE_H-110, PAGE_W/2+82, PAGE_H+54, 0, 180)
+    elif tpl == "copper_ledger":
+        copper = colors.HexColor("#a85b2a")
+        c.setStrokeColor(copper); c.setLineWidth(1.6); c.rect(25,25,PAGE_W-50,PAGE_H-50,fill=0,stroke=1)
+        c.setStrokeColor(colors.HexColor("#d7ae8d")); c.setLineWidth(0.7); c.rect(36,36,PAGE_W-72,PAGE_H-72,fill=0,stroke=1)
+        c.setStrokeColor(colors.HexColor("#c78960")); c.setLineWidth(0.6)
+        for y in range(86, int(PAGE_H-85), 24):
+            c.line(42,y,65,y); c.line(PAGE_W-65,y,PAGE_W-42,y)
+    elif tpl == "ivory_ribbon":
+        navy = colors.HexColor("#24354a")
+        gold = colors.HexColor("#8b6a1f")
+        c.setFillColor(navy); c.rect(0,PAGE_H-34,PAGE_W,34,fill=1,stroke=0); c.rect(0,0,PAGE_W,16,fill=1,stroke=0)
+        c.setFillColor(gold); c.rect(0,PAGE_H-38,PAGE_W,3,fill=1,stroke=0); c.rect(0,16,PAGE_W,3,fill=1,stroke=0)
+        c.setStrokeColor(colors.HexColor("#d9cda9")); c.setLineWidth(0.8); c.rect(24,28,PAGE_W-48,PAGE_H-56,fill=0,stroke=1)
+    elif tpl == "crimson_sash":
+        crimson = colors.HexColor("#b4232f")
+        p = c.beginPath(); p.moveTo(PAGE_W-220,PAGE_H); p.lineTo(PAGE_W,PAGE_H); p.lineTo(PAGE_W,PAGE_H-54); p.lineTo(PAGE_W-170,PAGE_H-54); p.close()
+        c.setFillColor(colors.HexColor("#f1c4c9")); c.drawPath(p,fill=1,stroke=0)
+        p = c.beginPath(); p.moveTo(0,0); p.lineTo(180,0); p.lineTo(0,58); p.close()
+        c.setFillColor(colors.HexColor("#f1c4c9")); c.drawPath(p,fill=1,stroke=0)
+        c.setStrokeColor(crimson); c.setLineWidth(1.7); c.rect(26,26,PAGE_W-52,PAGE_H-52,fill=0,stroke=1)
+        c.setLineWidth(0.6); c.rect(37,37,PAGE_W-74,PAGE_H-74,fill=0,stroke=1)
+    elif tpl == "cobalt_wave":
+        cobalt = colors.HexColor("#2458c7")
+        c.setStrokeColor(cobalt); c.setLineWidth(1.8); c.roundRect(25,25,PAGE_W-50,PAGE_H-50,14,fill=0,stroke=1)
+        p = c.beginPath(); p.moveTo(0,54); p.curveTo(130,20,240,78,370,46); p.curveTo(520,10,650,76,PAGE_W,38); p.lineTo(PAGE_W,0); p.lineTo(0,0); p.close()
+        c.setFillColor(colors.HexColor("#dce6fb")); c.drawPath(p,fill=1,stroke=0)
+        c.setStrokeColor(colors.HexColor("#9ab5eb")); c.setLineWidth(0.9); c.arc(40,38,150,106,190,160); c.arc(PAGE_W-150,38,PAGE_W-40,106,10,160)
+    elif tpl == "sage_garden":
+        sage = colors.HexColor("#5f7f51")
+        c.setStrokeColor(sage); c.setLineWidth(1.8); c.roundRect(24,24,PAGE_W-48,PAGE_H-48,12,fill=0,stroke=1)
+        c.setStrokeColor(colors.HexColor("#b7c7ad")); c.setLineWidth(0.7); c.roundRect(37,37,PAGE_W-74,PAGE_H-74,9,fill=0,stroke=1)
+        for x, y, dx, dy in [(54,PAGE_H-54,16,-18),(PAGE_W-54,PAGE_H-54,-16,-18),(54,54,16,18),(PAGE_W-54,54,-16,18)]:
+            c.setStrokeColor(sage); c.setLineWidth(0.8); c.line(x,y,x+dx,y+dy); c.circle(x+dx,y+dy,4,fill=0,stroke=1); c.circle(x+dx*0.7,y+dy*0.65,3,fill=1,stroke=0)
+    elif tpl == "charcoal_gold":
+        gold = colors.HexColor("#d2ad5f")
+        c.setStrokeColor(gold); c.setLineWidth(1.6); c.rect(24,24,PAGE_W-48,PAGE_H-48,fill=0,stroke=1)
+        c.setStrokeColor(colors.HexColor("#6c5830")); c.setLineWidth(0.7); c.rect(35,35,PAGE_W-70,PAGE_H-70,fill=0,stroke=1)
+        c.setFillColor(gold); c.rect(24,PAGE_H-31,PAGE_W,7,fill=1,stroke=0); c.rect(24,24,PAGE_W-48,3,fill=1,stroke=0)
+        c.setFillColor(colors.HexColor("#2a2417")); c.circle(PAGE_W/2,PAGE_H-68,30,fill=1,stroke=0)
+    elif tpl == "coastal":
+        blue = colors.HexColor("#0b82a5")
+        coral = colors.HexColor("#e49b7e")
+        c.setFillColor(coral); c.rect(0,0,14,PAGE_H,fill=1,stroke=0); c.setFillColor(colors.HexColor("#d9f0f6")); c.rect(14,0,42,PAGE_H,fill=1,stroke=0)
+        c.setStrokeColor(blue); c.setLineWidth(1.3); c.roundRect(66,24,PAGE_W-90,PAGE_H-48,10,fill=0,stroke=1)
+        c.setStrokeColor(colors.HexColor("#9bcbd8")); c.setLineWidth(0.9)
+        c.line(80,52,220,52); c.line(220,52,360,58); c.line(360,58,500,50); c.line(500,50,640,57); c.line(640,57,PAGE_W-45,51)
+    elif tpl == "geometric":
+        indigo = colors.HexColor("#4056a1")
+        c.setStrokeColor(indigo); c.setLineWidth(1.4); c.rect(24,24,PAGE_W-48,PAGE_H-48,fill=0,stroke=1)
+        c.setStrokeColor(colors.HexColor("#d7dcef")); c.setLineWidth(0.7); c.rect(34,34,PAGE_W-68,PAGE_H-68,fill=0,stroke=1)
+        for x,y in [(56,56),(PAGE_W-56,56),(56,PAGE_H-56),(PAGE_W-56,PAGE_H-56)]:
+            path=c.beginPath(); path.moveTo(x,y-9); path.lineTo(x+9,y); path.lineTo(x,y+9); path.lineTo(x-9,y); path.close()
+            c.setFillColor(colors.HexColor("#e8ebf8")); c.drawPath(path,fill=1,stroke=0); c.setStrokeColor(indigo); c.setLineWidth(0.6); c.drawPath(path,fill=0,stroke=1)
+    elif tpl == "monochrome":
+        charcoal = colors.HexColor("#20252b")
+        c.setFillColor(charcoal); c.rect(0,0,11,PAGE_H,fill=1,stroke=0); c.rect(0,PAGE_H-8,PAGE_W,8,fill=1,stroke=0)
+        c.setStrokeColor(charcoal); c.setLineWidth(0.9); c.rect(30,30,PAGE_W-60,PAGE_H-60,fill=0,stroke=1)
+        c.setStrokeColor(colors.HexColor("#dfe3e7")); c.setLineWidth(0.7); c.rect(42,42,PAGE_W-84,PAGE_H-84,fill=0,stroke=1)
+        c.line(160,104,PAGE_W-160,104)
     else:  # minimal
         c.setStrokeColor(colors.HexColor("#cbd5e1")); c.setLineWidth(0.9); c.rect(SAFE+10, SAFE+10, PAGE_W-2*(SAFE+10), PAGE_H-2*(SAFE+10), fill=0, stroke=1)
         c.setStrokeColor(colors.HexColor("#e2e8f0")); c.setLineWidth(0.7); c.line(180, 104, PAGE_W-180, 104)
@@ -333,10 +429,10 @@ def draw_certificate(target, info: dict, verification_url: Optional[str] = None,
 
     # Signatures live in a dedicated band above the footer. Their lines are always
     # inside the page border and to the left of the QR verification panel.
-    line_color = colors.HexColor("#94a3b8") if tpl != "midnight" else colors.HexColor("#64748b")
+    line_color = colors.HexColor("#94a3b8") if tpl not in {"midnight", "charcoal_gold"} else (colors.HexColor("#64748b") if tpl == "midnight" else colors.HexColor("#8e7442"))
     sig_ink = colors.HexColor(theme["ink"])
     sig_xs = signature_centers(tpl)
-    if tpl == "midnight":
+    if tpl in {"midnight", "charcoal_gold"}:
         for sx, sig_path in zip(sig_xs, (teacher_sig, principal_sig)):
             if sig_path and Path(sig_path).exists():
                 c.setFillColor(colors.white)
