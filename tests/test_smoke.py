@@ -111,3 +111,68 @@ def test_all_certificate_templates_render(app, tmp_path):
         pdf = output.read_bytes()
         assert pdf.startswith(b"%PDF")
         assert len(pdf) > 2000
+
+
+def test_signature_library_persists_named_drawings(app, tmp_path):
+    import base64
+    from app import current_signature_path, get_db, save_signature_data, set_setting
+
+    png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+    save_signature_data(
+        "teacher",
+        "data:image/png;base64," + png,
+        "Dr. R. K. Sharma Signature",
+    )
+
+    with get_db() as db:
+        row = db.execute(
+            "SELECT name,filename,mime_type,data_base64 FROM signature_library WHERE kind='teacher' ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+    assert row is not None
+    assert row["name"] == "Dr. R. K. Sharma Signature"
+    assert row["mime_type"] == "image/png"
+    assert base64.b64decode(row["data_base64"]) == base64.b64decode(png)
+
+    active = current_signature_path("teacher")
+    assert active and active.exists()
+    active.unlink()
+    restored = current_signature_path("teacher")
+    assert restored and restored.exists()
+    assert restored.read_bytes() == base64.b64decode(png)
+
+    set_setting("teacher_signature", "")
+
+
+def test_named_signature_survives_logout_and_login(app):
+    import base64
+    from app import save_signature_data
+
+    _, client = app
+    png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+    save_signature_data("principal", "data:image/png;base64," + png, "Principal Office Signature")
+
+    login_page = client.get("/")
+    token = csrf(login_page.get_data(as_text=True))
+    logged_in = client.post(
+        "/login",
+        data={"role": "admin", "username": "ADMIN", "password": "0000", "_csrf_token": token},
+        follow_redirects=False,
+    )
+    assert logged_in.status_code == 302
+    client.get("/logout")
+
+    relogin_page = client.get("/")
+    relogin_token = csrf(relogin_page.get_data(as_text=True))
+    relogin = client.post(
+        "/login",
+        data={"role": "admin", "username": "ADMIN", "password": "0000", "_csrf_token": relogin_token},
+        follow_redirects=False,
+    )
+    assert relogin.status_code == 302
+    page = client.get("/admin/signatures")
+    assert page.status_code == 200
+    html = page.get_data(as_text=True)
+    assert "Principal Office Signature" in html
+    assert "Saved Signature Library" in html
+    assert "Currently active" in html
+

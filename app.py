@@ -482,6 +482,15 @@ def init_db():
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL
             )""",
+            f"""CREATE TABLE IF NOT EXISTS signature_library (
+                id {id_pk},
+                kind TEXT NOT NULL,
+                name TEXT NOT NULL,
+                filename TEXT NOT NULL UNIQUE,
+                mime_type TEXT NOT NULL,
+                data_base64 TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )""",
             f"""CREATE TABLE IF NOT EXISTS admin_users (
                 id {id_pk},
                 username TEXT NOT NULL UNIQUE{case_unique},
@@ -646,17 +655,38 @@ def init_db():
 init_db()
 
 
+def _signature_library_row(filename):
+    with get_db() as db:
+        return db.execute("SELECT * FROM signature_library WHERE filename=? LIMIT 1", (filename,)).fetchone()
+
+
+def _restore_signature_row(row, target):
+    try:
+        raw = base64.b64decode(row["data_base64"], validate=True)
+    except Exception:
+        return False
+    target = Path(target)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(raw)
+    return target.exists()
+
+
 def current_signature_path(kind):
     filename = setting(f"{kind}_signature", "")
     if not filename:
         return None
     path = Path(filename)
     if not path.is_absolute():
-        path = BASE_DIR / filename
+        path = SIGNATURE_DIR / filename if len(path.parts) == 1 else BASE_DIR / filename
     if path.exists():
         return path
     # Restore the active signature from object storage after an ephemeral deploy.
     if storage_restore_file("signatures", path.name, path):
+        return path
+    # Database-backed signature bytes are the durable fallback when object
+    # storage is unavailable or a drawn signature was never uploaded there.
+    row = _signature_library_row(path.name)
+    if row and _restore_signature_row(row, path):
         return path
     return None
 
@@ -904,7 +934,29 @@ def create_email_verification(student_id):
     return token
 
 
-def save_signature_upload(kind, file_storage):
+def _save_signature_record(kind, name, path, raw, mime_type):
+    clean_name = clean(name, 80)
+    if not clean_name:
+        raise ValueError("Enter a name for this signature.")
+    if len(raw) > 2 * 1024 * 1024:
+        raise ValueError("Signature image is too large. Keep it under 2 MB.")
+    encoded = base64.b64encode(raw).decode("ascii")
+    created_at = datetime.now().isoformat(timespec="seconds")
+    relative = path.name
+    with get_db() as db:
+        db.execute(
+            "INSERT INTO signature_library(kind,name,filename,mime_type,data_base64,created_at) VALUES(?,?,?,?,?,?)",
+            (kind, clean_name, path.name, mime_type, encoded, created_at),
+        )
+        db.commit()
+    set_setting(f"{kind}_signature", relative)
+    try:
+        storage_put_file("signatures", path)
+    except Exception:
+        app.logger.exception("Signature object storage upload failed", extra={"request_id": getattr(g, "request_id", "")})
+
+
+def save_signature_upload(kind, file_storage, name):
     if not file_storage or not file_storage.filename:
         raise ValueError("Choose an image file first.")
     suffix = Path(secure_filename(file_storage.filename)).suffix.lower()
@@ -913,22 +965,12 @@ def save_signature_upload(kind, file_storage):
     filename = f"{kind}_{datetime.now():%Y%m%d_%H%M%S}_{secrets.token_hex(4)}{suffix}"
     path = SIGNATURE_DIR / filename
     file_storage.save(path)
-    old = current_signature_path(kind)
-    if old and old != path:
-        try: old.unlink(missing_ok=True)
-        except Exception: pass
-    set_setting(f"{kind}_signature", str(path.relative_to(BASE_DIR)))
-    try:
-        storage_put_file("signatures", path)
-    except Exception:
-        app.logger.exception("Signature object storage upload failed", extra={"request_id": getattr(g, "request_id", "")})
-    try:
-        storage_put_file("signatures", path)
-    except Exception:
-        app.logger.exception("Signature object storage upload failed", extra={"request_id": getattr(g, "request_id", "")})
+    raw = path.read_bytes()
+    mime_type = "image/png" if suffix == ".png" else "image/jpeg"
+    _save_signature_record(kind, name, path, raw, mime_type)
 
 
-def save_signature_data(kind, data_url):
+def save_signature_data(kind, data_url, name):
     if not data_url or "," not in data_url:
         raise ValueError("Draw a signature first.")
     head, encoded = data_url.split(",", 1)
@@ -941,11 +983,27 @@ def save_signature_data(kind, data_url):
     filename = f"{kind}_drawn_{datetime.now():%Y%m%d_%H%M%S}_{secrets.token_hex(4)}.png"
     path = SIGNATURE_DIR / filename
     path.write_bytes(raw)
-    old = current_signature_path(kind)
-    if old and old != path:
-        try: old.unlink(missing_ok=True)
-        except Exception: pass
-    set_setting(f"{kind}_signature", str(path.relative_to(BASE_DIR)))
+    _save_signature_record(kind, name, path, raw, "image/png")
+
+
+def _signature_library_rows(kind):
+    with get_db() as db:
+        return db.execute(
+            "SELECT id,kind,name,filename,mime_type,created_at FROM signature_library WHERE kind=? ORDER BY id DESC",
+            (kind,),
+        ).fetchall()
+
+
+def _signature_library_row_for_id(signature_id, kind):
+    try:
+        signature_id = int(signature_id)
+    except (TypeError, ValueError):
+        return None
+    with get_db() as db:
+        return db.execute(
+            "SELECT * FROM signature_library WHERE id=? AND kind=? LIMIT 1",
+            (signature_id, kind),
+        ).fetchone()
 
 
 def student_for_session():
@@ -1443,13 +1501,43 @@ def admin_verify():
 @admin_permission("signatures")
 def admin_signatures():
     ctx = admin_base_context("signatures")
+    teacher_path = current_signature_path("teacher")
+    principal_path = current_signature_path("principal")
+    teacher_active = None
+    principal_active = None
+    if teacher_path:
+        teacher_active = _signature_library_row(teacher_path.name)
+        if not teacher_active:
+            with get_db() as db:
+                db.execute(
+                    "INSERT INTO signature_library(kind,name,filename,mime_type,data_base64,created_at) VALUES(?,?,?,?,?,?)",
+                    ("teacher", "Current Teacher / Coordinator Signature", teacher_path.name, "image/png" if teacher_path.suffix.lower()==".png" else "image/jpeg", base64.b64encode(teacher_path.read_bytes()).decode("ascii"), datetime.now().isoformat(timespec="seconds")),
+                )
+                db.commit()
+            teacher_active = _signature_library_row(teacher_path.name)
+    if principal_path:
+        principal_active = _signature_library_row(principal_path.name)
+        if not principal_active:
+            with get_db() as db:
+                db.execute(
+                    "INSERT INTO signature_library(kind,name,filename,mime_type,data_base64,created_at) VALUES(?,?,?,?,?,?)",
+                    ("principal", "Current Principal / Head Signature", principal_path.name, "image/png" if principal_path.suffix.lower()==".png" else "image/jpeg", base64.b64encode(principal_path.read_bytes()).decode("ascii"), datetime.now().isoformat(timespec="seconds")),
+                )
+                db.commit()
+            principal_active = _signature_library_row(principal_path.name)
     return render_template(
         "admin_signatures.html",
         **ctx,
-        teacher_sig=bool(current_signature_path("teacher")),
-        principal_sig=bool(current_signature_path("principal")),
-        teacher_url=url_for("signature_preview", kind="teacher") if current_signature_path("teacher") else "",
-        principal_url=url_for("signature_preview", kind="principal") if current_signature_path("principal") else "",
+        teacher_sig=bool(teacher_path),
+        principal_sig=bool(principal_path),
+        teacher_active_name=teacher_active["name"] if teacher_active else "",
+        principal_active_name=principal_active["name"] if principal_active else "",
+        teacher_active_filename=teacher_active["filename"] if teacher_active else "",
+        principal_active_filename=principal_active["filename"] if principal_active else "",
+        teacher_url=url_for("signature_preview", kind="teacher") if teacher_path else "",
+        principal_url=url_for("signature_preview", kind="principal") if principal_path else "",
+        teacher_library=_signature_library_rows("teacher"),
+        principal_library=_signature_library_rows("principal"),
     )
 
 
@@ -1461,8 +1549,8 @@ def signature_upload():
         flash("Unknown signature type.", "error")
         return redirect(url_for("admin_signatures"))
     try:
-        save_signature_upload(kind, request.files.get("signature"))
-        flash(f"{kind.title()} signature uploaded successfully.", "success")
+        save_signature_upload(kind, request.files.get("signature"), request.form.get("signature_name", ""))
+        flash(f"{kind.title()} signature saved to the library.", "success")
     except Exception as exc:
         flash(str(exc), "error")
     return redirect(url_for("admin_signatures"))
@@ -1476,10 +1564,28 @@ def signature_draw():
         flash("Unknown signature type.", "error")
         return redirect(url_for("admin_signatures"))
     try:
-        save_signature_data(kind, request.form.get("signature_data", ""))
-        flash(f"Drawn {kind} signature saved successfully.", "success")
+        save_signature_data(kind, request.form.get("signature_data", ""), request.form.get("signature_name", ""))
+        flash(f"Drawn {kind} signature saved to the library.", "success")
     except Exception as exc:
         flash(str(exc), "error")
+    return redirect(url_for("admin_signatures"))
+
+
+@app.post("/admin/signature/use")
+@admin_permission("signatures")
+def signature_use():
+    kind = request.form.get("kind")
+    row = _signature_library_row_for_id(request.form.get("signature_id"), kind)
+    if not row:
+        flash("Signature not found.", "error")
+        return redirect(url_for("admin_signatures"))
+    path = SIGNATURE_DIR / row["filename"]
+    if not path.exists() and not _restore_signature_row(row, path):
+        if not storage_restore_file("signatures", path.name, path):
+            flash("The saved signature could not be restored.", "error")
+            return redirect(url_for("admin_signatures"))
+    set_setting(f"{kind}_signature", path.name)
+    flash(f"{row['name']} is now the active {kind} signature.", "success")
     return redirect(url_for("admin_signatures"))
 
 
@@ -1488,12 +1594,31 @@ def signature_draw():
 def signature_remove():
     kind = request.form.get("kind")
     if kind in {"teacher", "principal"}:
-        old = current_signature_path(kind)
-        if old:
-            try: old.unlink(missing_ok=True)
-            except Exception: pass
         set_setting(f"{kind}_signature", "")
-        flash(f"{kind.title()} signature removed.", "success")
+        flash(f"Current {kind} signature cleared. It remains available in the signature library.", "success")
+    return redirect(url_for("admin_signatures"))
+
+
+@app.post("/admin/signature/delete")
+@admin_permission("signatures")
+def signature_delete():
+    kind = request.form.get("kind")
+    row = _signature_library_row_for_id(request.form.get("signature_id"), kind)
+    if not row:
+        flash("Signature not found.", "error")
+        return redirect(url_for("admin_signatures"))
+    active = setting(f"{kind}_signature", "")
+    if Path(active).name == row["filename"]:
+        set_setting(f"{kind}_signature", "")
+    path = SIGNATURE_DIR / row["filename"]
+    try:
+        path.unlink(missing_ok=True)
+    except Exception:
+        pass
+    with get_db() as db:
+        db.execute("DELETE FROM signature_library WHERE id=?", (row["id"],))
+        db.commit()
+    flash(f"{row['name']} deleted from the signature library.", "success")
     return redirect(url_for("admin_signatures"))
 
 
@@ -2462,6 +2587,19 @@ def signature_preview(kind):
     if not path:
         return "", 404
     return send_from_directory(path.parent, path.name)
+
+
+@app.get("/admin/signature-library/<int:signature_id>")
+@admin_permission("signatures")
+def signature_library_preview(signature_id):
+    with get_db() as db:
+        row = db.execute("SELECT * FROM signature_library WHERE id=? LIMIT 1", (signature_id,)).fetchone()
+    if not row:
+        return "", 404
+    path = SIGNATURE_DIR / row["filename"]
+    if not path.exists() and not _restore_signature_row(row, path):
+        return "", 404
+    return send_from_directory(path.parent, path.name, mimetype=row["mime_type"])
 
 
 if __name__ == "__main__":
