@@ -2587,6 +2587,19 @@ def signature_preview(kind):
     return send_from_directory(path.parent, path.name)
 
 
+@app.get("/admin/signature-library/<int:signature_id>")
+@admin_permission("signatures")
+def signature_library_preview(signature_id):
+    with get_db() as db:
+        row = db.execute("SELECT * FROM signature_library WHERE id=? LIMIT 1", (signature_id,)).fetchone()
+    if not row:
+        return "", 404
+    path = SIGNATURE_DIR / row["filename"]
+    if not path.exists() and not _restore_signature_row(row, path):
+        return "", 404
+    return send_from_directory(path.parent, path.name, mimetype=row["mime_type"])
+
+
 if __name__ == "__main__":
     init_db()
     app.run(host="127.0.0.1", port=5000, debug=False)
