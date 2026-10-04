@@ -8,7 +8,11 @@ from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from reportlab.pdfgen import canvas
 
-REFERENCE_IMAGE = Path(__file__).resolve().parent / "static" / "nss_reference.png"
+REFERENCE_IMAGE = Path(__file__).resolve().parent / "static" / "nss_reference.jpg"
+
+
+class NssTemplateAssetMissing(RuntimeError):
+    pass
 
 
 def _fit_size(text: str, font: str, max_size: float, min_size: float, max_width: float) -> float:
@@ -35,7 +39,7 @@ def render_nss_certificate(target, info: dict, verification_url: Optional[str],
     c = canvas.Canvas(stream, pagesize=(page_width, page_height))
 
     if not REFERENCE_IMAGE.exists():
-        raise FileNotFoundError(f"NSS reference artwork is missing: {REFERENCE_IMAGE}")
+        raise NssTemplateAssetMissing("The NSS reference artwork is not installed yet. Upload static/nss_reference.jpg to the repository, then redeploy.")
 
     c.drawImage(
         ImageReader(str(REFERENCE_IMAGE)),
