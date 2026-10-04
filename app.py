@@ -2356,6 +2356,11 @@ def admin_bulk_generate():
                 if not all([info["name"],info["roll_number"],info["activity"],info["position"]]):
                     skipped.append(f"Row {idx}: missing required field")
                     continue
+                try:
+                    validate_date_range(info["date_from"], info["date_to"], required=info["template"] == "nss_seven_day")
+                except ValueError as exc:
+                    skipped.append(f"Row {idx}: {exc}")
+                    continue
                 if not info["department"] or not info["programme"]:
                     with get_db() as db:
                         academic = db.execute("SELECT department,programme,semester FROM students WHERE lower(roll_number)=lower(?) LIMIT 1", (info["roll_number"],)).fetchone()
