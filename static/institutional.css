@@ -875,16 +875,3 @@ body.glass-auth{
 .glass-ui .signature-library-empty{padding:18px 14px;color:#8a96a7;font-size:10px;text-align:center}
 @media(max-width:980px){.glass-ui .signature-library-grid{grid-template-columns:1fr}}
 @media(max-width:720px){.glass-ui .signature-layout{grid-template-columns:1fr}.glass-ui .signature-library-item{grid-template-columns:72px 1fr}.glass-ui .signature-library-actions{grid-column:1/-1;justify-content:flex-end}.glass-ui .draw-signature-row form{margin-left:0}}
-
-
-/* NSS certificate + date range controls */
-.glass-ui .date-range-fields{margin-top:2px}
-.glass-ui .date-range-fields input[type=date]{min-height:44px}
-.glass-ui .field-hint{margin:-6px 0 8px;padding:9px 11px;background:#fffaf0;border:1px solid #ead7a9;border-radius:9px;color:#7a5d18;font-size:10px}
-.glass-ui .field-hint.hidden{display:none}
-.glass-ui .mini-cert.nss_seven_day,.glass-ui .certificate.nss_seven_day{
-  background:#fff;color:#17345f;border:1px solid #173b93;box-shadow:inset 0 0 0 3px #f0e5cf;
-}
-.glass-ui .mini-cert.nss_seven_day:before,.glass-ui .certificate.nss_seven_day:before{
-  content:"NSS";position:absolute;left:9px;top:8px;font-size:7px;font-weight:900;letter-spacing:.08em;color:#b51e27
-}
