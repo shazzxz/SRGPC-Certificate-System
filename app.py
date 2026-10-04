@@ -16,6 +16,7 @@ from reportlab.lib import colors
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase.pdfmetrics import stringWidth
 from certificate_renderer import draw_certificate
+from nss_renderer import NssTemplateAssetMissing
 import sqlite3
 try:
     import psycopg
@@ -1403,7 +1404,11 @@ def admin_generate():
     info["created_by"] = session.get("username", ADMIN_USERNAME)
     slug = re.sub(r"[^a-zA-Z0-9]+", "_", info["name"]).strip("_").lower() or "student"
     filename = f"{slug}_{info['certificate_id']}.pdf"
-    render_certificate(GENERATED_DIR / filename, info, public_verify_url(info["certificate_id"]))
+    try:
+        render_certificate(GENERATED_DIR / filename, info, public_verify_url(info["certificate_id"]))
+    except NssTemplateAssetMissing as exc:
+        flash(str(exc), "error")
+        return redirect(url_for("admin_generate_page"))
     pdf_hash = file_sha256(GENERATED_DIR / filename)
     with get_db() as db:
         db.execute(
