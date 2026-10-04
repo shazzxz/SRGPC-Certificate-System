@@ -19,7 +19,8 @@ const PREVIEW_THEMES={
   charcoal_gold:{bg:'#171a1f',ink:'#f8fafc',muted:'#b5b8bf',accent:'#d2ad5f',soft:'#3a3325'},
   coastal:{bg:'#f4fbfd',ink:'#173a4f',muted:'#68808c',accent:'#0b82a5',soft:'#d9f0f6'},
   geometric:{bg:'#fbfcff',ink:'#20273a',muted:'#707a8e',accent:'#4056a1',soft:'#e8ebf8'},
-  monochrome:{bg:'#ffffff',ink:'#1f2933',muted:'#737b86',accent:'#20252b',soft:'#edf0f2'}
+  monochrome:{bg:'#ffffff',ink:'#1f2933',muted:'#737b86',accent:'#20252b',soft:'#edf0f2'},
+  nss_seven_day:{bg:'#ffffff',ink:'#17345f',muted:'#5f6f85',accent:'#173f93',soft:'#f5e9d1'}
 };
 const PREVIEW_FONTS={Helvetica:'Arial, Helvetica, sans-serif',Times:'Times New Roman, Times, serif',Courier:'Courier New, Courier, monospace'};
 function svgEl(tag,attrs={}){const s=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const[k,v]of Object.entries(attrs))s.setAttribute(k,String(v));return s;}
@@ -75,6 +76,27 @@ function drawPreviewFrame(svg,t){
   else if(activePreviewTemplate==='monochrome'){addRect(svg,0,0,11,595,{fill:'#20252b'});addRect(svg,0,0,842,8,{fill:'#20252b'});addRect(svg,30,30,782,535,{fill:'none',stroke:'#20252b','stroke-width':0.9});addRect(svg,42,42,758,511,{fill:'none',stroke:'#dfe3e7','stroke-width':0.7});addLine(svg,160,491,682,491,{stroke:'#20252b','stroke-width':0.7});}
   else {addRect(svg,34,34,774,527,{fill:'none',stroke:'#cbd5e1','stroke-width':0.9});addRect(svg,34,34,774,3,{fill:'#111827'});}
 }
+function nssDateLabel(v){if(!v)return 'Date';const d=new Date(v+'T00:00:00');return Number.isNaN(d.getTime())?'Date':d.toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'});}
+function renderNssPreview(svg,stage,ff){
+  addRect(svg,0,0,842,595,{fill:'#fff'});addRect(svg,14,12,814,571,{fill:'none',stroke:'#17345f','stroke-width':1.5});addRect(svg,20,18,802,559,{fill:'none',stroke:'#17345f','stroke-width':0.7});
+  addPath(svg,'M20 18 L180 18 L78 102 L20 118 Z',{fill:'#173b93'});addImage(svg,stage.dataset.logoUrl,33,24,74,74);
+  addText(svg,'सहोद्रा राय शासकीय पॉलीटेक्निक महाविद्यालय सागर (म.प्र.)',421,62,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:21,weight:800,fill:'#17345f',length:760});
+  addText(svg,'An ISO 9001:2015 Certified Institution',421,91,{font:'Arial',size:10.5,fill:'#333'});
+  addText(svg,'युवा कार्यक्रम और खेल मंत्रालय',182,40,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:7.5,fill:'#1f2b3d',anchor:'start'});
+  addText(svg,'MINISTRY OF YOUTH AFFAIRS AND SPORTS',182,54,{font:'Arial',size:7,fill:'#1f2b3d',anchor:'start'});
+  addCircle(svg,300,58,31,{fill:'#8b1e1e'});addCircle(svg,300,58,24,{fill:'#fff'});addCircle(svg,300,58,17,{fill:'#f47a1f'});
+  addLine(svg,300,34,300,82,{stroke:'#fff','stroke-width':2});addLine(svg,276,58,324,58,{stroke:'#fff','stroke-width':2});addLine(svg,283,41,317,75,{stroke:'#fff','stroke-width':2});addLine(svg,317,41,283,75,{stroke:'#fff','stroke-width':2});
+  addText(svg,'NATIONAL SERVICE SCHEME',300,96,{font:'Arial',size:6.5,weight:700,fill:'#17345f'});
+  addText(svg,'my',472,57,{font:'Arial',size:27,weight:800,fill:'#ef3f2f'});addText(svg,'भारत',522,57,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:17,weight:800,fill:'#1a7a49'});
+  addCircle(svg,760,58,29,{fill:'#fff',stroke:'#bb8a31','stroke-width':5});addCircle(svg,760,58,20,{fill:'#ae2235'});addText(svg,'MP',760,58,{font:'Arial',size:8,weight:700,fill:'#fff'});
+  addText(svg,'Certificate No.',680,116,{font:'Arial',size:8,fill:'#111',anchor:'start'});addText(svg,'SRGPC-PREVIEW',736,116,{font:'Arial',size:8,weight:700,fill:'#17345f',anchor:'start'});
+  addText(svg,'राष्ट्रीय सेवा योजना',421,147,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:26,weight:900,fill:'#173b93'});addText(svg,'सात दिवसीय विशेष शिविर',421,177,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:19,weight:800,fill:'#1a4b9c'});
+  addPath(svg,'M250 210 L296 210 L314 224 L296 238 L250 238 L268 224 Z',{fill:'#b3202b'});addPath(svg,'M592 210 L546 210 L528 224 L546 238 L592 238 L574 224 Z',{fill:'#b3202b'});addRect(svg,296,205,250,44,{fill:'#c9272d',stroke:'#b89a5a','stroke-width':1.2,rx:4});addText(svg,'प्रमाण पत्र',421,226,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:23,weight:900,fill:'#fff'});
+  const name=document.getElementById('name')?.value?.trim()||'Student Name', dateFrom=nssDateLabel(document.getElementById('date_from')?.value||''), dateTo=nssDateLabel(document.getElementById('date_to')?.value||'');
+  addText(svg,'प्रमाणित किया जाता है, कि',55,282,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:12.5,weight:700,fill:'#1a2c4c',anchor:'start'});addLine(svg,205,289,790,289,{stroke:'#17345f','stroke-width':1.1,'stroke-dasharray':'2 3'});addText(svg,name,500,279,{font:ff,size:15,weight:800,fill:'#1b54ad',length:250});addText(svg,'ने',790,282,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:12.5,weight:700,fill:'#1a2c4c'});
+  addText(svg,'राष्ट्रीय सेवा योजना (छात्र इकाई) के तत्वावधान में',55,318,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:11.7,weight:700,fill:'#1a2c4c',anchor:'start'});addText(svg,'‘मेरा युवा भारत एवं डिजिटल साक्षरता',350,318,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:11.7,weight:800,fill:'#16743f',anchor:'start'});addText(svg,'के साथ युवाओं की सामाजिक सहभागिता’',55,346,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:11.7,weight:800,fill:'#16743f',anchor:'start'});addText(svg,'परिप्रेक्ष्य में आयोजित पूर्णकालिक सात-दिवसीय विशेष शिविर ग्राम मैनपानी, तहसील/जिला-सागर (म.प्र.) में',330,346,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:11.2,weight:700,fill:'#1a2c4c',anchor:'start'});addText(svg,dateFrom,525,374,{font:'Arial',size:11.7,weight:800,fill:'#c92a2f'});addText(svg,'से',660,374,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:11.7,weight:700,fill:'#1a2c4c'});addText(svg,dateTo,705,374,{font:'Arial',size:11.7,weight:800,fill:'#c92a2f'});addText(svg,'तक स्वयं सेवक / सहयोगी के रूप में योगदान दिया।',55,402,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:11.7,weight:700,fill:'#1a2c4c',anchor:'start'});
+  const teacher=stage.dataset.teacherUrl, principal=stage.dataset.principalUrl;if(teacher)addImage(svg,teacher,98,418,160,48);if(principal)addImage(svg,principal,584,418,160,48);addLine(svg,78,470,278,470,{stroke:'#17345f','stroke-width':0.9});addLine(svg,564,470,764,470,{stroke:'#17345f','stroke-width':0.9});addText(svg,'कार्यक्रम अधिकारी, रासेयो',178,488,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:10.5,weight:800,fill:'#b51e27'});addText(svg,'प्राचार्य',664,488,{font:'Noto Sans Devanagari, DejaVu Sans, sans-serif',size:10.5,weight:800,fill:'#173b93'});addRect(svg,391,465,60,60,{fill:'#fff',stroke:'#d5dce8',rx:6});addImage(svg,stage.dataset.qrUrl,398,472,46,46);addText(svg,'SCAN TO VERIFY',421,536,{font:'Arial',size:6.2,weight:700,fill:'#17345f'});
+}
 function renderLiveCertificate(){
   const stage=document.getElementById('certificateLivePreview');const svg=document.getElementById('certificateLiveSvg');if(!stage||!svg)return;
   const get=id=>document.getElementById(id)?.value?.trim()||'';
@@ -82,7 +104,7 @@ function renderLiveCertificate(){
   const type=get('certificate_type')||'Achievement', year=get('academic_year')||'2026-27', font=get('font_family')||'Helvetica';
   const tpl=get('templateSelect')||'classic'; activePreviewTemplate=tpl;
   const t=PREVIEW_THEMES[tpl]||PREVIEW_THEMES.classic; const ff=PREVIEW_FONTS[font]||PREVIEW_FONTS.Helvetica;
-  svg.replaceChildren(); drawPreviewFrame(svg,t);
+  svg.replaceChildren(); if(tpl==='nss_seven_day'){renderNssPreview(svg,stage,ff);return;} drawPreviewFrame(svg,t);
   const cx=tpl==='skyline'?480:421;
   addImage(svg,stage.dataset.logoUrl,cx-38,49,76,80);
   addText(svg,'SRGPC',cx,139,{font:ff,size:13.5,weight:700,fill:t.accent,letterSpacing:'.6'});
@@ -112,10 +134,17 @@ function renderLiveCertificate(){
 let activePreviewTemplate='classic';let previewFrameTimer=null;
 function bindCertificateLivePreview(){
   const form=document.getElementById('certForm');const stage=document.getElementById('certificateLivePreview');if(!form||!stage)return;
-  const ids=['name','roll','activity','position','certificate_type','academic_year','font_family','templateSelect'];
+  const ids=['name','roll','activity','position','certificate_type','academic_year','date_from','date_to','font_family','templateSelect'];
   const refresh=()=>{cancelAnimationFrame(previewFrameTimer);previewFrameTimer=requestAnimationFrame(renderLiveCertificate);};
   ids.forEach(id=>{const el=document.getElementById(id);if(el){el.addEventListener('input',refresh);el.addEventListener('change',refresh);}});
   document.querySelectorAll('.template-option').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.template-option').forEach(b=>b.classList.remove('selected'));btn.classList.add('selected');const select=document.getElementById('templateSelect');if(select){select.value=btn.dataset.template;select.dispatchEvent(new Event('change',{bubbles:true}));}}));
+  const applyNssDefaults=()=>{
+    const tpl=document.getElementById('templateSelect')?.value,isNss=tpl==='nss_seven_day';
+    const type=document.getElementById('certificate_type'),activity=document.getElementById('activity'),position=document.getElementById('position'),hint=document.getElementById('nssDateHint');
+    if(isNss){if(type)type.value='NSS';if(activity&&!activity.value)activity.value='NSS Seven-Day Special Camp';if(position&&!position.value)position.value='Volunteer';}
+    if(hint)hint.classList.toggle('hidden',!isNss);
+  };
+  document.getElementById('templateSelect')?.addEventListener('change',applyNssDefaults);applyNssDefaults();
   renderLiveCertificate();
 }
 function setupSignatureCanvas(kind){const c=document.getElementById('canvas-'+kind);if(!c)return;const ctx=c.getContext('2d');ctx.lineWidth=3;ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#0f172a';let drawing=false;function pos(e){const r=c.getBoundingClientRect();return{x:(e.clientX-r.left)*(c.width/r.width),y:(e.clientY-r.top)*(c.height/r.height)}}function start(e){e.preventDefault();drawing=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);liveSignature(kind,c.toDataURL('image/png'));}function move(e){if(!drawing)return;e.preventDefault();const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();liveSignature(kind,c.toDataURL('image/png'));}function end(){drawing=false;}c.addEventListener('pointerdown',start);c.addEventListener('pointermove',move);window.addEventListener('pointerup',end);}
