@@ -32,6 +32,7 @@ import os
 import csv
 import io
 import json
+import html
 import zipfile
 import tempfile
 import shutil
@@ -1148,6 +1149,7 @@ def mobile_oauth_launch():
         return redirect(url_for("login"))
     intent_uri = _mobile_oauth_redirect(token)
     custom_uri = "srgpc://oauth2callback?" + urllib.parse.urlencode({"token": token})
+    safe_custom_uri = html.escape(custom_uri, quote=True)
     return f"""<!doctype html>
 <html><head><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Returning to SRGPC</title>
@@ -1158,7 +1160,7 @@ a{{display:inline-block;padding:14px 22px;border-radius:12px;background:#2457d6;
 <body>
 <h2>Returning to SRGPC…</h2>
 <p>If the app does not open automatically, tap the button below.</p>
-<a href="{custom_uri}">Open SRGPC App</a>
+<a href="{safe_custom_uri}">Open SRGPC App</a>
 <script>
 (function(){{
   var intent = {json.dumps(intent_uri)};
