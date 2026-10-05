@@ -1,0 +1,25 @@
+{
+  "name": "SRGPC Certificate Management System",
+  "short_name": "SRGPC Certificates",
+  "description": "Official digital certificate management and verification portal for SRGPC.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f7fa",
+  "theme_color": "#102a43",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/static/college_logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

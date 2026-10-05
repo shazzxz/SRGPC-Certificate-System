@@ -227,3 +227,17 @@ def test_student_certificate_wallet_hides_template_names(app):
         )
     assert "2026-27" in html
     assert "Royal Violet" not in html
+
+
+def test_pwa_assets_are_available(app):
+    _, client = app
+    manifest = client.get("/static/manifest.webmanifest")
+    assert manifest.status_code == 200
+    assert manifest.headers["Content-Type"].startswith("application/manifest+json")
+    body = manifest.get_json()
+    assert body["display"] == "standalone"
+    assert body["start_url"] == "/"
+    worker = client.get("/sw.js")
+    assert worker.status_code == 200
+    assert worker.headers["Service-Worker-Allowed"] == "/"
+    assert "Cache-Control" in worker.headers

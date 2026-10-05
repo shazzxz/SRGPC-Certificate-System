@@ -172,6 +172,15 @@ def healthz():
     }), status
 
 
+
+
+@app.get("/sw.js")
+def pwa_service_worker():
+    response = send_from_directory(app.static_folder, "sw.js", mimetype="application/javascript")
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Service-Worker-Allowed"] = "/"
+    return response
+
 def storage_configured():
     required = ("SRGPC_S3_BUCKET", "SRGPC_S3_ACCESS_KEY", "SRGPC_S3_SECRET_KEY")
     return boto3 is not None and all(os.environ.get(key, "").strip() for key in required)

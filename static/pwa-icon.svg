@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#102a43"/>
+  <rect x="52" y="52" width="408" height="408" rx="92" fill="#173b5e" stroke="#c89b3c" stroke-width="10"/>
+  <circle cx="256" cy="214" r="105" fill="#fff"/>
+  <circle cx="256" cy="214" r="91" fill="#f7f9fc" stroke="#c89b3c" stroke-width="6"/>
+  <path d="M256 144l18 48 51 3-39 32 13 50-43-27-43 27 13-50-39-32 51-3z" fill="#1d4ed8"/>
+  <text x="256" y="388" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="64" font-weight="700" fill="#fff">SRGPC</text>
+</svg>
