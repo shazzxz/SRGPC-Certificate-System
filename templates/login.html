@@ -120,5 +120,13 @@
 })();
 </script>
 <script src="{{ url_for('static', filename='app.js', v='10') }}"></script>
+<script>
+(function(){
+  const google = document.getElementById('googleSignIn');
+  if (google && window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) {
+    google.href = "{{ url_for('google_login') }}?mobile=1";
+  }
+})();
+</script>
 </body>
 </html>
