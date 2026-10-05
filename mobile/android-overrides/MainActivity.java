@@ -24,6 +24,7 @@ import androidx.credentials.CredentialManager;
 import androidx.credentials.CustomCredential;
 import androidx.credentials.GetCredentialRequest;
 import androidx.credentials.GetCredentialResponse;
+import androidx.credentials.CredentialManagerCallback;
 import androidx.credentials.exceptions.GetCredentialException;
 
 import com.getcapacitor.BridgeActivity;
@@ -158,17 +159,11 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
 
             CancellationSignal cancellationSignal = new CancellationSignal();
             credentialManager.getCredentialAsync(
-                request,
                 this,
+                request,
                 cancellationSignal,
                 googleExecutor,
-                new androidx.core.os.CancellationSignal.OnCancelListener() {
-                    @Override
-                    public void onCancel() {
-                        sendGoogleResult(null, "Google sign-in was cancelled.");
-                    }
-                },
-                new androidx.credentials.CredentialManagerCallback<GetCredentialResponse, GetCredentialException>() {
+                new CredentialManagerCallback<GetCredentialResponse, GetCredentialException>() {
                     @Override
                     public void onResult(GetCredentialResponse response) {
                         handleGoogleCredential(response);
