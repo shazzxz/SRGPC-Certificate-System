@@ -1168,7 +1168,7 @@ def mobile_oauth_complete():
 @app.get("/auth/google")
 @limiter.limit("12 per minute")
 def google_login():
-    mobile = request.args.get("mobile") == "1"
+    mobile = request.args.get("mobile") == "1" or "SRGPC-Android-App" in request.headers.get("User-Agent", "")
     session["google_login_mode"] = "student"
     session["google_mobile"] = mobile
     if mobile:
@@ -1179,7 +1179,7 @@ def google_login():
 @app.get("/auth/google/admin")
 @limiter.limit("12 per minute")
 def google_admin_login():
-    mobile = request.args.get("mobile") == "1"
+    mobile = request.args.get("mobile") == "1" or "SRGPC-Android-App" in request.headers.get("User-Agent", "")
     session["google_login_mode"] = "admin"
     session["google_mobile"] = mobile
     if mobile:
