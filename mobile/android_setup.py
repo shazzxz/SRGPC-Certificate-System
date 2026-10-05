@@ -46,6 +46,7 @@ variables = android / "variables.gradle"
 if variables.exists():
     v = variables.read_text()
     v = v.replace("compileSdkVersion = 35", "compileSdkVersion = 36")
+    v = v.replace("minSdkVersion = 23", "minSdkVersion = 24")
     variables.write_text(v)
 
 # Native Google Sign-In uses Android Credential Manager directly. These libraries are
