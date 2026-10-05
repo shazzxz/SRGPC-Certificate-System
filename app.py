@@ -491,6 +491,14 @@ def init_db():
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL
             )""",
+            f"""CREATE TABLE IF NOT EXISTS mobile_oauth_states (
+                id {id_pk},
+                state_hash TEXT NOT NULL UNIQUE{case_unique},
+                login_mode TEXT NOT NULL DEFAULT 'student',
+                expires_at TEXT NOT NULL,
+                used_at TEXT,
+                created_at TEXT NOT NULL
+            )""",
             f"""CREATE TABLE IF NOT EXISTS mobile_oauth_handoffs (
                 id {id_pk},
                 token_hash TEXT NOT NULL UNIQUE{case_unique},
@@ -836,9 +844,41 @@ def google_redirect_uri():
     return url_for("google_callback", _external=True)
 
 
-def google_authorize_url():
-    state = secrets.token_urlsafe(32)
-    session["google_oauth_state"] = state
+def _create_mobile_oauth_state(login_mode):
+    state = secrets.token_urlsafe(48)
+    state_hash = hashlib.sha256(state.encode("utf-8")).hexdigest()
+    now = datetime.now().replace(microsecond=0)
+    expires = now + timedelta(minutes=10)
+    with get_db() as db:
+        db.execute(
+            "INSERT INTO mobile_oauth_states(state_hash,login_mode,expires_at,created_at) VALUES(?,?,?,?)",
+            (state_hash, login_mode, expires.isoformat(), now.isoformat()),
+        )
+        db.commit()
+    return state
+
+
+def _consume_mobile_oauth_state(state):
+    if not state:
+        return None
+    state_hash = hashlib.sha256(state.encode("utf-8")).hexdigest()
+    now = datetime.now().replace(microsecond=0).isoformat()
+    with get_db() as db:
+        row = db.execute(
+            "SELECT * FROM mobile_oauth_states WHERE state_hash=? AND used_at IS NULL AND expires_at>=?",
+            (state_hash, now),
+        ).fetchone()
+        if not row:
+            return None
+        db.execute("UPDATE mobile_oauth_states SET used_at=? WHERE id=?", (now, row["id"]))
+        db.commit()
+    return row
+
+
+def google_authorize_url(mobile=False, login_mode="student"):
+    state = _create_mobile_oauth_state(login_mode) if mobile else secrets.token_urlsafe(32)
+    if not mobile:
+        session["google_oauth_state"] = state
     params = {
         "client_id": os.environ["GOOGLE_CLIENT_ID"].strip(),
         "redirect_uri": google_redirect_uri(),
@@ -1083,6 +1123,17 @@ def _mobile_oauth_redirect(token):
     return "srgpc://oauth2callback?" + urllib.parse.urlencode({"token": token})
 
 
+def _mobile_oauth_response(token):
+    target = _mobile_oauth_redirect(token)
+    return (
+        "<!doctype html><html><head><meta name='viewport' content='width=device-width,initial-scale=1'>"
+        "<title>Returning to SRGPC app…</title></head><body style='font-family:Arial,sans-serif;text-align:center;padding:40px'>"
+        "<h2>Returning to SRGPC app…</h2><p>You can close this window if the app opens automatically.</p>"
+        f"<script>window.location.replace({json.dumps(target)});</script>"
+        f"<p><a href={json.dumps(target)}>Continue to SRGPC app</a></p></body></html>"
+    )
+
+
 @app.get("/auth/mobile/complete")
 def mobile_oauth_complete():
     payload = _consume_mobile_oauth_handoff(request.args.get("token", ""))
@@ -1117,16 +1168,22 @@ def mobile_oauth_complete():
 @app.get("/auth/google")
 @limiter.limit("12 per minute")
 def google_login():
+    mobile = request.args.get("mobile") == "1" or "SRGPC-Android-App" in request.headers.get("User-Agent", "")
     session["google_login_mode"] = "student"
-    session["google_mobile"] = request.args.get("mobile") == "1"
+    session["google_mobile"] = mobile
+    if mobile:
+        return redirect(google_authorize_url(mobile=True, login_mode="student"))
     return google_signin_or_register()
 
 
 @app.get("/auth/google/admin")
 @limiter.limit("12 per minute")
 def google_admin_login():
+    mobile = request.args.get("mobile") == "1" or "SRGPC-Android-App" in request.headers.get("User-Agent", "")
     session["google_login_mode"] = "admin"
-    session["google_mobile"] = request.args.get("mobile") == "1"
+    session["google_mobile"] = mobile
+    if mobile:
+        return redirect(google_authorize_url(mobile=True, login_mode="admin"))
     return google_signin_or_register()
 
 
@@ -1136,9 +1193,15 @@ def google_callback():
         flash("Google Sign-In is not configured.", "error")
         return redirect(url_for("login"))
     state = request.args.get("state", "")
-    if not state or not secrets.compare_digest(state, session.pop("google_oauth_state", "")):
-        flash("Google sign-in could not be verified. Please try again.", "error")
-        return redirect(url_for("login"))
+    mobile_state = _consume_mobile_oauth_state(state)
+    if mobile_state:
+        session["google_login_mode"] = mobile_state["login_mode"]
+        session["google_mobile"] = True
+    else:
+        expected_state = session.pop("google_oauth_state", "")
+        if not state or not expected_state or not secrets.compare_digest(state, expected_state):
+            flash("Google sign-in could not be verified. Please try again.", "error")
+            return redirect(url_for("login"))
     if request.args.get("error"):
         flash("Google sign-in was cancelled.", "error")
         return redirect(url_for("login"))
@@ -1178,7 +1241,7 @@ def google_callback():
             payload["student_id"] = int(student["id"])
         else:
             payload["pending_google"] = {"sub": google_sub, "gmail": gmail, "name": name}
-        return redirect(_mobile_oauth_redirect(_create_mobile_oauth_handoff(payload)))
+        return _mobile_oauth_response(_create_mobile_oauth_handoff(payload))
     if student:
         if not student["google_sub"]:
             with get_db() as db:

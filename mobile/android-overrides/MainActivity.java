@@ -13,6 +13,8 @@ import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
 import android.webkit.URLUtil;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.widget.Toast;
 import androidx.core.app.ActivityCompat;
 import com.getcapacitor.BridgeActivity;
 
@@ -30,6 +32,19 @@ public class MainActivity extends BridgeActivity {
         WebView webView = getBridge().getWebView();
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setDomStorageEnabled(true);
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                if (url == null) return false;
+                Uri uri = Uri.parse(url);
+                if ("srgpc".equalsIgnoreCase(uri.getScheme())) {
+                    handleIntent(new Intent(Intent.ACTION_VIEW, uri));
+                    return true;
+                }
+                return false;
+            }
+        });
+
         webView.setDownloadListener(new DownloadListener() {
             @Override
             public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
@@ -74,6 +89,7 @@ public class MainActivity extends BridgeActivity {
         if (pendingDownloadUserAgent != null) request.addRequestHeader("User-Agent", pendingDownloadUserAgent);
         DownloadManager manager = (DownloadManager) getSystemService(Context.DOWNLOAD_SERVICE);
         manager.enqueue(request);
+        Toast.makeText(this, "Certificate download started. Check Downloads.", Toast.LENGTH_SHORT).show();
         pendingDownloadUrl = null;
     }
 

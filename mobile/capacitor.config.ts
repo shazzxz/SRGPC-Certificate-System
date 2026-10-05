@@ -10,7 +10,8 @@ const config: CapacitorConfig = {
     androidScheme: "https"
   },
   android: {
-    backgroundColor: "#102a43"
+    backgroundColor: "#102a43",
+    appendUserAgent: "SRGPC-Android-App/1"
   }
 };
 
