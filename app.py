@@ -1131,7 +1131,41 @@ def _consume_mobile_oauth_handoff(token):
 
 
 def _mobile_oauth_redirect(token):
-    return "srgpc://oauth2callback?" + urllib.parse.urlencode({"token": token})
+    # Android browsers can sometimes keep a custom-scheme OAuth redirect inside
+    # the browser. Use an intent:// URI that explicitly targets the installed
+    # SRGPC Android package; MainActivity handles the srgpc:// data after launch.
+    query = urllib.parse.urlencode({"token": token})
+    return (
+        "intent://oauth2callback?" + query
+        + "#Intent;scheme=srgpc;package=in.srgpc.certificates;end"
+    )
+
+
+@app.get("/auth/mobile/launch")
+def mobile_oauth_launch():
+    token = clean(request.args.get("token", ""), 300)
+    if not token:
+        return redirect(url_for("login"))
+    intent_uri = _mobile_oauth_redirect(token)
+    custom_uri = "srgpc://oauth2callback?" + urllib.parse.urlencode({"token": token})
+    return f"""<!doctype html>
+<html><head><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Returning to SRGPC</title>
+<style>
+body{{font-family:Arial,sans-serif;text-align:center;padding:48px 24px;background:#f4f7fb;color:#172033}}
+a{{display:inline-block;padding:14px 22px;border-radius:12px;background:#2457d6;color:white;text-decoration:none;font-weight:600}}
+</style></head>
+<body>
+<h2>Returning to SRGPC…</h2>
+<p>If the app does not open automatically, tap the button below.</p>
+<a href="{custom_uri}">Open SRGPC App</a>
+<script>
+(function(){{
+  var intent = {json.dumps(intent_uri)};
+  try {{ window.location.replace(intent); }} catch (_) {{}}
+}})();
+</script>
+</body></html>"""
 
 
 @app.get("/auth/mobile/complete")
