@@ -194,3 +194,16 @@ def test_generate_form_omits_non_certificate_academic_fields(app):
     assert 'name="department"' not in html
     assert 'name="programme"' not in html
     assert 'name="semester"' not in html
+
+
+
+def test_legacy_template_display_falls_back_safely(app):
+    flask_app, _ = app
+    from flask import render_template_string
+    with flask_app.test_request_context("/"):
+        html = render_template_string(
+            "{{ templates.get(item.template, {}).get('name', 'Legacy Certificate') }}",
+            item={"template": "nss_seven_day"},
+            templates={"classic": {"name": "Classic Gold"}},
+        )
+    assert html.strip() == "Legacy Certificate"
