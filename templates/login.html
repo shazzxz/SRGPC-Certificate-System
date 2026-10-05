@@ -123,9 +123,104 @@
 <script>
 (function(){
   const google = document.getElementById('googleSignIn');
-  if (google && window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform()) {
-    google.href = "{{ url_for('google_login') }}?mobile=1";
+  if (!google) return;
+
+  const isNative = !!(
+    window.Capacitor &&
+    typeof window.Capacitor.isNativePlatform === 'function' &&
+    window.Capacitor.isNativePlatform()
+  );
+  if (!isNative) return;
+
+  // The APK uses Google's Android Credential Manager through the native
+  // Capacitor plugin. This never opens Brave/Chrome for the Google account
+  // picker. The normal website keeps its existing browser OAuth flow.
+  google.href = "{{ url_for('google_login') }}?mobile=1";
+
+  let nativeLoginBusy = false;
+  let socialLoginPromise = null;
+
+  function getSocialLogin() {
+    if (socialLoginPromise) return socialLoginPromise;
+    socialLoginPromise = Promise.resolve().then(function(){
+      const cap = window.Capacitor;
+      if (!cap) throw new Error("Capacitor bridge is unavailable.");
+
+      // Capacitor exposes native plugins globally for apps using server.url.
+      // registerPlugin is the fallback for a remote page that did not import
+      // the plugin's TypeScript package itself.
+      if (cap.Plugins && cap.Plugins.SocialLogin) return cap.Plugins.SocialLogin;
+      if (typeof cap.registerPlugin === 'function') {
+        return cap.registerPlugin('SocialLogin');
+      }
+      throw new Error("Native Google Sign-In plugin is unavailable.");
+    });
+    return socialLoginPromise;
   }
+
+  async function nativeGoogleLogin(event) {
+    event.preventDefault();
+    if (nativeLoginBusy) return;
+    nativeLoginBusy = true;
+
+    const originalText = google.textContent;
+    google.textContent = "Opening Google…";
+    google.style.pointerEvents = "none";
+    google.setAttribute("aria-busy", "true");
+
+    try {
+      const clientId = {{ google_web_client_id|tojson }};
+      if (!clientId) throw new Error("Google Sign-In is not configured on the server.");
+
+      const SocialLogin = await getSocialLogin();
+      await SocialLogin.initialize({
+        google: {
+          webClientId: clientId,
+          mode: "online"
+        }
+      });
+
+      const result = await SocialLogin.login({
+        provider: "google",
+        options: {
+          style: "bottom",
+          filterByAuthorizedAccounts: false,
+          scopes: ["email", "profile"]
+        }
+      });
+
+      const idToken = result && result.result && result.result.idToken;
+      if (!idToken) throw new Error("Google did not return an ID token.");
+
+      const csrf = document.querySelector('meta[name="csrf-token"]')?.content || "";
+      const response = await fetch("{{ url_for('google_native_login') }}", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": csrf
+        },
+        body: JSON.stringify({ id_token: idToken, login_mode: "student" })
+      });
+
+      const data = await response.json().catch(function(){ return {}; });
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || "Google sign-in failed. Please try again.");
+      }
+      window.location.assign(data.redirect_url || "{{ url_for('login') }}");
+    } catch (error) {
+      const message = error && error.message ? error.message : "Google sign-in failed. Please try again.";
+      if (!/cancel|dismiss/i.test(message)) {
+        alert(message);
+      }
+      google.textContent = originalText;
+      google.style.pointerEvents = "";
+      google.removeAttribute("aria-busy");
+      nativeLoginBusy = false;
+    }
+  }
+
+  google.addEventListener("click", nativeGoogleLogin);
 })();
 </script>
 </body>
