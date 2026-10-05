@@ -13,7 +13,7 @@
     <div class="card-head"><span class="status-chip status-{{ item.status|lower }}">{{ item.status }}</span><small>{{ item.created_at }}</small></div>
     <h3>{{ item.position }}</h3>
     <p>{{ item.activity }} · {{ item.certificate_type }}</p>
-    <p class="muted-line">{{ item.academic_year }} · {{ templates.get(item.template, {}).get('name', 'Legacy Certificate') }}</p>
+    <p class="muted-line">{{ item.academic_year }}</p>
     <code>{{ item.certificate_id }}</code>
     <div class="card-actions">
       <a class="secondary-btn inline-btn" href="{{ url_for('student_certificate_detail',certificate_id=item.certificate_id) }}">Details</a>
