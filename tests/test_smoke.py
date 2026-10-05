@@ -243,6 +243,17 @@ def test_pwa_assets_are_available(app):
     assert "Cache-Control" in worker.headers
 
 
+def test_mobile_google_oauth_state_is_self_contained(app):
+    flask_app, _ = app
+    with flask_app.test_request_context("/"):
+        from app import _create_mobile_google_state, _read_mobile_google_state
+        state = _create_mobile_google_state("student")
+        payload = _read_mobile_google_state(state)
+        assert payload["mobile"] is True
+        assert payload["login_mode"] == "student"
+        assert _read_mobile_google_state(state[:-1] + ("0" if state[-1] != "0" else "1")) is None
+
+
 def test_mobile_oauth_handoff_is_one_time(app):
     flask_app, _ = app
     with flask_app.test_request_context("/"):
