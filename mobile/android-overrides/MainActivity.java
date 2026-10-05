@@ -29,6 +29,7 @@ import androidx.credentials.exceptions.GetCredentialException;
 
 import com.getcapacitor.BridgeActivity;
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
+import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption;
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginHandle;
@@ -195,11 +196,13 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
 
     private void requestGoogleCredential(String webClientId, boolean authorizedOnly) {
         try {
-            GetGoogleIdOption option = new GetGoogleIdOption.Builder()
-                .setServerClientId(webClientId)
-                .setFilterByAuthorizedAccounts(authorizedOnly)
-                .setAutoSelectEnabled(authorizedOnly)
-                .build();
+            // This is the explicit "Sign in with Google" button flow.
+            // Google's current Android guidance uses GetSignInWithGoogleOption
+            // for a button because it prompts the user to choose a Google
+            // account instead of filtering to previously-authorized credentials.
+            GetSignInWithGoogleOption option =
+                new GetSignInWithGoogleOption.Builder(webClientId)
+                    .build();
 
             GetCredentialRequest request = new GetCredentialRequest.Builder()
                 .addCredentialOption(option)
@@ -219,23 +222,18 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
 
                     @Override
                     public void onError(GetCredentialException e) {
-                        if (authorizedOnly) {
-                            runOnUiThread(() -> requestGoogleCredential(webClientId, false));
-                        } else {
-                            String message = e != null && e.getMessage() != null
-                                ? e.getMessage()
-                                : "No Google account credential was available.";
-                            sendGoogleResult(null, message);
-                        }
+                        String message = e != null && e.getMessage() != null
+                            ? e.getMessage()
+                            : "Google account chooser could not be opened.";
+                        sendGoogleResult(null, message);
                     }
                 }
             );
         } catch (Exception e) {
-            if (authorizedOnly) {
-                runOnUiThread(() -> requestGoogleCredential(webClientId, false));
-            } else {
-                sendGoogleResult(null, e.getMessage() != null ? e.getMessage() : "Google sign-in failed.");
-            }
+            sendGoogleResult(
+                null,
+                e.getMessage() != null ? e.getMessage() : "Google account chooser could not be opened."
+            );
         }
     }
 
