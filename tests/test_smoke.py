@@ -241,3 +241,23 @@ def test_pwa_assets_are_available(app):
     assert worker.status_code == 200
     assert worker.headers["Service-Worker-Allowed"] == "/"
     assert "Cache-Control" in worker.headers
+
+
+def test_mobile_oauth_handoff_is_one_time(app):
+    flask_app, _ = app
+    with flask_app.test_request_context("/"):
+        token = flask_app.view_functions["_create_mobile_oauth_handoff"]({
+            "login_mode": "student",
+            "pending_google": {"sub": "test-sub", "gmail": "test@gmail.com", "name": "Test"},
+        })
+        first = flask_app.view_functions["_consume_mobile_oauth_handoff"](token)
+        second = flask_app.view_functions["_consume_mobile_oauth_handoff"](token)
+    assert first["login_mode"] == "student"
+    assert second is None
+
+
+def test_mobile_complete_rejects_unknown_token(app):
+    _, client = app
+    response = client.get("/auth/mobile/complete?token=definitely-invalid")
+    assert response.status_code == 302
+    assert response.headers["Location"].endswith("/")
