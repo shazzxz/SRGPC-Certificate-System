@@ -125,27 +125,32 @@
   const google = document.getElementById('googleSignIn');
   if (!google) return;
 
-  const isNative = !!(
-    window.Capacitor &&
-    typeof window.Capacitor.isNativePlatform === 'function' &&
-    window.Capacitor.isNativePlatform()
-  );
-  if (!isNative) return;
+  const isNativeBridge = !!(window.SRGPCNativeGoogle && typeof window.SRGPCNativeGoogle.signIn === 'function');
+  if (!isNativeBridge) return;
 
-  google.href = "{{ url_for('google_login') }}?mobile=1";
   let nativeLoginBusy = false;
-  let socialLoginPromise = null;
+  let resolveGoogle = null;
 
-  function getSocialLogin() {
-    if (socialLoginPromise) return socialLoginPromise;
-    socialLoginPromise = Promise.resolve().then(function(){
-      const cap = window.Capacitor;
-      if (!cap) throw new Error("Capacitor bridge is unavailable.");
-      if (cap.Plugins && cap.Plugins.SocialLogin) return cap.Plugins.SocialLogin;
-      if (typeof cap.registerPlugin === 'function') return cap.registerPlugin('SocialLogin');
-      throw new Error("Native Google Sign-In plugin is unavailable.");
+  window.__srgpcNativeGoogleResult = function(result) {
+    if (!resolveGoogle) return;
+    const resolve = resolveGoogle;
+    resolveGoogle = null;
+    resolve(result || {});
+  };
+
+  function nativeGoogleSignIn(clientId) {
+    return new Promise(function(resolve, reject) {
+      resolveGoogle = function(result) {
+        if (result && result.idToken) resolve(result);
+        else reject(new Error((result && result.error) || "Google sign-in failed."));
+      };
+      try {
+        window.SRGPCNativeGoogle.signIn(clientId);
+      } catch (error) {
+        resolveGoogle = null;
+        reject(error);
+      }
     });
-    return socialLoginPromise;
   }
 
   google.addEventListener("click", async function(event){
@@ -160,33 +165,9 @@
     try {
       const clientId = {{ google_web_client_id|tojson }};
       if (!clientId) throw new Error("Google Sign-In is not configured on the server.");
-      const SocialLogin = await getSocialLogin();
-      await SocialLogin.initialize({
-        google: { webClientId: clientId, mode: "online" }
-      });
 
-      let result;
-      try {
-        result = await SocialLogin.login({
-          provider: "google",
-          options: {
-            style: "bottom",
-            filterByAuthorizedAccounts: true,
-            autoSelectEnabled: true
-          }
-        });
-      } catch (firstError) {
-        result = await SocialLogin.login({
-          provider: "google",
-          options: {
-            style: "bottom",
-            filterByAuthorizedAccounts: false,
-            autoSelectEnabled: false
-          }
-        });
-      }
-
-      const idToken = result && result.result && result.result.idToken;
+      const result = await nativeGoogleSignIn(clientId);
+      const idToken = result && result.idToken;
       if (!idToken) throw new Error("Google did not return an ID token.");
 
       const csrf = document.querySelector('meta[name="csrf-token"]')?.content || "";
