@@ -17,8 +17,13 @@ import android.webkit.WebViewClient;
 import android.widget.Toast;
 import androidx.core.app.ActivityCompat;
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginHandle;
+import ee.forgr.capacitor.social.login.GoogleProvider;
+import ee.forgr.capacitor.social.login.ModifiedMainActivityForSocialLoginPlugin;
+import ee.forgr.capacitor.social.login.SocialLoginPlugin;
 
-public class MainActivity extends BridgeActivity {
+public class MainActivity extends BridgeActivity implements ModifiedMainActivityForSocialLoginPlugin {
     private static final int REQUEST_NOTIFICATIONS = 1101;
     private static final int REQUEST_STORAGE = 1102;
     private String pendingDownloadUrl;
@@ -64,6 +69,23 @@ public class MainActivity extends BridgeActivity {
         handleIntent(getIntent());
         requestNotificationPermission();
     }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode >= GoogleProvider.REQUEST_AUTHORIZE_GOOGLE_MIN &&
+            requestCode < GoogleProvider.REQUEST_AUTHORIZE_GOOGLE_MAX) {
+            PluginHandle pluginHandle = getBridge().getPlugin("SocialLogin");
+            if (pluginHandle == null) return;
+            Plugin plugin = pluginHandle.getInstance();
+            if (plugin instanceof SocialLoginPlugin) {
+                ((SocialLoginPlugin) plugin).handleGoogleLoginIntent(requestCode, data);
+            }
+        }
+    }
+
+    @Override
+    public void IHaveModifiedTheMainActivityForTheUseWithSocialLoginPlugin() {}
 
     @Override
     protected void onNewIntent(Intent intent) {
