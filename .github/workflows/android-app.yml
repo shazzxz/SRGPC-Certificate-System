@@ -46,6 +46,14 @@ jobs:
       - name: Add native Android bridge
         run: python android_setup.py
 
+      - name: Prepare Android API 36 and debug signing key
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0" >/dev/null
+          mkdir -p "$HOME/.config/.android"
+          if [ ! -f "$HOME/.config/.android/debug.keystore" ]; then
+            keytool -genkeypair -v               -keystore "$HOME/.config/.android/debug.keystore"               -storepass android -keypass android               -alias AndroidDebugKey -keyalg RSA -keysize 2048 -validity 10000               -dname "CN=Android Debug,O=Android,C=US"
+          fi
+
       - name: Print debug signing SHA-1
         working-directory: mobile/android
         run: ./gradlew signingReport --no-daemon
