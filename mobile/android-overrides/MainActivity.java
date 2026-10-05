@@ -8,28 +8,50 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.CancellationSignal;
 import android.os.Environment;
 import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
+import android.webkit.JavascriptInterface;
 import android.webkit.URLUtil;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Toast;
+
 import androidx.core.app.ActivityCompat;
+import androidx.credentials.Credential;
+import androidx.credentials.CredentialManager;
+import androidx.credentials.CustomCredential;
+import androidx.credentials.GetCredentialRequest;
+import androidx.credentials.GetCredentialResponse;
+import androidx.credentials.exceptions.GetCredentialException;
+
 import com.getcapacitor.BridgeActivity;
+import com.google.android.libraries.identity.googleid.GetGoogleIdOption;
+import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginHandle;
 import ee.forgr.capacitor.social.login.GoogleProvider;
 import ee.forgr.capacitor.social.login.ModifiedMainActivityForSocialLoginPlugin;
 import ee.forgr.capacitor.social.login.SocialLoginPlugin;
 
+import org.json.JSONObject;
+
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+
 public class MainActivity extends BridgeActivity implements ModifiedMainActivityForSocialLoginPlugin {
     private static final int REQUEST_NOTIFICATIONS = 1101;
     private static final int REQUEST_STORAGE = 1102;
+    private static final String APP_HOST = "srgpc-certificate-system.onrender.com";
+
     private String pendingDownloadUrl;
     private String pendingDownloadUserAgent;
     private String pendingDownloadContentDisposition;
     private String pendingDownloadMimeType;
+
+    private CredentialManager credentialManager;
+    private final Executor googleExecutor = Executors.newSingleThreadExecutor();
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -37,6 +59,11 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         WebView webView = getBridge().getWebView();
         webView.getSettings().setJavaScriptEnabled(true);
         webView.getSettings().setDomStorageEnabled(true);
+
+        // The app loads our own SRGPC site, so expose only the small native
+        // Google sign-in bridge needed by that site.
+        webView.addJavascriptInterface(new GoogleBridge(), "SRGPCNativeGoogle");
+
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
@@ -44,6 +71,16 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
                 Uri uri = Uri.parse(url);
                 if ("srgpc".equalsIgnoreCase(uri.getScheme())) {
                     handleIntent(new Intent(Intent.ACTION_VIEW, uri));
+                    return true;
+                }
+                if ("http".equalsIgnoreCase(uri.getScheme()) ||
+                    "https".equalsIgnoreCase(uri.getScheme())) {
+                    String host = uri.getHost();
+                    if (host != null && APP_HOST.equalsIgnoreCase(host)) return false;
+                    // Keep third-party pages out of the WebView/native bridge.
+                    try {
+                        startActivity(new Intent(Intent.ACTION_VIEW, uri));
+                    } catch (Exception ignored) {}
                     return true;
                 }
                 return false;
@@ -66,6 +103,8 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
                 enqueueDownload();
             }
         });
+
+        credentialManager = CredentialManager.create(this);
         handleIntent(getIntent());
         requestNotificationPermission();
     }
@@ -92,6 +131,98 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         super.onNewIntent(intent);
         setIntent(intent);
         handleIntent(intent);
+    }
+
+    private class GoogleBridge {
+        @JavascriptInterface
+        public void signIn(String webClientId) {
+            if (webClientId == null || webClientId.trim().isEmpty()) {
+                sendGoogleResult(null, "Google Sign-In is not configured.");
+                return;
+            }
+            runOnUiThread(() -> requestGoogleCredential(webClientId.trim(), true));
+        }
+    }
+
+    private void requestGoogleCredential(String webClientId, boolean authorizedOnly) {
+        try {
+            GetGoogleIdOption option = new GetGoogleIdOption.Builder()
+                .setServerClientId(webClientId)
+                .setFilterByAuthorizedAccounts(authorizedOnly)
+                .setAutoSelectEnabled(authorizedOnly)
+                .build();
+
+            GetCredentialRequest request = new GetCredentialRequest.Builder()
+                .addCredentialOption(option)
+                .build();
+
+            CancellationSignal cancellationSignal = new CancellationSignal();
+            credentialManager.getCredentialAsync(
+                request,
+                this,
+                cancellationSignal,
+                googleExecutor,
+                new androidx.core.os.CancellationSignal.OnCancelListener() {
+                    @Override
+                    public void onCancel() {
+                        sendGoogleResult(null, "Google sign-in was cancelled.");
+                    }
+                },
+                new androidx.credentials.CredentialManagerCallback<GetCredentialResponse, GetCredentialException>() {
+                    @Override
+                    public void onResult(GetCredentialResponse response) {
+                        handleGoogleCredential(response);
+                    }
+
+                    @Override
+                    public void onError(GetCredentialException e) {
+                        if (authorizedOnly) {
+                            runOnUiThread(() -> requestGoogleCredential(webClientId, false));
+                        } else {
+                            String message = e != null && e.getMessage() != null
+                                ? e.getMessage()
+                                : "No Google account credential was available.";
+                            sendGoogleResult(null, message);
+                        }
+                    }
+                }
+            );
+        } catch (Exception e) {
+            if (authorizedOnly) {
+                runOnUiThread(() -> requestGoogleCredential(webClientId, false));
+            } else {
+                sendGoogleResult(null, e.getMessage() != null ? e.getMessage() : "Google sign-in failed.");
+            }
+        }
+    }
+
+    private void handleGoogleCredential(GetCredentialResponse response) {
+        try {
+            Credential credential = response.getCredential();
+            if (credential instanceof CustomCredential) {
+                CustomCredential custom = (CustomCredential) credential;
+                if (GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL.equals(custom.getType())) {
+                    GoogleIdTokenCredential googleCredential =
+                        GoogleIdTokenCredential.createFrom(custom.getData());
+                    String idToken = googleCredential.getIdToken();
+                    if (idToken != null && !idToken.isEmpty()) {
+                        sendGoogleResult(idToken, null);
+                        return;
+                    }
+                }
+            }
+            sendGoogleResult(null, "Google did not return an ID token.");
+        } catch (Exception e) {
+            sendGoogleResult(null, e.getMessage() != null ? e.getMessage() : "Could not read Google credential.");
+        }
+    }
+
+    private void sendGoogleResult(String idToken, String error) {
+        String tokenJson = idToken == null ? "null" : JSONObject.quote(idToken);
+        String errorJson = error == null ? "null" : JSONObject.quote(error);
+        String script = "window.__srgpcNativeGoogleResult && window.__srgpcNativeGoogleResult({idToken:"
+            + tokenJson + ",error:" + errorJson + "});";
+        runOnUiThread(() -> getBridge().getWebView().evaluateJavascript(script, null));
     }
 
     private void enqueueDownload() {
@@ -140,7 +271,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
             String token = data.getQueryParameter("token");
             if (token != null && !token.isEmpty()) {
                 getBridge().getWebView().loadUrl(
-                    "https://srgpc-certificate-system.onrender.com/auth/mobile/complete?token=" + Uri.encode(token)
+                    "https://" + APP_HOST + "/auth/mobile/complete?token=" + Uri.encode(token)
                 );
             }
         }
