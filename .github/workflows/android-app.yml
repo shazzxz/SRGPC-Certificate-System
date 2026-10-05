@@ -46,6 +46,10 @@ jobs:
       - name: Add native Android bridge
         run: python android_setup.py
 
+      - name: Print debug signing SHA-1
+        working-directory: mobile/android
+        run: ./gradlew signingReport --no-daemon
+
       - name: Build debug APK
         working-directory: mobile/android
         run: ./gradlew assembleDebug --no-daemon
