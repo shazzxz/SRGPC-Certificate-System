@@ -43,6 +43,9 @@ jobs:
       - name: Sync Capacitor
         run: npx cap sync android
 
+      - name: Add native Android bridge
+        run: python android_setup.py
+
       - name: Build debug APK
         working-directory: mobile/android
         run: ./gradlew assembleDebug --no-daemon
