@@ -1,0 +1,17 @@
+{
+  "name": "srgpc-mobile-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Android wrapper for the SRGPC Certificate Management System",
+  "scripts": {
+    "build:android": "npx cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "7.4.4",
+    "@capacitor/core": "7.4.4"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "7.4.4",
+    "typescript": "~5.8.3"
+  }
+}
