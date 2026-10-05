@@ -1338,9 +1338,6 @@ def admin_generate_page():
         teacher_sig=bool(current_signature_path("teacher")),
         principal_sig=bool(current_signature_path("principal")),
         students=students,
-        departments=DEPARTMENTS,
-        programmes=PROGRAMMES,
-        semesters=SEMESTERS,
     )
 
 
@@ -1355,9 +1352,9 @@ def admin_generate():
         "position": clean(request.form.get("position"), 80),
         "certificate_type": clean(request.form.get("certificate_type"), 60) or "Achievement",
         "academic_year": clean(request.form.get("academic_year"), 20) or setting("default_academic_year", current_academic_year()),
-        "department": clean(request.form.get("department"), 60) or "Other",
-        "programme": clean(request.form.get("programme"), 60) or "Other",
-        "semester": clean(request.form.get("semester"), 10) or "",
+        "department": "",
+        "programme": "",
+        "semester": "",
         "template": allowed_template(request.form.get("template")),
         "font_family": allowed_font(request.form.get("font_family")),
     }

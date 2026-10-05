@@ -176,3 +176,21 @@ def test_named_signature_survives_logout_and_login(app):
     assert "Saved Signature Library" in html
     assert "Currently active" in html
 
+
+
+def test_generate_form_omits_non_certificate_academic_fields(app):
+    _, client = app
+    page = client.get("/")
+    token = csrf(page.get_data(as_text=True))
+    login = client.post(
+        "/login",
+        data={"role":"admin","username":"ADMIN","password":"0000","_csrf_token":token},
+        follow_redirects=False,
+    )
+    assert login.status_code == 302
+    response = client.get("/admin/generate")
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert 'name="department"' not in html
+    assert 'name="programme"' not in html
+    assert 'name="semester"' not in html
