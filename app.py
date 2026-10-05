@@ -938,6 +938,39 @@ def google_userinfo(access_token):
         return json.loads(response.read().decode())
 
 
+def google_verify_id_token(id_token):
+    """Verify a native Google ID token and return its claims.
+
+    Google tokeninfo performs Google's signature/expiry validation. We still
+    enforce this application's audience, issuer, verified-email and Gmail
+    requirements before using any identity data.
+    """
+    if not id_token:
+        raise ValueError("Missing Google ID token.")
+    query = urllib.parse.urlencode({"id_token": id_token})
+    req = urllib.request.Request(
+        "https://oauth2.googleapis.com/tokeninfo?" + query,
+        headers={"Accept": "application/json"},
+        method="GET",
+    )
+    with urllib.request.urlopen(req, timeout=15) as response:
+        claims = json.loads(response.read().decode())
+
+    expected_audience = os.environ.get("GOOGLE_CLIENT_ID", "").strip()
+    if not expected_audience or claims.get("aud") != expected_audience:
+        raise ValueError("Google ID token audience mismatch.")
+    if claims.get("iss") not in {"accounts.google.com", "https://accounts.google.com"}:
+        raise ValueError("Google ID token issuer mismatch.")
+    try:
+        if int(claims.get("exp", "0")) <= int(time.time()):
+            raise ValueError("Google ID token has expired.")
+    except (TypeError, ValueError):
+        raise ValueError("Google ID token expiry is invalid.")
+    if str(claims.get("email_verified", "")).lower() != "true":
+        raise ValueError("Google account email is not verified.")
+    return claims
+
+
 def google_signin_or_register():
     if not google_configured():
         flash("Google Sign-In is not configured yet. Ask the administrator to add the Google OAuth credentials in Render.", "error")
@@ -1224,6 +1257,78 @@ def mobile_oauth_complete():
 def _request_is_capacitor_webview():
     user_agent = request.headers.get("User-Agent", "").lower()
     return "capacitor" in user_agent or "; wv)" in user_agent or "in.srgpc.certificates" in user_agent
+
+
+@app.post("/auth/google/native")
+@limiter.limit("12 per minute")
+def google_native_login():
+    """Finish Google login from the Android Credential Manager flow.
+
+    The browser OAuth flow remains unchanged. The APK sends only the native
+    Google ID token here; the server verifies it before creating the Flask
+    session, so no browser redirect or custom-scheme handoff is needed.
+    """
+    if not os.environ.get("GOOGLE_CLIENT_ID", "").strip():
+        return jsonify({"ok": False, "error": "Google Sign-In is not configured."}), 503
+
+    body = request.get_json(silent=True) or {}
+    id_token = str(body.get("id_token") or "").strip()
+    login_mode = str(body.get("login_mode") or "student").strip().lower()
+    if login_mode not in {"student", "admin"}:
+        login_mode = "student"
+
+    try:
+        claims = google_verify_id_token(id_token)
+    except Exception:
+        app.logger.warning("Native Google token verification failed", extra={"request_id": getattr(g, "request_id", "")})
+        return jsonify({"ok": False, "error": "Google sign-in could not be verified. Please try again."}), 401
+
+    google_sub = clean(claims.get("sub"), 160)
+    gmail = clean(claims.get("email"), 120).lower()
+    name = clean(claims.get("name"), 80)
+    if not google_sub or not gmail or not is_valid_gmail(gmail):
+        return jsonify({"ok": False, "error": "Only verified Gmail accounts can be used for student access."}), 403
+
+    with get_db() as db:
+        student = db.execute(
+            "SELECT * FROM students WHERE google_sub=? OR LOWER(gmail)=LOWER(?) LIMIT 1",
+            (google_sub, gmail),
+        ).fetchone()
+
+    if student:
+        if not student["google_sub"]:
+            db_student_id = student["id"]
+            with get_db() as db:
+                db.execute("UPDATE students SET google_sub=?, email_verified=1 WHERE id=?", (google_sub, db_student_id))
+                db.commit()
+            with get_db() as db:
+                student = db.execute("SELECT * FROM students WHERE id=?", (db_student_id,)).fetchone()
+
+        if login_mode == "admin":
+            if not student["admin_enabled"]:
+                return jsonify({"ok": False, "error": "This student account does not have admin access."}), 403
+            begin_session(
+                role="admin",
+                username=student["username"],
+                admin_role="admin",
+                admin_id=None,
+                admin_source_student_id=student["id"],
+            )
+            audit("Admin Google login", "admin", student["username"], f"Student admin role: {session['admin_role']}")
+            return jsonify({"ok": True, "redirect_url": url_for("admin_dashboard")})
+
+        begin_session(role="student", student_id=student["id"], username=student["username"])
+        return jsonify({"ok": True, "redirect_url": url_for("student_dashboard")})
+
+    if login_mode == "admin":
+        return jsonify({
+            "ok": False,
+            "error": "That Google account is not registered as an SRGPC student yet. Sign in as a student first, then ask the superadmin to grant admin access.",
+        }), 403
+
+    session["pending_google"] = {"sub": google_sub, "gmail": gmail, "name": name}
+    session["google_login_mode"] = "student"
+    return jsonify({"ok": True, "redirect_url": url_for("register_google")})
 
 
 @app.get("/auth/google")
