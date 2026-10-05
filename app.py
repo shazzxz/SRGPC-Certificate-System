@@ -493,6 +493,14 @@ def init_db():
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL
             )""",
+            f"""CREATE TABLE IF NOT EXISTS mobile_oauth_states (
+                id {id_pk},
+                state_hash TEXT NOT NULL UNIQUE{case_unique},
+                login_mode TEXT NOT NULL DEFAULT 'student',
+                expires_at TEXT NOT NULL,
+                used_at TEXT,
+                created_at TEXT NOT NULL
+            )""",
             f"""CREATE TABLE IF NOT EXISTS mobile_oauth_handoffs (
                 id {id_pk},
                 token_hash TEXT NOT NULL UNIQUE{case_unique},
@@ -1170,6 +1178,15 @@ a{{display:inline-block;padding:14px 22px;border-radius:12px;background:#2457d6;
 </body></html>"""
 
 
+def _mobile_oauth_response(token):
+    target = _mobile_oauth_redirect(token)
+    return ("<!doctype html><html><head><meta name='viewport' content='width=device-width,initial-scale=1'>"
+            "<title>Returning to SRGPC app…</title></head><body style='font-family:Arial,sans-serif;text-align:center;padding:40px'>"
+            "<h2>Returning to SRGPC app…</h2><p>You can close this window if the app opens automatically.</p>"
+            f"<script>window.location.replace({json.dumps(target)});</script>"
+            f"<p><a href={json.dumps(target)}>Continue to SRGPC app</a></p></body></html>")
+
+
 @app.get("/auth/mobile/complete")
 def mobile_oauth_complete():
     payload = _consume_mobile_oauth_handoff(request.args.get("token", ""))
@@ -1292,7 +1309,7 @@ def google_callback():
             payload["student_id"] = int(student["id"])
         else:
             payload["pending_google"] = {"sub": google_sub, "gmail": gmail, "name": name}
-        return redirect(_mobile_oauth_redirect(_create_mobile_oauth_handoff(payload)))
+        return _mobile_oauth_response(_create_mobile_oauth_handoff(payload))
     if student:
         if not student["google_sub"]:
             with get_db() as db:
