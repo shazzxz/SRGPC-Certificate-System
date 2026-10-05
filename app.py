@@ -1262,6 +1262,15 @@ def _request_is_capacitor_webview():
     return "capacitor" in user_agent or "; wv)" in user_agent or "in.srgpc.certificates" in user_agent
 
 
+@app.get("/auth/google/native/config")
+def google_native_config():
+    """Return only the public Google OAuth client ID needed by the Android app."""
+    client_id = os.environ.get("GOOGLE_CLIENT_ID", "").strip()
+    if not client_id:
+        return jsonify({"ok": False, "error": "Google Sign-In is not configured."}), 503
+    return jsonify({"ok": True, "client_id": client_id})
+
+
 @app.post("/auth/google/native")
 @limiter.limit("12 per minute")
 def google_native_login():
