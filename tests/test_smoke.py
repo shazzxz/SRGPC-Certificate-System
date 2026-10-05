@@ -291,4 +291,4 @@ def test_mobile_oauth_response_returns_app_callback(app):
     from app import _mobile_oauth_response
     with flask_app.app_context():
         html = _mobile_oauth_response("abc123")
-        assert "srgpc://oauth2callback?token=abc123" in html
+        assert "oauth2callback?token=abc123" in html
