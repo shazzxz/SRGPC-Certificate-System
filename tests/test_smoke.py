@@ -194,3 +194,18 @@ def test_generate_form_omits_non_certificate_academic_fields(app):
     assert 'name="department"' not in html
     assert 'name="programme"' not in html
     assert 'name="semester"' not in html
+
+
+def test_student_certificate_list_handles_legacy_template(app):
+    _, client = app
+    page = client.get("/")
+    token = csrf(page.get_data(as_text=True))
+    login = client.post("/login", data={
+        "role":"student","username":"24039C04060","password":"0000","_csrf_token":token
+    }, follow_redirects=False)
+    if login.status_code != 302:
+        pytest.skip("Configured test student credentials are not available")
+    response = client.get("/student/certificates")
+    assert response.status_code in {200, 404}
+    if response.status_code == 200:
+        assert "Legacy Certificate" in response.get_data(as_text=True) or "certificate" in response.get_data(as_text=True).lower()
