@@ -1,4 +1,5 @@
 name: Android App
+# Rebuild after native Google Credential Manager login fix
 
 on:
   workflow_dispatch:
