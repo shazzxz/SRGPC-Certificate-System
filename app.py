@@ -92,7 +92,10 @@ def csrf_token():
 
 @app.context_processor
 def security_context():
-    return {"csrf_token": csrf_token}
+    return {
+        "csrf_token": csrf_token,
+        "google_web_client_id": os.environ.get("GOOGLE_CLIENT_ID", "").strip(),
+    }
 
 
 @app.before_request
