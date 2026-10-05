@@ -26,6 +26,7 @@ except ImportError:
 import hashlib
 import secrets
 import base64
+import binascii
 import re
 import os
 import csv
@@ -1138,6 +1139,9 @@ def mobile_oauth_complete():
     payload = _consume_mobile_oauth_handoff(request.args.get("token", ""))
     if not payload:
         flash("This mobile sign-in link is invalid or has expired. Please try Google Sign-In again.", "error")
+        return redirect(url_for("login"))
+    if payload.get("error") == "cancelled":
+        flash("Google sign-in was cancelled.", "error")
         return redirect(url_for("login"))
     login_mode = payload.get("login_mode", "student")
     student_id = payload.get("student_id")
