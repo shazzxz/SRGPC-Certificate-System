@@ -32,5 +32,7 @@ if 'android:scheme="srgpc"' not in text:
         </intent-filter>
     </activity>"""
     )
+    if 'android:launchMode="singleTask"' not in block:
+        block = block.replace('android:name=".MainActivity"', 'android:name=".MainActivity"\n            android:launchMode="singleTask"')
     text = text[:start] + block + text[end + len("</activity>"):]
 manifest.write_text(text)
