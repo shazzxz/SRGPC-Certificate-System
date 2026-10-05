@@ -77,7 +77,17 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
                 if ("http".equalsIgnoreCase(uri.getScheme()) ||
                     "https".equalsIgnoreCase(uri.getScheme())) {
                     String host = uri.getHost();
-                    if (host != null && APP_HOST.equalsIgnoreCase(host)) return false;
+                    if (host != null && APP_HOST.equalsIgnoreCase(host)) {
+                        String path = uri.getPath();
+                        if ("/auth/google".equals(path)) {
+                            view.evaluateJavascript(
+                                "window.__srgpcStartNativeGoogle && window.__srgpcStartNativeGoogle();",
+                                null
+                            );
+                            return true;
+                        }
+                        return false;
+                    }
                     // Keep third-party pages out of the WebView/native bridge.
                     try {
                         startActivity(new Intent(Intent.ACTION_VIEW, uri));
@@ -85,6 +95,12 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
                     return true;
                 }
                 return false;
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                installNativeGoogleInterceptor(view);
             }
         });
 
@@ -132,6 +148,39 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         super.onNewIntent(intent);
         setIntent(intent);
         handleIntent(intent);
+    }
+
+    private void installNativeGoogleInterceptor(WebView view) {
+        String js = "(function(){"
+            + "if(window.__srgpcNativeGoogleInstalled)return;"
+            + "window.__srgpcNativeGoogleInstalled=true;"
+            + "window.__srgpcStartNativeGoogle=function(){"
+            + "var bridge=window.SRGPCNativeGoogle;"
+            + "if(!bridge||typeof bridge.signIn!=='function')return;"
+            + "var html=document.documentElement&&document.documentElement.innerHTML||'';"
+            + "var m=html.match(/[0-9]+-[A-Za-z0-9_-]+\\\\.apps\\\\.googleusercontent\\\\.com/);"
+            + "var clientId=m?m[0]:'';"
+            + "if(!clientId){alert('Google Sign-In configuration is missing.');return;}"
+            + "var tokenDone=false;"
+            + "window.__srgpcNativeGoogleResult=function(result){"
+            + "if(tokenDone)return;tokenDone=true;"
+            + "if(!result||!result.idToken){return;}"
+            + "var csrfEl=document.querySelector('meta[name=\\\"csrf-token\\\"]')||document.querySelector('input[name=\\\"_csrf_token\\\"]');"
+            + "var csrf=csrfEl?(csrfEl.content||csrfEl.value||''):'';"
+            + "fetch('/auth/google/native',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-CSRFToken':csrf},body:JSON.stringify({id_token:result.idToken,login_mode:'student'})})"
+            + ".then(function(r){return r.json().then(function(d){return {ok:r.ok,data:d};});})"
+            + ".then(function(x){if(!x.ok||!x.data.ok)throw new Error((x.data&&x.data.error)||'Google sign-in failed.');window.location.assign(x.data.redirect_url||'/');})"
+            + ".catch(function(e){alert(e&&e.message?e.message:'Google sign-in failed.');});"
+            + "};"
+            + "bridge.signIn(clientId);"
+            + "};"
+            + "document.addEventListener('click',function(e){"
+            + "var el=e.target&&e.target.closest?e.target.closest('a[href*=\\\"/auth/google\\\"]'):null;"
+            + "if(!el)return;"
+            + "e.preventDefault();e.stopImmediatePropagation();window.__srgpcStartNativeGoogle();"
+            + "},true);"
+            + "})();";
+        view.evaluateJavascript(js, null);
     }
 
     private class GoogleBridge {
