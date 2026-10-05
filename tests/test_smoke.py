@@ -277,13 +277,13 @@ def test_mobile_complete_rejects_unknown_token(app):
 
 def test_mobile_oauth_state_can_be_created_and_consumed(app):
     flask_app, _ = app
-    from app import _create_mobile_oauth_state, _consume_mobile_oauth_state
+    from app import _create_mobile_google_state, _read_mobile_google_state
     with flask_app.app_context():
-        state = _create_mobile_oauth_state("student")
-        row = _consume_mobile_oauth_state(state)
+        state = _create_mobile_google_state("student")
+        row = _read_mobile_google_state(state)
         assert row is not None
         assert row["login_mode"] == "student"
-        assert _consume_mobile_oauth_state(state) is None
+        assert _read_mobile_google_state(state) is not None
 
 
 def test_mobile_oauth_response_returns_app_callback(app):
