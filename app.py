@@ -836,9 +836,59 @@ def google_redirect_uri():
     return url_for("google_callback", _external=True)
 
 
+def _create_mobile_google_state(login_mode):
+    payload = {
+        "v": 1,
+        "iat": int(time.time()),
+        "nonce": secrets.token_urlsafe(24),
+        "login_mode": login_mode if login_mode in {"student", "admin"} else "student",
+        "mobile": True,
+    }
+    encoded = base64.urlsafe_b64encode(
+        json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    ).rstrip(b"=").decode("ascii")
+    signature = hmac.new(
+        app.secret_key.encode("utf-8"),
+        encoded.encode("ascii"),
+        hashlib.sha256,
+    ).hexdigest()
+    return encoded + "." + signature
+
+
+def _read_mobile_google_state(state):
+    try:
+        encoded, signature = state.split(".", 1)
+        expected = hmac.new(
+            app.secret_key.encode("utf-8"),
+            encoded.encode("ascii"),
+            hashlib.sha256,
+        ).hexdigest()
+        if not hmac.compare_digest(signature, expected):
+            return None
+        padded = encoded + "=" * (-len(encoded) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(padded.encode("ascii")).decode("utf-8"))
+        issued_at = int(payload.get("iat", 0))
+        if payload.get("v") != 1 or payload.get("mobile") is not True:
+            return None
+        if abs(int(time.time()) - issued_at) > 10 * 60:
+            return None
+        if payload.get("login_mode") not in {"student", "admin"}:
+            return None
+        return payload
+    except (ValueError, TypeError, KeyError, json.JSONDecodeError, UnicodeDecodeError, binascii.Error):
+        return None
+
+
 def google_authorize_url():
-    state = secrets.token_urlsafe(32)
-    session["google_oauth_state"] = state
+    login_mode = session.get("google_login_mode", "student")
+    mobile_login = bool(session.get("google_mobile", False))
+    if mobile_login:
+        # Mobile OAuth may finish in the external browser, so do not bind its
+        # state exclusively to the WebView's session cookie.
+        state = _create_mobile_google_state(login_mode)
+    else:
+        state = secrets.token_urlsafe(32)
+        session["google_oauth_state"] = state
     params = {
         "client_id": os.environ["GOOGLE_CLIENT_ID"].strip(),
         "redirect_uri": google_redirect_uri(),
@@ -1114,11 +1164,16 @@ def mobile_oauth_complete():
     return redirect(url_for("register_google"))
 
 
+def _request_is_capacitor_webview():
+    user_agent = request.headers.get("User-Agent", "").lower()
+    return "capacitor" in user_agent or "; wv)" in user_agent or "in.srgpc.certificates" in user_agent
+
+
 @app.get("/auth/google")
 @limiter.limit("12 per minute")
 def google_login():
     session["google_login_mode"] = "student"
-    session["google_mobile"] = request.args.get("mobile") == "1"
+    session["google_mobile"] = request.args.get("mobile") == "1" or _request_is_capacitor_webview()
     return google_signin_or_register()
 
 
@@ -1126,7 +1181,7 @@ def google_login():
 @limiter.limit("12 per minute")
 def google_admin_login():
     session["google_login_mode"] = "admin"
-    session["google_mobile"] = request.args.get("mobile") == "1"
+    session["google_mobile"] = request.args.get("mobile") == "1" or _request_is_capacitor_webview()
     return google_signin_or_register()
 
 
@@ -1136,10 +1191,25 @@ def google_callback():
         flash("Google Sign-In is not configured.", "error")
         return redirect(url_for("login"))
     state = request.args.get("state", "")
-    if not state or not secrets.compare_digest(state, session.pop("google_oauth_state", "")):
-        flash("Google sign-in could not be verified. Please try again.", "error")
-        return redirect(url_for("login"))
+    mobile_state = _read_mobile_google_state(state)
+    if mobile_state:
+        login_mode = mobile_state["login_mode"]
+        mobile_login = True
+    else:
+        expected_state = session.pop("google_oauth_state", "")
+        if not state or not expected_state or not secrets.compare_digest(state, expected_state):
+            flash("Google sign-in could not be verified. Please try again.", "error")
+            return redirect(url_for("login"))
+        login_mode = session.get("google_login_mode", "student")
+        mobile_login = bool(session.get("google_mobile", False))
+
     if request.args.get("error"):
+        if mobile_login:
+            token = _create_mobile_oauth_handoff({
+                "login_mode": login_mode,
+                "error": "cancelled",
+            })
+            return redirect(_mobile_oauth_redirect(token))
         flash("Google sign-in was cancelled.", "error")
         return redirect(url_for("login"))
     code = request.args.get("code", "")
@@ -1170,8 +1240,12 @@ def google_callback():
             (google_sub, gmail),
         ).fetchone()
 
-    login_mode = session.pop("google_login_mode", "student")
-    mobile_login = bool(session.pop("google_mobile", False))
+    if not mobile_state:
+        login_mode = session.pop("google_login_mode", "student")
+        mobile_login = bool(session.pop("google_mobile", False))
+    else:
+        session.pop("google_login_mode", None)
+        session.pop("google_mobile", None)
     if mobile_login:
         payload = {"login_mode": login_mode}
         if student:
