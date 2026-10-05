@@ -207,3 +207,23 @@ def test_legacy_template_display_falls_back_safely(app):
             templates={"classic": {"name": "Classic Gold"}},
         )
     assert html.strip() == "Legacy Certificate"
+
+
+def test_student_certificate_wallet_hides_template_names(app):
+    flask_app, _ = app
+    from flask import render_template
+    with flask_app.test_request_context("/student/certificates"):
+        html = render_template(
+            "student_certificates.html",
+            student={"name":"Test Student","roll_number":"CSE0001"},
+            certs=[{
+                "status":"Valid","created_at":"2026-10-05",
+                "position":"1st","activity":"Competition","certificate_type":"Achievement",
+                "academic_year":"2026-27","template":"royal","certificate_id":"TEST-001",
+                "filename":"TEST-001.pdf",
+            }],
+            search_name="",
+            templates={"royal":{"name":"Royal Violet"}},
+        )
+    assert "2026-27" in html
+    assert "Royal Violet" not in html
