@@ -48,6 +48,20 @@ if variables.exists():
     v = v.replace("compileSdkVersion = 35", "compileSdkVersion = 36")
     variables.write_text(v)
 
+# Native Google Sign-In uses Android Credential Manager directly. These libraries are
+# not pulled in by the web Capacitor bundle, so declare them in the generated app
+# module before compiling MainActivity.java.
+app_gradle = android / "app/build.gradle"
+if app_gradle.exists():
+    a = app_gradle.read_text()
+    deps = '''\n    implementation "androidx.credentials:credentials:1.6.0"\n    implementation "androidx.credentials:credentials-play-services-auth:1.6.0"\n    implementation "com.google.android.libraries.identity.googleid:googleid:1.2.1"\n'''
+    if 'androidx.credentials:credentials:1.6.0' not in a:
+        marker = "dependencies {"
+        if marker not in a:
+            raise RuntimeError("Generated app build.gradle does not contain dependencies block")
+        a = a.replace(marker, marker + deps, 1)
+        app_gradle.write_text(a)
+
 root_gradle = android / "build.gradle"
 if root_gradle.exists():
     g = root_gradle.read_text()
