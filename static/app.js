@@ -55,8 +55,8 @@ function splitPreview(text,maxChars=58){const words=String(text||'').trim().spli
 function drawPreviewFrame(svg,t){
   const {bg,accent}=t; addRect(svg,0,0,842,595,{fill:bg});
   if(activePreviewTemplate==='classic'){addRect(svg,24,24,794,547,{fill:'none',stroke:accent,'stroke-width':2.2,rx:10});addRect(svg,36,36,770,523,{fill:'none',stroke:'#d7c596','stroke-width':0.7,rx:8});}
-  else if(activePreviewTemplate==='modern'){addRect(svg,0,0,842,78,{fill:'#0f172a'});addRect(svg,0,78,88,517,{fill:'#eaf2ff'});addRect(svg,106,34,712,527,{fill:'none',stroke:'#cbd5e1','stroke-width':0.7});}
-  else if(activePreviewTemplate==='emerald'){addRect(svg,24,24,794,547,{fill:'none',stroke:accent,'stroke-width':2.3,rx:12});addRect(svg,36,36,770,523,{fill:'none',stroke:'#a5d4c8','stroke-width':0.7,rx:9});addCircle(svg,421,74,52,{fill:t.soft});}
+  else if(activePreviewTemplate==='modern'){addRect(svg,0,0,842,78,{fill:'#0f172a'});addRect(svg,0,78,88,517,{fill:'#eaf2ff'});addRect(svg,420,34,84,76,{fill:'#fff',rx:11});addRect(svg,106,34,712,527,{fill:'none',stroke:'#cbd5e1','stroke-width':0.7});}
+  else if(activePreviewTemplate==='emerald'){addRect(svg,24,24,794,547,{fill:'none',stroke:accent,'stroke-width':2.3,rx:12});addRect(svg,36,36,770,523,{fill:'none',stroke:'#a5d4c8','stroke-width':0.7,rx:9});addCircle(svg,421,68,42,{fill:t.soft});}
   else if(activePreviewTemplate==='midnight'){addRect(svg,24,24,794,547,{fill:'none',stroke:'#a7b5ff','stroke-width':1.5,rx:12});addRect(svg,38,38,766,519,{fill:'none',stroke:'#32496f','stroke-width':0.7,rx:9});}
   else if(activePreviewTemplate==='royal'){addRect(svg,24,24,794,547,{fill:'none',stroke:accent,'stroke-width':2.4,rx:12});addRect(svg,36,36,770,523,{fill:'none',stroke:'#c9b7e8','stroke-width':0.75,rx:9});for(const [x,y] of [[60,60],[782,60],[60,535],[782,535]])addCircle(svg,x,y,7,{fill:t.soft});}
   else if(activePreviewTemplate==='burgundy'){addRect(svg,0,0,842,595,{fill:'#fffaf5'});addRect(svg,0,0,842,30,{fill:'#6f1d2a'});addRect(svg,0,583,842,12,{fill:'#8f2f42'});addRect(svg,24,24,794,547,{fill:'none',stroke:'#c6a15b','stroke-width':1.5,rx:12});addRect(svg,34,34,774,527,{fill:'none',stroke:'#dfcda4','stroke-width':0.6,rx:9});}
@@ -69,10 +69,10 @@ function drawPreviewFrame(svg,t){
   else if(activePreviewTemplate==='crimson_sash'){addPath(svg,'M622 0 H842 V54 H672 Z',{fill:'#f1c4c9'});addPath(svg,'M0 595 H180 L0 537 Z',{fill:'#f1c4c9'});addRect(svg,26,26,790,543,{fill:'none',stroke:'#b4232f','stroke-width':1.7});addRect(svg,37,37,768,521,{fill:'none',stroke:'#e6aab1','stroke-width':0.6});}
   else if(activePreviewTemplate==='cobalt_wave'){addRect(svg,25,25,792,545,{fill:'none',stroke:'#2458c7','stroke-width':1.8,'rx':14});addPath(svg,'M0 541 C130 560 240 520 370 549 C520 585 650 519 842 558 L842 595 H0 Z',{fill:'#dce6fb'});addPath(svg,'M42 548 A55 34 0 0 1 148 548',{fill:'none',stroke:'#9ab5eb','stroke-width':0.9});addPath(svg,'M694 548 A55 34 0 0 0 800 548',{fill:'none',stroke:'#9ab5eb','stroke-width':0.9});}
   else if(activePreviewTemplate==='sage_garden'){addRect(svg,24,24,794,547,{fill:'none',stroke:'#5f7f51','stroke-width':1.8,'rx':12});addRect(svg,37,37,768,521,{fill:'none',stroke:'#b7c7ad','stroke-width':0.7,'rx':9});for(const [x,y,dx,dy] of [[54,56,16,18],[788,56,-16,18],[54,539,16,-18],[788,539,-16,-18]]){addLine(svg,x,y,x+dx,y+dy,{stroke:'#5f7f51','stroke-width':0.8});addCircle(svg,x+dx,y+dy,4,{fill:'none',stroke:'#5f7f51','stroke-width':0.8});addCircle(svg,x+dx*0.7,y+dy*0.65,3,{fill:'#5f7f51'});}}
-  else if(activePreviewTemplate==='charcoal_gold'){addRect(svg,24,24,794,547,{fill:'none',stroke:'#d2ad5f','stroke-width':1.6});addRect(svg,35,35,772,525,{fill:'none',stroke:'#6c5830','stroke-width':0.7});addRect(svg,24,24,794,7,{fill:'#d2ad5f'});addRect(svg,24,568,794,3,{fill:'#d2ad5f'});addCircle(svg,421,74,42,{fill:'#2a2417'});}
-  else if(activePreviewTemplate==='coastal'){addRect(svg,0,0,14,595,{fill:'#e49b7e'});addRect(svg,14,0,42,595,{fill:'#d9f0f6'});addRect(svg,66,24,752,547,{fill:'none',stroke:'#0b82a5','stroke-width':1.3,'rx':10});}
+  else if(activePreviewTemplate==='charcoal_gold'){addRect(svg,24,24,794,547,{fill:'none',stroke:'#d2ad5f','stroke-width':1.6});addRect(svg,35,35,772,525,{fill:'none',stroke:'#6c5830','stroke-width':0.7});addRect(svg,24,24,794,7,{fill:'#d2ad5f'});addRect(svg,24,568,794,3,{fill:'#d2ad5f'});addCircle(svg,421,68,36,{fill:'#2a2417'});}
+  else if(activePreviewTemplate==='coastal'){addRect(svg,0,0,14,595,{fill:'#e49b7e'});addRect(svg,14,0,42,595,{fill:'#d9f0f6'});addRect(svg,66,24,752,547,{fill:'none',stroke:'#0b82a5','stroke-width':1.3,'rx':10});addPath(svg,'M80 544 L220 544 L360 538 L500 546 L640 539 L797 545',{fill:'none',stroke:'#9bcbd8','stroke-width':0.9});}
   else if(activePreviewTemplate==='geometric'){addRect(svg,24,24,794,547,{fill:'none',stroke:'#4056a1','stroke-width':1.4});addRect(svg,34,34,774,527,{fill:'none',stroke:'#d7dcef','stroke-width':0.7});for(const [x,y] of [[56,56],[786,56],[56,539],[786,539]]){addPath(svg,'M '+x+' '+(y-9)+' L '+(x+9)+' '+y+' L '+x+' '+(y+9)+' L '+(x-9)+' '+y+' Z',{fill:'#e8ebf8',stroke:'#4056a1','stroke-width':0.6});}}
-  else if(activePreviewTemplate==='monochrome'){addRect(svg,0,0,11,595,{fill:'#20252b'});addRect(svg,0,0,842,8,{fill:'#20252b'});addRect(svg,30,30,782,535,{fill:'none',stroke:'#20252b','stroke-width':0.9});addRect(svg,42,42,758,511,{fill:'none',stroke:'#dfe3e7','stroke-width':0.7});}
+  else if(activePreviewTemplate==='monochrome'){addRect(svg,0,0,11,595,{fill:'#20252b'});addRect(svg,0,0,842,8,{fill:'#20252b'});addRect(svg,30,30,782,535,{fill:'none',stroke:'#20252b','stroke-width':0.9});addRect(svg,42,42,758,511,{fill:'none',stroke:'#dfe3e7','stroke-width':0.7});addLine(svg,160,491,682,491,{stroke:'#20252b','stroke-width':0.7});}
   else {addRect(svg,34,34,774,527,{fill:'none',stroke:'#cbd5e1','stroke-width':0.9});addRect(svg,34,34,774,3,{fill:'#111827'});}
 }
 function renderLiveCertificate(){
@@ -89,60 +89,50 @@ function renderLiveCertificate(){
   // Match the PDF renderer: all text positions below are SVG baselines.
   // The crest has a fixed square safe box and is centered on this template's
   // actual content area (after any left-side design rail).
-  addRect(svg,cx-49,27,98,94,{fill:'#fff',stroke:t.accent,'stroke-width':0.65,'stroke-opacity':0.32,rx:12});
-  addImage(svg,stage.dataset.logoUrl,cx-40,34,80,80);
-  addText(svg,'SRGPC',cx,132,{font:ff,size:15.8,weight:700,fill:t.accent,letterSpacing:'.6'});
-  addText(svg,'CERTIFICATE OF ACHIEVEMENT',cx,179,{font:ff,size:30,weight:800,fill:t.ink,length:670,minSize:19});
-  addText(svg,'Presented in recognition of outstanding performance',cx,206,{font:ff,size:11.4,fill:t.muted,length:560,minSize:8.8});
-  addText(svg,'Presented to',cx,238,{font:ff,size:12,fill:t.muted});
-  addText(svg,name,cx,275,{font:ff,size:34,weight:700,fill:t.ink,length:600,minSize:14});
-  addLine(svg,cx-160,295,cx+160,295,{stroke:t.accent,'stroke-width':1.2});
+  if(tpl==='midnight'||tpl==='charcoal_gold')addRect(svg,cx-42,34,84,76,{fill:'#fff',rx:11});
+  addImage(svg,stage.dataset.logoUrl,cx-32,40,64,64);
+  addText(svg,'SRGPC',cx,125,{font:ff,size:13.8,weight:700,fill:t.accent,letterSpacing:'.6'});
+  addText(svg,'CERTIFICATE OF ACHIEVEMENT',cx,169,{font:ff,size:28,weight:800,fill:t.ink,length:670,minSize:18.5});
+  addText(svg,'Presented in recognition of outstanding performance',cx,199,{font:ff,size:10.6,fill:t.muted,length:560,minSize:8.2});
+  addText(svg,'Presented to',cx,233,{font:ff,size:11,fill:t.muted});
+  addText(svg,name,cx,270,{font:ff,size:32,weight:700,fill:t.ink,length:600,minSize:14});
+  addLine(svg,cx-160,290,cx+160,290,{stroke:t.accent,'stroke-width':1.2});
 
   const [l1,l2]=splitPreview(`for securing ${position} in ${activity}.`,68);
-  addText(svg,l1,cx,328,{font:ff,size:16,weight:700,fill:t.ink,length:Math.min(610,Math.max(250,610-(l1.length-35)*3)),minSize:12});
-  if(l2)addText(svg,l2,cx,349,{font:ff,size:16,weight:700,fill:t.ink,length:Math.min(610,Math.max(250,610-(l2.length-35)*3)),minSize:12});
+  addText(svg,l1,cx,321,{font:ff,size:13,weight:700,fill:t.ink,length:Math.min(610,Math.max(250,610-(l1.length-35)*3))});
+  if(l2)addText(svg,l2,cx,340,{font:ff,size:13,weight:700,fill:t.ink,length:Math.min(610,Math.max(250,610-(l2.length-35)*3))});
 
-  const badgeW=Math.min(250,Math.max(158,60+type.length*5.4));
-  addRect(svg,cx-badgeW/2,367,badgeW,38,{fill:t.soft,rx:19});
-  addText(svg,type.toUpperCase(),cx,393,{font:ff,size:10.5,weight:700,fill:t.accent,length:badgeW-24});
+  const badgeW=Math.min(240,Math.max(152,60+type.length*5.4));
+  addRect(svg,cx-badgeW/2,362,badgeW,36,{fill:t.soft,rx:18});
+  addText(svg,type.toUpperCase(),cx,387,{font:ff,size:9,weight:700,fill:t.accent,length:badgeW-22});
 
   // Signature columns are balanced around the certificate content center.
-  const signatureOffsets={modern:145,skyline:125,coastal:145};
+  const signatureOffsets={modern:171,skyline:125,coastal:171};
   const signatureOffset=signatureOffsets[tpl]??171;
   const [sx1,sx2]=[cx-signatureOffset,cx+signatureOffset];
   const teacher=stage.dataset.teacherUrl, principal=stage.dataset.principalUrl;
-  if(teacher)addImage(svg,teacher,sx1-65,422,130,40);
-  if(principal)addImage(svg,principal,sx2-65,422,130,40);
-  addLine(svg,sx1-80,469,sx1+80,469,{stroke:'#94a3b8','stroke-width':0.9});
-  addLine(svg,sx2-80,469,sx2+80,469,{stroke:'#94a3b8','stroke-width':0.9});
-  addText(svg,'Faculty / Coordinator',sx1,486,{font:ff,size:10.2,fill:t.ink,length:190,minSize:8.8});
-  addText(svg,'Principal / Head of Institution',sx2,486,{font:ff,size:10.2,fill:t.ink,length:190,minSize:8.8});
+  if(teacher)addImage(svg,teacher,sx1-60,420,120,40);
+  if(principal)addImage(svg,principal,sx2-60,420,120,40);
+  addLine(svg,sx1-80,466,sx1+80,466,{stroke:'#94a3b8','stroke-width':0.9});
+  addLine(svg,sx2-80,466,sx2+80,466,{stroke:'#94a3b8','stroke-width':0.9});
+  addText(svg,'Faculty / Coordinator',sx1,484,{font:ff,size:9.4,fill:t.ink,length:184,minSize:7.8});
+  addText(svg,'Principal / Head of Institution',sx2,484,{font:ff,size:9.4,fill:t.ink,length:184,minSize:7.8});
 
-  // Protected footer panel: it masks all decorative frame artwork beneath the
-  // metadata and mirrors footer_panel_bounds() in certificate_renderer.py.
-  const contentLefts={modern:106,skyline:118,coastal:66};
-  const panelLeft=Math.max(42,(contentLefts[tpl]??24)+18);
-  const panelRight=694;
-  const panelWidth=panelRight-panelLeft;
-  const colWidth=panelWidth/3;
-  addRect(svg,panelLeft,505,panelWidth,46,{fill:t.soft,stroke:t.accent,'stroke-width':0.55,rx:6});
-  addLine(svg,panelLeft+colWidth,513,panelLeft+colWidth,543,{stroke:t.accent,'stroke-width':0.45,'stroke-opacity':0.3});
-  addLine(svg,panelLeft+2*colWidth,513,panelLeft+2*colWidth,543,{stroke:t.accent,'stroke-width':0.45,'stroke-opacity':0.3});
-  const footerColumns=[
-    {label:'ROLL NUMBER',value:roll},
-    {label:'CERTIFICATE TYPE / YEAR',value:type+' · '+year},
-    {label:'CERTIFICATE ID',value:'SRGPC-PREVIEW'}
-  ];
-  footerColumns.forEach((item,index)=>{
-    const center=panelLeft+colWidth*(index+0.5), width=colWidth-16;
-    addText(svg,item.label,center,521,{font:ff,size:7.6,weight:700,fill:t.muted,length:width,minSize:7});
-    addText(svg,item.value,center,539,{font:ff,size:10.3,weight:700,fill:t.ink,length:width,minSize:8.2});
-  });
+  // Metadata uses three readable columns; the QR has its own reserved box.
+  const footerLayouts={
+    skyline:{rollX:206,rollW:166,typeX:390,typeW:180,idX:585,idW:150},
+    modern:{rollX:196,rollW:160,typeX:390,typeW:185,idX:590,idW:160},
+    coastal:{rollX:166,rollW:172,typeX:385,typeW:190,idX:600,idW:150}
+  };
+  const footer=footerLayouts[tpl]||{rollX:142,rollW:190,typeX:370,typeW:220,idX:580,idW:175};
+  addText(svg,'Roll No. '+roll,footer.rollX,513,{font:ff,size:10.5,fill:t.ink,length:footer.rollW,minSize:9});
+  addText(svg,type+' - '+year,footer.typeX,513,{font:ff,size:10.5,fill:t.ink,length:footer.typeW,minSize:9});
+  addText(svg,'SRGPC-PREVIEW',footer.idX,513,{font:ff,size:10,fill:t.ink,length:footer.idW,minSize:8.6});
 
   const qrX=706;
   addRect(svg,qrX,475,96,96,{fill:'#fff',stroke:t.accent,'stroke-width':0.8,rx:8});
   addImage(svg,stage.dataset.qrUrl,qrX+14,485,68,68);
-  addText(svg,'SCAN TO VERIFY',qrX+48,563,{font:ff,size:8,weight:700,fill:t.accent,length:84,minSize:7});
+  addText(svg,'SCAN TO VERIFY',qrX+48,563,{font:ff,size:7.4,weight:700,fill:t.accent,length:86,minSize:6.4});
 }
 let activePreviewTemplate='classic';let previewFrameTimer=null;
 function bindCertificateLivePreview(){

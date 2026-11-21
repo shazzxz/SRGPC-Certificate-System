@@ -374,23 +374,24 @@ def test_certificate_layout_header_footer_clearance(app):
     assert renderer.SUBTITLE_Y - renderer.PRESENTED_TO_Y >= 28
 
     # Reserve a distinct footer zone and keep the QR panel inside the frame.
-    assert renderer.FOOTER_PANEL_BOTTOM + renderer.FOOTER_PANEL_HEIGHT < renderer.SIGNATURE_LINE_Y - 17
+    assert renderer.FOOTER_TEXT_Y == 82
+    assert renderer.FOOTER_TEXT_Y - renderer.QR_BOX_Y >= 20
+    assert renderer.LOGO_MAX_W == 64 and renderer.LOGO_MAX_H == 64
     assert renderer.QR_BOX_X + renderer.QR_BOX <= renderer.PAGE_W - 40
     assert renderer.SIGNATURE_LINE_Y > renderer.QR_BOX_Y + 80
 
-    for template in renderer.TEMPLATES:
-        panel_left, panel_bottom, panel_width, panel_height = renderer.footer_panel_bounds(template)
-        assert panel_left >= renderer.content_bounds(template)[0]
-        assert panel_bottom == 44
-        assert panel_width > 0 and panel_height == 46
-        assert panel_left + panel_width <= renderer.QR_BOX_X - 12
-
     # The live SVG preview must use the same spacing and no crest-crossing rule.
-    assert "addImage(svg,stage.dataset.logoUrl,cx-40,34,80,80)" in preview
-    assert "addText(svg,'SRGPC',cx,132" in preview
-    assert "addText(svg,'CERTIFICATE OF ACHIEVEMENT',cx,179" in preview
-    assert "Protected footer panel" in preview and "CERTIFICATE TYPE / YEAR" in preview
+    assert "addImage(svg,stage.dataset.logoUrl,cx-32,40,64,64)" in preview
+    assert "addText(svg,'SRGPC',cx,125" in preview
+    assert "addText(svg,'CERTIFICATE OF ACHIEVEMENT',cx,169" in preview
+    assert "Roll No." in preview and "footer.rollX,513" in preview
+    assert "footer.typeX,513" in preview and "footer.idX,513" in preview
+    assert "Protected footer panel" not in preview
     assert "addRect(svg,qrX,475,96,96" in preview
+    assert "M80 544 L220 544" in preview
+    renderer_source = (root / "certificate_renderer.py").read_text(encoding="utf-8")
+    assert "c.line(80,52,220,52)" in renderer_source
+    assert "FOOTER_PANEL_BOTTOM" not in renderer_source
     assert "addLine(svg,36,84,806,84" not in preview
 
 
@@ -556,7 +557,7 @@ def test_all_certificate_templates_and_fonts_use_aligned_safe_areas(monkeypatch)
     preview_js = (root / "static" / "app.js").read_text(encoding="utf-8")
     assert "opts.baseline||'alphabetic'" in preview_js
     assert "contentCenters={modern:462,skyline:468,coastal:442}" in preview_js
-    assert "Protected footer panel" in preview_js and "footerColumns" in preview_js
+    assert "footerLayouts" in preview_js
 
     original_fit = renderer.draw_fit_centered
     original_logo = renderer._logo
@@ -573,8 +574,6 @@ def test_all_certificate_templates_and_fonts_use_aligned_safe_areas(monkeypatch)
         assert sum(signature_xs) / 2 == pytest.approx(center, abs=0.01)
         assert signature_xs[0] - 80 >= left
         assert signature_xs[1] + 80 <= right
-        assert signature_xs[0] - 95 >= left
-        assert signature_xs[1] + 95 < renderer.QR_BOX_X
 
         # Footer columns must not touch one another or collide with the QR box.
         roll_x, roll_w, type_x, type_w, cert_x, cert_w = renderer._footer_positions(template)
@@ -676,11 +675,17 @@ def test_certificate_content_bounds_cover_all_three_asymmetric_frames():
         assert renderer.content_center(template) == pytest.approx((left + right) / 2, abs=0.01)
 
 
-def test_live_preview_asset_cache_key_is_bumped():
+def test_original_certificate_style_is_restored_and_preview_cache_is_fresh():
     root = Path(__file__).resolve().parents[1]
     base_template = (root / "templates" / "base.html").read_text(encoding="utf-8")
-    preview_js = (root / "static" / "app.js").read_text(encoding="utf-8")
-    assert "filename='app.js', v='12'" in base_template
-    assert "Protected footer panel" in preview_js
-    assert "footerLayouts" not in preview_js
-    assert "label:'CERTIFICATE ID'" in preview_js
+    preview = (root / "static" / "app.js").read_text(encoding="utf-8")
+    renderer = (root / "certificate_renderer.py").read_text(encoding="utf-8")
+
+    # Keep the original single-line footer, crest scale, and template art.
+    assert "filename='app.js', v='13'" in base_template
+    assert "Protected footer panel" not in preview
+    assert "addText(svg,'SRGPC',cx,125" in preview
+    assert "addImage(svg,stage.dataset.logoUrl,cx-32,40,64,64)" in preview
+    assert "M80 544 L220 544" in preview
+    assert "FOOTER_TEXT_Y = 82" in renderer
+    assert "FOOTER_PANEL_BOTTOM" not in renderer
