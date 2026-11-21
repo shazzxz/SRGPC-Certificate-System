@@ -276,9 +276,8 @@ def draw_footer_metadata(c: canvas.Canvas, info: dict, font: dict, theme: dict, 
         ("CERTIFICATE ID", _safe_text(info.get("certificate_id"), "SRGPC-PREVIEW"), cert_x, cert_w),
     )
     for label, value, center, width in values:
-        draw_fit_centered(c, label, bold=font["bold"], x=center, y=FOOTER_LABEL_Y,
-                          max_width=width, start_size=7.6, min_size=7.0,
-                          color=muted, step=0.2)
+        draw_fit_centered(c, label, font["bold"], center, FOOTER_LABEL_Y,
+                          width, 7.6, 7.0, muted, 0.2)
         draw_fit_centered(c, value, font["bold"], center, FOOTER_VALUE_Y,
                           width, 10.3, 8.2, ink, 0.2)
 
