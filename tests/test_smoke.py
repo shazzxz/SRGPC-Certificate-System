@@ -292,3 +292,65 @@ def test_mobile_oauth_response_returns_app_callback(app):
     with flask_app.app_context():
         html = _mobile_oauth_response("abc123")
         assert "oauth2callback?token=abc123" in html
+
+
+def _create_test_student(client):
+    import secrets
+    from app import get_db
+    from werkzeug.security import generate_password_hash
+    from datetime import datetime
+
+    suffix = secrets.token_hex(4)
+    username = f"student-test-{suffix}"
+    roll_number = f"CSETEST{suffix.upper()}"
+    gmail = f"{username}@gmail.com"
+    with get_db() as db:
+        cursor = db.execute(
+            "INSERT INTO students(username,password_hash,mobile,roll_number,gmail,name,created_at) VALUES(?,?,?,?,?,?,?)",
+            (username, generate_password_hash("student-pass"), "9999999999", roll_number, gmail, "Test Student", datetime.now().isoformat(timespec="seconds")),
+        )
+        student_id = cursor.lastrowid
+        db.commit()
+    with client.session_transaction() as session_data:
+        session_data["role"] = "student"
+        session_data["student_id"] = student_id
+        session_data["username"] = username
+    return student_id, roll_number
+
+
+def test_student_request_page_uses_one_respectful_free_text_box(app):
+    _, client = app
+    _create_test_student(client)
+    response = client.get("/student/request")
+    assert response.status_code == 200
+    html = response.get_data(as_text=True)
+    assert 'name="request_text"' in html
+    assert 'name="request_type"' not in html
+    assert 'name="activity"' not in html
+    assert 'name="position"' not in html
+    assert "What certificate would you like to request?" in html
+
+
+def test_student_free_text_request_uses_registered_identity(app):
+    _, client = app
+    student_id, roll_number = _create_test_student(client)
+    page = client.get("/student/request")
+    token = csrf(page.get_data(as_text=True))
+    response = client.post(
+        "/student/request",
+        data={"_csrf_token": token, "request_text": "I need a certificate for volunteering at the college technical fest."},
+        follow_redirects=False,
+    )
+    assert response.status_code == 302
+    from app import get_db
+    with get_db() as db:
+        row = db.execute(
+            "SELECT name,roll_number,request_type,activity,position,note FROM certificate_requests WHERE student_id=? ORDER BY id DESC LIMIT 1",
+            (student_id,),
+        ).fetchone()
+    assert row is not None
+    assert row["name"] == "Test Student"
+    assert row["roll_number"] == roll_number
+    assert row["request_type"] == "Other"
+    assert row["activity"] == "Student request"
+    assert row["note"] == "I need a certificate for volunteering at the college technical fest."
