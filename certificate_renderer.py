@@ -24,19 +24,22 @@ QR_BOX = 96
 QR_SIZE = 68
 QR_BOX_X = PAGE_W - SAFE - QR_BOX - 16
 QR_BOX_Y = 24
-LOGO_CENTER_Y = 523
-LOGO_MAX_W = 64
-LOGO_MAX_H = 64
-INSTITUTION_Y = 470
-TITLE_Y = 426
-SUBTITLE_Y = 396
-PRESENTED_TO_Y = 362
-STUDENT_NAME_Y = 325
-NAME_RULE_Y = 305
-ACHIEVEMENT_TEXT_Y = 274
-BADGE_Y = 197
-SIGNATURE_LINE_Y = 129
-FOOTER_TEXT_Y = 50
+LOGO_CENTER_Y = 521
+LOGO_MAX_W = 80
+LOGO_MAX_H = 80
+INSTITUTION_Y = 463
+TITLE_Y = 416
+SUBTITLE_Y = 389
+PRESENTED_TO_Y = 357
+STUDENT_NAME_Y = 320
+NAME_RULE_Y = 300
+ACHIEVEMENT_TEXT_Y = 267
+BADGE_Y = 190
+SIGNATURE_LINE_Y = 126
+FOOTER_PANEL_BOTTOM = 44
+FOOTER_PANEL_HEIGHT = 46
+FOOTER_LABEL_Y = FOOTER_PANEL_BOTTOM + 30
+FOOTER_VALUE_Y = FOOTER_PANEL_BOTTOM + 12
 SIGNATURE_XS = (250, PAGE_W - 250)
 
 # The renderer deliberately uses one shared content grid for every template.
@@ -221,33 +224,63 @@ def draw_signature(c: canvas.Canvas, path: Optional[Path], center_x: float, line
     c.setStrokeColor(line_color)
     c.setLineWidth(0.9)
     c.line(center_x - 80, line_y, center_x + 80, line_y)
-    draw_fit_centered(c, label, font, center_x, line_y - 17, 184, 9.4, 7.8, ink, 0.25)
+    draw_fit_centered(c, label, font, center_x, line_y - 17, 190, 10.2, 8.8, ink, 0.2)
+
+
+def footer_panel_bounds(tpl: str):
+    """Protected metadata area, never shared with borders or template ornaments."""
+    content_left, _ = content_bounds(tpl)
+    panel_left = max(float(SAFE + 18), content_left + 18)
+    panel_right = QR_BOX_X - 12
+    return panel_left, FOOTER_PANEL_BOTTOM, panel_right - panel_left, FOOTER_PANEL_HEIGHT
 
 
 def _footer_positions(tpl: str):
-    # Each tuple is (roll center/width, type center/width, ID center/width).
-    # Keep columns disjoint and stop the ID before the QR verification panel.
-    if tpl == "skyline":
-        return (206, 166, 390, 180, 585, 150)
-    if tpl == "modern":
-        return (196, 160, 390, 185, 590, 160)
-    if tpl == "coastal":
-        return (166, 172, 385, 190, 600, 150)
-    return (142, 190, 370, 220, 580, 175)
+    """Return three equal, non-overlapping footer columns (center, width)."""
+    panel_left, _panel_y, panel_width, _panel_h = footer_panel_bounds(tpl)
+    col_width = panel_width / 3
+    inset_width = col_width - 16
+    return (
+        panel_left + col_width * 0.5, inset_width,
+        panel_left + col_width * 1.5, inset_width,
+        panel_left + col_width * 2.5, inset_width,
+    )
 
 
 def draw_footer_metadata(c: canvas.Canvas, info: dict, font: dict, theme: dict, tpl: str, certificate_type: Optional[str] = None):
-    """Draw the footer metadata in three readable columns, clear of the QR panel."""
-    text = colors.HexColor(theme["ink"])
-    bold = font["bold"]
+    """Draw a protected, two-row footer panel away from all template ornaments."""
+    panel_left, panel_y, panel_width, panel_height = footer_panel_bounds(tpl)
     roll_x, roll_w, center_x, center_w, cert_x, cert_w = _footer_positions(tpl)
-    roll_text = f"Roll No. {_safe_text(info.get('roll_number'), '-')}"
-    type_value = certificate_type or _safe_text(info.get('certificate_type'), "Achievement")
-    center_text = f"{type_value} - {_safe_text(info.get('academic_year'), '2026-27')}"
-    cert_text = _safe_text(info.get('certificate_id'), "SRGPC-PREVIEW")
-    draw_fit_centered(c, roll_text, bold, roll_x, FOOTER_TEXT_Y, roll_w, 10.5, 9.0, text, 0.25)
-    draw_fit_centered(c, center_text, bold, center_x, FOOTER_TEXT_Y, center_w, 10.5, 9.0, text, 0.25)
-    draw_fit_centered(c, cert_text, bold, cert_x, FOOTER_TEXT_Y, cert_w, 10.0, 8.6, text, 0.2)
+    ink = colors.HexColor(theme["ink"])
+    muted = colors.HexColor(theme["muted"])
+    accent = colors.HexColor(theme["accent"])
+    soft = colors.HexColor(theme["accent_soft"])
+
+    # This opaque panel masks bottom-frame decorations before any metadata is
+    # drawn, so corner seals, waves and ribbons cannot cross the text baseline.
+    c.setFillColor(soft)
+    c.setStrokeColor(accent)
+    c.setLineWidth(0.55)
+    c.roundRect(panel_left, panel_y, panel_width, panel_height, 6, fill=1, stroke=1)
+
+    _col_width = panel_width / 3
+    for separator_x in (panel_left + _col_width, panel_left + 2 * _col_width):
+        c.setStrokeColor(colors.Color(accent.red, accent.green, accent.blue, alpha=0.30))
+        c.setLineWidth(0.45)
+        c.line(separator_x, panel_y + 8, separator_x, panel_y + panel_height - 8)
+
+    type_value = certificate_type or _safe_text(info.get("certificate_type"), "Achievement")
+    values = (
+        ("ROLL NUMBER", f"{_safe_text(info.get('roll_number'), '-')}", roll_x, roll_w),
+        ("CERTIFICATE TYPE / YEAR", f"{type_value} · {_safe_text(info.get('academic_year'), '2026-27')}", center_x, center_w),
+        ("CERTIFICATE ID", _safe_text(info.get("certificate_id"), "SRGPC-PREVIEW"), cert_x, cert_w),
+    )
+    for label, value, center, width in values:
+        draw_fit_centered(c, label, bold=font["bold"], x=center, y=FOOTER_LABEL_Y,
+                          max_width=width, start_size=7.6, min_size=7.0,
+                          color=muted, step=0.2)
+        draw_fit_centered(c, value, font["bold"], center, FOOTER_VALUE_Y,
+                          width, 10.3, 8.2, ink, 0.2)
 
 
 def draw_footer(c: canvas.Canvas, info: dict, verification_url: Optional[str], font: dict, theme: dict, tpl: str):
@@ -258,7 +291,7 @@ def draw_footer(c: canvas.Canvas, info: dict, verification_url: Optional[str], f
         c.setLineWidth(0.8)
         c.roundRect(QR_BOX_X, QR_BOX_Y, QR_BOX, QR_BOX, 8, fill=1, stroke=1)
         draw_qr(c, verification_url, QR_BOX_X + (QR_BOX - QR_SIZE) / 2, QR_BOX_Y + 18, QR_SIZE)
-        draw_fit_centered(c, "SCAN TO VERIFY", font["bold"], QR_BOX_X + QR_BOX / 2, QR_BOX_Y + 8, QR_BOX - 10, 7.4, 6.4, colors.HexColor(theme["accent"]), 0.2)
+        draw_fit_centered(c, "SCAN TO VERIFY", font["bold"], QR_BOX_X + QR_BOX / 2, QR_BOX_Y + 8, QR_BOX - 10, 8.0, 7.0, colors.HexColor(theme["accent"]), 0.2)
 
 
 def draw_frame(c: canvas.Canvas, tpl: str, theme: dict):
@@ -382,8 +415,12 @@ def draw_frame(c: canvas.Canvas, tpl: str, theme: dict):
         coral = colors.HexColor("#e49b7e")
         c.setFillColor(coral); c.rect(0,0,14,PAGE_H,fill=1,stroke=0); c.setFillColor(colors.HexColor("#d9f0f6")); c.rect(14,0,42,PAGE_H,fill=1,stroke=0)
         c.setStrokeColor(blue); c.setLineWidth(1.3); c.roundRect(66,24,PAGE_W-90,PAGE_H-48,10,fill=0,stroke=1)
+        # The original lower wave crossed the footer text baseline. The footer
+        # now owns that entire band, so keep the coastal frame clean below it.
         c.setStrokeColor(colors.HexColor("#9bcbd8")); c.setLineWidth(0.9)
-        c.line(80,52,220,52); c.line(220,52,360,58); c.line(360,58,500,50); c.line(500,50,640,57); c.line(640,57,PAGE_W-45,51)
+        c.line(80, 104, 220, 104); c.line(220, 104, 360, 110)
+        c.line(360, 110, 500, 102); c.line(500, 102, 640, 109)
+        c.line(640, 109, PAGE_W-45, 103)
     elif tpl == "geometric":
         indigo = colors.HexColor("#4056a1")
         c.setStrokeColor(indigo); c.setLineWidth(1.4); c.rect(24,24,PAGE_W-48,PAGE_H-48,fill=0,stroke=1)
@@ -414,11 +451,11 @@ def _title_band(c, info, theme, font, cx):
         c.setFillColor(colors.white)
         c.roundRect(cx - 42, 485, 84, 76, 11, fill=1, stroke=0)
     _logo(c, info.get("logo_path"), cx, LOGO_CENTER_Y, LOGO_MAX_W, LOGO_MAX_H)
-    draw_fit_centered(c, "SRGPC", bold, cx, INSTITUTION_Y, min(160, content_bounds(info.get("template", "classic"))[1] - content_bounds(info.get("template", "classic"))[0] - 36), 13.8, 10.5, accent, 0.2)
+    draw_fit_centered(c, "SRGPC", bold, cx, INSTITUTION_Y, min(170, content_bounds(info.get("template", "classic"))[1] - content_bounds(info.get("template", "classic"))[0] - 36), 15.8, 12.0, accent, 0.2)
 
     title = _safe_text(info.get("title"), "CERTIFICATE OF ACHIEVEMENT")
-    draw_fit_centered(c, title, bold, cx, TITLE_Y, 670, 28, 18.5, dark, 0.5)
-    draw_fit_centered(c, "Presented in recognition of outstanding performance", regular, cx, SUBTITLE_Y, 560, 10.6, 8.2, muted, 0.25)
+    draw_fit_centered(c, title, bold, cx, TITLE_Y, 670, 30, 19.0, dark, 0.5)
+    draw_fit_centered(c, "Presented in recognition of outstanding performance", regular, cx, SUBTITLE_Y, 560, 11.4, 8.8, muted, 0.25)
 
 
 def signature_centers(tpl: str):
@@ -454,10 +491,10 @@ def draw_certificate(target, info: dict, verification_url: Optional[str] = None,
     draw_frame(c, tpl, theme)
     _title_band(c, {**info, "logo_path": logo_path}, theme, font, cx)
 
-    draw_fit_centered(c, "Presented to", font["regular"], cx, PRESENTED_TO_Y, 280, 11, 8.5, muted, 0.25)
+    draw_fit_centered(c, "Presented to", font["regular"], cx, PRESENTED_TO_Y, 280, 12, 9.0, muted, 0.2)
 
     student_name = _safe_text(info.get("name"), "Student Name")
-    draw_fit_centered(c, student_name, font["bold"], cx, STUDENT_NAME_Y, 600, 32, 14, dark, 0.5)
+    draw_fit_centered(c, student_name, font["bold"], cx, STUDENT_NAME_Y, 600, 34, 14, dark, 0.5)
 
     c.setStrokeColor(accent)
     c.setLineWidth(1.2)
@@ -469,15 +506,15 @@ def draw_certificate(target, info: dict, verification_url: Optional[str] = None,
     sentence = f"for securing {position} in {activity}."
     # The achievement statement is the key semantic line, so keep it bold in
     # every template. Fit within a dedicated two-line safe box.
-    draw_wrapped_center_fit(c, sentence, font["bold"], cx, ACHIEVEMENT_TEXT_Y, 650, start_size=15.0, min_size=11.0, max_lines=2, leading=20, color=dark)
+    draw_wrapped_center_fit(c, sentence, font["bold"], cx, ACHIEVEMENT_TEXT_Y, 650, start_size=16.0, min_size=12.0, max_lines=2, leading=21, color=dark)
 
     # Achievement/type badge uses a width derived from the actual text, capped to a safe range.
     badge_font = _fit_size(cert_type.upper(), font["bold"], 10.0, 8.0, 205, 0.25)
-    badge_w = min(240, max(152, stringWidth(cert_type.upper(), font["bold"], badge_font) + 42))
+    badge_w = min(250, max(158, stringWidth(cert_type.upper(), font["bold"], badge_font) + 44))
     badge_y = BADGE_Y
     c.setFillColor(colors.HexColor(theme["accent_soft"]))
-    c.roundRect(cx - badge_w / 2, badge_y, badge_w, 36, 18, fill=1, stroke=0)
-    draw_fit_centered(c, cert_type.upper(), font["bold"], cx, badge_y + 11, badge_w - 22, 10.0, 8.0, accent, 0.25)
+    c.roundRect(cx - badge_w / 2, badge_y, badge_w, 38, 19, fill=1, stroke=0)
+    draw_fit_centered(c, cert_type.upper(), font["bold"], cx, badge_y + 12, badge_w - 24, 10.5, 8.2, accent, 0.25)
 
     # Signatures live in a dedicated band above the footer. Their lines are always
     # inside the page border and to the left of the QR verification panel.
