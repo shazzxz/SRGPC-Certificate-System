@@ -573,6 +573,8 @@ def test_all_certificate_templates_and_fonts_use_aligned_safe_areas(monkeypatch)
         assert sum(signature_xs) / 2 == pytest.approx(center, abs=0.01)
         assert signature_xs[0] - 80 >= left
         assert signature_xs[1] + 80 <= right
+        assert signature_xs[0] - 95 >= left
+        assert signature_xs[1] + 95 < renderer.QR_BOX_X
 
         # Footer columns must not touch one another or collide with the QR box.
         roll_x, roll_w, type_x, type_w, cert_x, cert_w = renderer._footer_positions(template)
