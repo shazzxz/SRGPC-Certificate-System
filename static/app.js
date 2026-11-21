@@ -55,7 +55,7 @@ function splitPreview(text,maxChars=58){const words=String(text||'').trim().spli
 function drawPreviewFrame(svg,t){
   const {bg,accent}=t; addRect(svg,0,0,842,595,{fill:bg});
   if(activePreviewTemplate==='classic'){addRect(svg,24,24,794,547,{fill:'none',stroke:accent,'stroke-width':2.2,rx:10});addRect(svg,36,36,770,523,{fill:'none',stroke:'#d7c596','stroke-width':0.7,rx:8});}
-  else if(activePreviewTemplate==='modern'){addRect(svg,0,0,842,78,{fill:'#0f172a'});addRect(svg,0,78,88,517,{fill:'#eaf2ff'});addRect(svg,412,27,100,94,{fill:'#fff',rx:12});addRect(svg,106,34,712,527,{fill:'none',stroke:'#cbd5e1','stroke-width':0.7});}
+  else if(activePreviewTemplate==='modern'){addRect(svg,0,0,842,78,{fill:'#0f172a'});addRect(svg,0,78,88,517,{fill:'#eaf2ff'});addRect(svg,106,34,712,527,{fill:'none',stroke:'#cbd5e1','stroke-width':0.7});}
   else if(activePreviewTemplate==='emerald'){addRect(svg,24,24,794,547,{fill:'none',stroke:accent,'stroke-width':2.3,rx:12});addRect(svg,36,36,770,523,{fill:'none',stroke:'#a5d4c8','stroke-width':0.7,rx:9});addCircle(svg,421,68,42,{fill:t.soft});}
   else if(activePreviewTemplate==='midnight'){addRect(svg,24,24,794,547,{fill:'none',stroke:'#a7b5ff','stroke-width':1.5,rx:12});addRect(svg,38,38,766,519,{fill:'none',stroke:'#32496f','stroke-width':0.7,rx:9});}
   else if(activePreviewTemplate==='royal'){addRect(svg,24,24,794,547,{fill:'none',stroke:accent,'stroke-width':2.4,rx:12});addRect(svg,36,36,770,523,{fill:'none',stroke:'#c9b7e8','stroke-width':0.75,rx:9});for(const [x,y] of [[60,60],[782,60],[60,535],[782,535]])addCircle(svg,x,y,7,{fill:t.soft});}
@@ -89,8 +89,8 @@ function renderLiveCertificate(){
   // Match the PDF renderer: all text positions below are SVG baselines.
   // The crest has a fixed square safe box and is centered on this template's
   // actual content area (after any left-side design rail).
-  if(tpl==='midnight'||tpl==='charcoal_gold')addRect(svg,cx-50,27,100,94,{fill:'#fff',rx:12});
-  addImage(svg,stage.dataset.logoUrl,cx-40,29,80,80);
+  addRect(svg,cx-49,27,98,94,{fill:'#fff',stroke:t.accent,'stroke-width':0.65,'stroke-opacity':0.32,rx:12});
+  addImage(svg,stage.dataset.logoUrl,cx-40,34,80,80);
   addText(svg,'SRGPC',cx,132,{font:ff,size:15.8,weight:700,fill:t.accent,letterSpacing:'.6'});
   addText(svg,'CERTIFICATE OF ACHIEVEMENT',cx,179,{font:ff,size:30,weight:800,fill:t.ink,length:670,minSize:19});
   addText(svg,'Presented in recognition of outstanding performance',cx,206,{font:ff,size:11.4,fill:t.muted,length:560,minSize:8.8});
