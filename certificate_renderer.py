@@ -455,11 +455,11 @@ def _title_band(c, info, theme, font, cx):
 def signature_centers(tpl: str):
     cx = content_center(tpl)
     if tpl == "modern":
-        return (cx - 171, cx + 171)
+        return (cx - 145, cx + 145)
     if tpl == "skyline":
         return (cx - 125, cx + 125)
     if tpl == "coastal":
-        return (cx - 171, cx + 171)
+        return (cx - 145, cx + 145)
     return SIGNATURE_XS
 
 
