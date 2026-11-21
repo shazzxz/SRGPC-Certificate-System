@@ -388,7 +388,10 @@ def test_certificate_layout_header_footer_clearance(app):
     assert "footer.typeX,513" in preview and "footer.idX,513" in preview
     assert "Protected footer panel" not in preview
     assert "addRect(svg,qrX,475,96,96" in preview
-    assert "addRect(svg,qrX,475,96,96" in preview
+    assert "M80 544 L220 544" in preview
+    renderer_source = (root / "certificate_renderer.py").read_text(encoding="utf-8")
+    assert "c.line(80,52,220,52)" in renderer_source
+    assert "FOOTER_PANEL_BOTTOM" not in renderer_source
     assert "addLine(svg,36,84,806,84" not in preview
 
 
@@ -670,3 +673,19 @@ def test_certificate_content_bounds_cover_all_three_asymmetric_frames():
         assert right <= renderer.PAGE_W
         assert right > left
         assert renderer.content_center(template) == pytest.approx((left + right) / 2, abs=0.01)
+
+
+def test_original_certificate_style_is_restored_and_preview_cache_is_fresh():
+    root = Path(__file__).resolve().parents[1]
+    base_template = (root / "templates" / "base.html").read_text(encoding="utf-8")
+    preview = (root / "static" / "app.js").read_text(encoding="utf-8")
+    renderer = (root / "certificate_renderer.py").read_text(encoding="utf-8")
+
+    # Keep the original single-line footer, crest scale, and template art.
+    assert "filename='app.js', v='13'" in base_template
+    assert "Protected footer panel" not in preview
+    assert "addText(svg,'SRGPC',cx,125" in preview
+    assert "addImage(svg,stage.dataset.logoUrl,cx-32,40,64,64)" in preview
+    assert "M80 544 L220 544" in preview
+    assert "FOOTER_TEXT_Y = 82" in renderer
+    assert "FOOTER_PANEL_BOTTOM" not in renderer
