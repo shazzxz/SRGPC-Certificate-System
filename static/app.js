@@ -57,7 +57,7 @@ function drawPreviewFrame(svg,t){
   if(activePreviewTemplate==='classic'){addRect(svg,24,24,794,547,{fill:'none',stroke:accent,'stroke-width':2.2,rx:10});addRect(svg,36,36,770,523,{fill:'none',stroke:'#d7c596','stroke-width':0.7,rx:8});}
   else if(activePreviewTemplate==='modern'){addRect(svg,0,0,842,78,{fill:'#0f172a'});addRect(svg,0,78,88,517,{fill:'#eaf2ff'});addRect(svg,148,0,646,1,{fill:accent});addRect(svg,34,34,774,527,{fill:'none',stroke:'#cbd5e1','stroke-width':0.7});}
   else if(activePreviewTemplate==='emerald'){addRect(svg,24,24,794,547,{fill:'none',stroke:accent,'stroke-width':2.3,rx:12});addRect(svg,36,36,770,523,{fill:'none',stroke:'#a5d4c8','stroke-width':0.7,rx:9});addRect(svg,350,30,142,10,{fill:t.soft,rx:5});}
-  else if(activePreviewTemplate==='midnight'){addRect(svg,24,24,794,547,{fill:'none',stroke:'#a7b5ff','stroke-width':1.5,rx:12});addRect(svg,38,38,766,519,{fill:'none',stroke:'#32496f','stroke-width':0.7,rx:9});addLine(svg,36,84,806,84,{stroke:accent,'stroke-width':1.1});}
+  else if(activePreviewTemplate==='midnight'){addRect(svg,24,24,794,547,{fill:'none',stroke:'#a7b5ff','stroke-width':1.5,rx:12});addRect(svg,38,38,766,519,{fill:'none',stroke:'#32496f','stroke-width':0.7,rx:9});}
   else if(activePreviewTemplate==='royal'){addRect(svg,24,24,794,547,{fill:'none',stroke:accent,'stroke-width':2.4,rx:12});addRect(svg,36,36,770,523,{fill:'none',stroke:'#c9b7e8','stroke-width':0.75,rx:9});for(const [x,y] of [[60,60],[782,60],[60,535],[782,535]])addRect(svg,x-5,y-5,10,10,{fill:t.soft,rx:3});}
   else if(activePreviewTemplate==='burgundy'){addRect(svg,0,0,842,595,{fill:'#fffaf5'});addRect(svg,0,0,842,30,{fill:'#6f1d2a'});addRect(svg,0,583,842,12,{fill:'#8f2f42'});addRect(svg,24,24,794,547,{fill:'none',stroke:'#c6a15b','stroke-width':1.5,rx:12});addRect(svg,34,34,774,527,{fill:'none',stroke:'#dfcda4','stroke-width':0.6,rx:9});}
   else if(activePreviewTemplate==='skyline'){addRect(svg,0,0,102,595,{fill:'#0b3b72'});addRect(svg,0,585,842,10,{fill:'#0ea5e9'});addRect(svg,118,24,700,547,{fill:'none',stroke:'#cbd5e1','stroke-width':0.7});for(const [x,h] of [[18,90],[38,135],[58,108],[78,160]])addRect(svg,x,28,13,h,{fill:'#14508d'});}
@@ -84,30 +84,46 @@ function renderLiveCertificate(){
   const t=PREVIEW_THEMES[tpl]||PREVIEW_THEMES.classic; const ff=PREVIEW_FONTS[font]||PREVIEW_FONTS.Helvetica;
   svg.replaceChildren(); drawPreviewFrame(svg,t);
   const cx=tpl==='skyline'?480:421;
-  addImage(svg,stage.dataset.logoUrl,cx-38,49,76,80);
-  addText(svg,'SRGPC',cx,139,{font:ff,size:13.5,weight:700,fill:t.accent,letterSpacing:'.6'});
-  addText(svg,'CERTIFICATE OF ACHIEVEMENT',cx,175,{font:ff,size:29,weight:800,fill:t.ink,length:670});
-  addText(svg,'Presented in recognition of outstanding performance',cx,200,{font:ff,size:10.6,fill:t.muted,length:560});
-  addText(svg,'Presented to',cx,225,{font:ff,size:11,fill:t.muted});
-  addText(svg,name,cx,265,{font:ff,size:32,weight:700,fill:t.ink,length:fitLen(name,600)});
-  addLine(svg,cx-160,285,cx+160,285,{stroke:t.accent,'stroke-width':1.2});
+
+  // Keep the crest, institution name, title and subtitle in distinct bands.
+  addImage(svg,stage.dataset.logoUrl,cx-34,38,68,68);
+  addText(svg,'SRGPC',cx,122,{font:ff,size:13.8,weight:700,fill:t.accent,letterSpacing:'.6'});
+  addText(svg,'CERTIFICATE OF ACHIEVEMENT',cx,169,{font:ff,size:28,weight:800,fill:t.ink,length:670,minSize:18.5});
+  addText(svg,'Presented in recognition of outstanding performance',cx,199,{font:ff,size:10.6,fill:t.muted,length:560,minSize:8.2});
+  addText(svg,'Presented to',cx,233,{font:ff,size:11,fill:t.muted});
+  addText(svg,name,cx,270,{font:ff,size:32,weight:700,fill:t.ink,length:fitLen(name,600)});
+  addLine(svg,cx-160,290,cx+160,290,{stroke:t.accent,'stroke-width':1.2});
+
   const [l1,l2]=splitPreview(`for securing ${position} in ${activity}.`,68);
-  addText(svg,l1,cx,320,{font:ff,size:13,weight:700,fill:t.ink,length:Math.min(610,Math.max(250,610-(l1.length-35)*3))});
+  addText(svg,l1,cx,321,{font:ff,size:13,weight:700,fill:t.ink,length:Math.min(610,Math.max(250,610-(l1.length-35)*3))});
   if(l2)addText(svg,l2,cx,340,{font:ff,size:13,weight:700,fill:t.ink,length:Math.min(610,Math.max(250,610-(l2.length-35)*3))});
+
   const badgeW=Math.min(240,Math.max(152,60+type.length*5.4));
-  addRect(svg,cx-badgeW/2,356,badgeW,36,{fill:t.soft,rx:18});
-  addText(svg,type.toUpperCase(),cx,374,{font:ff,size:9,weight:700,fill:t.accent,length:badgeW-22});
-  const sx1=tpl==='skyline'?306:306, sx2=tpl==='skyline'?610:610;
+  addRect(svg,cx-badgeW/2,362,badgeW,36,{fill:t.soft,rx:18});
+  addText(svg,type.toUpperCase(),cx,380,{font:ff,size:9,weight:700,fill:t.accent,length:badgeW-22});
+
+  // Signature columns are balanced around the certificate content center.
+  const [sx1,sx2]=tpl==='skyline'?[355,605]:[250,592];
   const teacher=stage.dataset.teacherUrl, principal=stage.dataset.principalUrl;
-  if(teacher)addImage(svg,teacher,sx1-63,422,126,44);
-  if(principal)addImage(svg,principal,sx2-63,422,126,44);
-  addLine(svg,sx1-86,470,sx1+86,470,{stroke:'#94a3b8','stroke-width':0.9});addLine(svg,sx2-86,470,sx2+86,470,{stroke:'#94a3b8','stroke-width':0.9});
-  addText(svg,'Faculty / Coordinator',sx1,488,{font:ff,size:8.5,fill:t.ink,length:170});addText(svg,'Principal / Head of Institution',sx2,488,{font:ff,size:8.5,fill:t.ink,length:190});
-  addText(svg,`Roll No. ${roll}`,165,555,{font:ff,size:8,fill:t.muted,length:150,anchor:'middle'});
-  addText(svg,`${type} - ${year}`,425,555,{font:ff,size:8,fill:t.muted,length:210});
-  addText(svg,'SRGPC-PREVIEW',640,555,{font:ff,size:7,fill:t.muted,length:130});
-  addRect(svg,720,498,98,73,{fill:'#fff',stroke:t.accent,'stroke-width':0.8,rx:8});
-  addImage(svg,stage.dataset.qrUrl,732,505,74,54); addText(svg,'SCAN TO VERIFY',769,563,{font:ff,size:6.4,weight:700,fill:t.accent,length:78});
+  if(teacher)addImage(svg,teacher,sx1-60,420,120,40);
+  if(principal)addImage(svg,principal,sx2-60,420,120,40);
+  addLine(svg,sx1-80,466,sx1+80,466,{stroke:'#94a3b8','stroke-width':0.9});
+  addLine(svg,sx2-80,466,sx2+80,466,{stroke:'#94a3b8','stroke-width':0.9});
+  addText(svg,'Faculty / Coordinator',sx1,484,{font:ff,size:9.4,fill:t.ink,length:184,minSize:7.8});
+  addText(svg,'Principal / Head of Institution',sx2,484,{font:ff,size:9.4,fill:t.ink,length:184,minSize:7.8});
+
+  // Metadata uses three readable columns; the QR has its own reserved box.
+  const footer=tpl==='skyline'
+    ? {rollX:232,rollW:180,typeX:430,typeW:205,idX:610,idW:165}
+    : {rollX:142,rollW:190,typeX:370,typeW:220,idX:580,idW:175};
+  addText(svg,'Roll No. '+roll,footer.rollX,545,{font:ff,size:10.5,fill:t.ink,length:footer.rollW,minSize:9});
+  addText(svg,type+' - '+year,footer.typeX,545,{font:ff,size:10.5,fill:t.ink,length:footer.typeW,minSize:9});
+  addText(svg,'SRGPC-PREVIEW',footer.idX,545,{font:ff,size:10,fill:t.ink,length:footer.idW,minSize:8.6});
+
+  const qrX=706;
+  addRect(svg,qrX,475,96,96,{fill:'#fff',stroke:t.accent,'stroke-width':0.8,rx:8});
+  addImage(svg,stage.dataset.qrUrl,qrX+14,485,68,68);
+  addText(svg,'SCAN TO VERIFY',qrX+48,560,{font:ff,size:7.4,weight:700,fill:t.accent,length:86,minSize:6.4});
 }
 let activePreviewTemplate='classic';let previewFrameTimer=null;
 function bindCertificateLivePreview(){

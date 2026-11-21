@@ -354,3 +354,31 @@ def test_student_free_text_request_uses_registered_identity(app):
     assert row["request_type"] == "Other"
     assert row["activity"] == "Student request"
     assert row["note"] == "I need a certificate for volunteering at the college technical fest."
+
+
+def test_certificate_layout_header_footer_clearance(app):
+    from pathlib import Path
+    import certificate_renderer as renderer
+
+    root = Path(__file__).resolve().parents[1]
+    preview = (root / "static" / "app.js").read_text(encoding="utf-8")
+
+    # Keep the crest clear of the institute label and leave generous gaps
+    # between the institution, title, subtitle, and body copy.
+    assert renderer.LOGO_CENTER_Y - renderer.LOGO_MAX_H / 2 > renderer.INSTITUTION_Y
+    assert renderer.INSTITUTION_Y - renderer.TITLE_Y >= 40
+    assert renderer.TITLE_Y - renderer.SUBTITLE_Y >= 25
+    assert renderer.SUBTITLE_Y - renderer.PRESENTED_TO_Y >= 28
+
+    # Reserve a distinct footer zone and keep the QR panel inside the frame.
+    assert renderer.FOOTER_TEXT_Y - renderer.QR_BOX_Y >= 20
+    assert renderer.QR_BOX_X + renderer.QR_BOX <= renderer.PAGE_W - 40
+    assert renderer.SIGNATURE_LINE_Y > renderer.QR_BOX_Y + 80
+
+    # The live SVG preview must use the same spacing and no crest-crossing rule.
+    assert "addImage(svg,stage.dataset.logoUrl,cx-34,38,68,68)" in preview
+    assert "addText(svg,'SRGPC',cx,122" in preview
+    assert "addText(svg,'CERTIFICATE OF ACHIEVEMENT',cx,169" in preview
+    assert "Roll No." in preview and "footer.rollX,545" in preview
+    assert "addRect(svg,qrX,475,96,96" in preview
+    assert "addLine(svg,36,84,806,84" not in preview
