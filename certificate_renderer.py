@@ -230,7 +230,7 @@ def _footer_positions(tpl: str):
     if tpl == "skyline":
         return (206, 166, 390, 180, 585, 150)
     if tpl == "modern":
-        return (196, 150, 390, 185, 590, 160)
+        return (196, 160, 390, 185, 590, 160)
     if tpl == "coastal":
         return (166, 172, 385, 190, 600, 150)
     return (142, 190, 370, 220, 580, 175)
