@@ -682,4 +682,5 @@ def test_live_preview_asset_cache_key_is_bumped():
     preview_js = (root / "static" / "app.js").read_text(encoding="utf-8")
     assert "filename='app.js', v='12'" in base_template
     assert "Protected footer panel" in preview_js
-    assert "SRGPC-PREVIEW" not in preview_js
+    assert "footerLayouts" not in preview_js
+    assert "addText(svg,'CERTIFICATE ID'" in preview_js
