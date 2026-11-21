@@ -121,7 +121,7 @@ function renderLiveCertificate(){
   // Metadata uses three readable columns; the QR has its own reserved box.
   const footerLayouts={
     skyline:{rollX:206,rollW:166,typeX:390,typeW:180,idX:585,idW:150},
-    modern:{rollX:196,rollW:150,typeX:390,typeW:185,idX:590,idW:160},
+    modern:{rollX:196,rollW:160,typeX:390,typeW:185,idX:590,idW:160},
     coastal:{rollX:166,rollW:172,typeX:385,typeW:190,idX:600,idW:150}
   };
   const footer=footerLayouts[tpl]||{rollX:142,rollW:190,typeX:370,typeW:220,idX:580,idW:175};
