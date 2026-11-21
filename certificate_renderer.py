@@ -308,12 +308,11 @@ def draw_frame(c: canvas.Canvas, tpl: str, theme: dict):
         c.setFillColor(colors.HexColor("#0f172a")); c.rect(0, PAGE_H-78, PAGE_W, 78, fill=1, stroke=0)
         c.setFillColor(colors.HexColor("#eaf2ff")); c.rect(0, 0, 88, PAGE_H-78, fill=1, stroke=0)
         modern_cx = content_center(tpl)
-        c.setFillColor(colors.white); c.roundRect(modern_cx-42, 485, 84, 76, 11, fill=1, stroke=0)
         c.setStrokeColor(colors.HexColor("#cbd5e1")); c.setLineWidth(0.7); c.rect(106, 34, PAGE_W-130, PAGE_H-68, fill=0, stroke=1)
     elif tpl == "emerald":
         c.setStrokeColor(accent); c.setLineWidth(2.3); c.roundRect(SAFE, SAFE, PAGE_W-2*SAFE, PAGE_H-2*SAFE, 12, fill=0, stroke=1)
         c.setStrokeColor(colors.HexColor("#a5d4c8")); c.setLineWidth(0.7); c.roundRect(SAFE+12, SAFE+12, PAGE_W-2*(SAFE+12), PAGE_H-2*(SAFE+12), 9, fill=0, stroke=1)
-        c.setFillColor(soft); c.circle(PAGE_W/2, PAGE_H-68, 42, fill=1, stroke=0)
+        c.setFillColor(soft); c.circle(PAGE_W/2, PAGE_H-74, 52, fill=1, stroke=0)
     elif tpl == "midnight":
         c.setStrokeColor(colors.HexColor("#a7b5ff")); c.setLineWidth(1.5); c.roundRect(SAFE, SAFE, PAGE_W-2*SAFE, PAGE_H-2*SAFE, 12, fill=0, stroke=1)
         c.setStrokeColor(colors.HexColor("#32496f")); c.setLineWidth(0.7); c.roundRect(SAFE+14, SAFE+14, PAGE_W-2*(SAFE+14), PAGE_H-2*(SAFE+14), 9, fill=0, stroke=1)
@@ -408,7 +407,7 @@ def draw_frame(c: canvas.Canvas, tpl: str, theme: dict):
         c.setStrokeColor(gold); c.setLineWidth(1.6); c.rect(24,24,PAGE_W-48,PAGE_H-48,fill=0,stroke=1)
         c.setStrokeColor(colors.HexColor("#6c5830")); c.setLineWidth(0.7); c.rect(35,35,PAGE_W-70,PAGE_H-70,fill=0,stroke=1)
         c.setFillColor(gold); c.rect(24,PAGE_H-31,PAGE_W-48,7,fill=1,stroke=0); c.rect(24,24,PAGE_W-48,3,fill=1,stroke=0)
-        c.setFillColor(colors.HexColor("#2a2417")); c.circle(PAGE_W/2,PAGE_H-68,36,fill=1,stroke=0)
+        c.setFillColor(colors.HexColor("#2a2417")); c.circle(PAGE_W/2,PAGE_H-74,42,fill=1,stroke=0)
     elif tpl == "coastal":
         blue = colors.HexColor("#0b82a5")
         coral = colors.HexColor("#e49b7e")
@@ -444,11 +443,12 @@ def _title_band(c, info, theme, font, cx):
     muted = colors.HexColor(theme["muted"])
     accent = colors.HexColor(theme["accent"])
 
-    # A compact crest block, institute label, title and subtitle have separate
-    # vertical bands. No decorative frame line is allowed to cross this stack.
-    if theme["ink"] == "#f8fafc":
-        c.setFillColor(colors.white)
-        c.roundRect(cx - 42, 485, 84, 76, 11, fill=1, stroke=0)
+    # The crest always gets its own neutral plate. This keeps it readable over
+    # dark headers, coloured halos, ribbons and pale template backgrounds.
+    c.setFillColor(colors.white)
+    c.setStrokeColor(colors.Color(accent.red, accent.green, accent.blue, alpha=0.32))
+    c.setLineWidth(0.65)
+    c.roundRect(cx - 49, 474, 98, 94, 12, fill=1, stroke=1)
     _logo(c, info.get("logo_path"), cx, LOGO_CENTER_Y, LOGO_MAX_W, LOGO_MAX_H)
     draw_fit_centered(c, "SRGPC", bold, cx, INSTITUTION_Y, min(170, content_bounds(info.get("template", "classic"))[1] - content_bounds(info.get("template", "classic"))[0] - 36), 15.8, 12.0, accent, 0.2)
 
