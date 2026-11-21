@@ -2281,13 +2281,17 @@ def admin_request_generate(request_id):
 
     try:
         with get_db() as db:
-            current = db.execute(
-                "SELECT status FROM certificate_requests WHERE id=?",
-                (request_id,),
-            ).fetchone()
-            if not current or current["status"] not in {"Pending", "Under Review"}:
-                flash("This request has already been processed. No second certificate was issued.", "error")
+            # Atomically claim the request. Only the first concurrent submit can
+            # transition Pending/Under Review to Generated and attach its ID.
+            claim = db.execute(
+                """UPDATE certificate_requests
+                   SET status='Generated', processed_at=?, processed_by=?, certificate_id=?
+                   WHERE id=? AND status IN ('Pending','Under Review')""",
+                (info["created_at"], session.get("username", ADMIN_USERNAME), info["certificate_id"], request_id),
+            )
+            if claim.rowcount != 1:
                 (GENERATED_DIR / filename).unlink(missing_ok=True)
+                flash("This request has already been processed. No second certificate was issued.", "error")
                 return redirect(url_for("admin_request_detail", request_id=request_id))
             db.execute(
                 """INSERT INTO certificates(
@@ -2302,10 +2306,6 @@ def admin_request_generate(request_id):
                     info["payload_hash"], pdf_hash, info["created_by"], request_id,
                     info["department"], info["programme"], info["semester"],
                 ),
-            )
-            db.execute(
-                "UPDATE certificate_requests SET status='Generated', processed_at=?, processed_by=?, certificate_id=? WHERE id=?",
-                (info["created_at"], session.get("username", ADMIN_USERNAME), info["certificate_id"], request_id),
             )
             add_certificate_history(
                 db, info["certificate_id"], "Generated", "Certificate generated from request.",
