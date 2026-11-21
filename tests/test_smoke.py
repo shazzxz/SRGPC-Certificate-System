@@ -379,8 +379,8 @@ def test_certificate_layout_header_footer_clearance(app):
     assert renderer.SIGNATURE_LINE_Y > renderer.QR_BOX_Y + 80
 
     # The live SVG preview must use the same spacing and no crest-crossing rule.
-    assert "addImage(svg,stage.dataset.logoUrl,cx-34,38,68,68)" in preview
-    assert "addText(svg,'SRGPC',cx,122" in preview
+    assert "addImage(svg,stage.dataset.logoUrl,cx-32,40,64,64)" in preview
+    assert "addText(svg,'SRGPC',cx,125" in preview
     assert "addText(svg,'CERTIFICATE OF ACHIEVEMENT',cx,169" in preview
     assert "Roll No." in preview and "footer.rollX,545" in preview
     assert "addRect(svg,qrX,475,96,96" in preview
@@ -529,3 +529,139 @@ def test_mobile_student_layout_has_stacked_actions_and_compact_request_ui(app):
     assert "student-request-account" in request_template
     assert "What certificate would you like to request?" not in request_template
     assert "No name search is required" not in wallet_template
+
+
+def test_all_certificate_templates_and_fonts_use_aligned_safe_areas(monkeypatch):
+    """Exercise every selectable PDF theme, all supported fonts and its real page box."""
+    import re
+    from io import BytesIO
+
+    import app as portal
+    import certificate_renderer as renderer
+    from reportlab.pdfbase.pdfmetrics import stringWidth
+
+    assert set(portal.TEMPLATES) == set(renderer.TEMPLATES)
+    assert len(renderer.TEMPLATES) == 20
+
+    # The browser preview must use the same page baselines and asymmetric
+    # content centers as the authoritative PDF renderer.
+    root = Path(__file__).resolve().parents[1]
+    preview_js = (root / "static" / "app.js").read_text(encoding="utf-8")
+    assert "opts.baseline||'alphabetic'" in preview_js
+    assert "contentCenters={modern:462,skyline:468,coastal:442}" in preview_js
+    assert "footerLayouts" in preview_js
+
+    original_fit = renderer.draw_fit_centered
+    original_logo = renderer._logo
+    original_signature = renderer.draw_signature
+
+    for template in renderer.TEMPLATES:
+        left, right = renderer.content_bounds(template)
+        center = renderer.content_center(template)
+        assert center == pytest.approx((left + right) / 2, abs=0.01)
+
+        # Signature rules are mirrored around the same visual center and stay
+        # inside the content rail for each template.
+        signature_xs = renderer.signature_centers(template)
+        assert sum(signature_xs) / 2 == pytest.approx(center, abs=0.01)
+        assert signature_xs[0] - 80 >= left
+        assert signature_xs[1] + 80 <= right
+
+        # Footer columns must not touch one another or collide with the QR box.
+        roll_x, roll_w, type_x, type_w, cert_x, cert_w = renderer._footer_positions(template)
+        footer_regions = [
+            (roll_x - roll_w / 2, roll_x + roll_w / 2),
+            (type_x - type_w / 2, type_x + type_w / 2),
+            (cert_x - cert_w / 2, cert_x + cert_w / 2),
+        ]
+        assert footer_regions[0][1] < footer_regions[1][0]
+        assert footer_regions[1][1] < footer_regions[2][0]
+        assert footer_regions[0][0] >= left
+        assert footer_regions[2][1] < renderer.QR_BOX_X
+
+        for family in renderer.FONT_OPTIONS:
+            fit_records = []
+            logo_records = []
+            signature_records = []
+
+            def checked_fit(canvas, text, font, x, y, max_width, start_size, min_size, color, step=0.5):
+                size = original_fit(canvas, text, font, x, y, max_width, start_size, min_size, color, step)
+                width = stringWidth(renderer._safe_text(text), font, size)
+                assert width <= max_width + 0.1, (template, family, text, width, max_width, size)
+                fit_records.append((text, x, y, max_width, size))
+                return size
+
+            def checked_logo(canvas, path, x, y, max_w=62, max_h=62):
+                logo_records.append((x, y, max_w, max_h))
+                return original_logo(canvas, path, x, y, max_w, max_h)
+
+            def checked_signature(canvas, path, center_x, line_y, label, font, ink, line_color):
+                signature_records.append(center_x)
+                return original_signature(canvas, path, center_x, line_y, label, font, ink, line_color)
+
+            monkeypatch.setattr(renderer, "draw_fit_centered", checked_fit)
+            monkeypatch.setattr(renderer, "_logo", checked_logo)
+            monkeypatch.setattr(renderer, "draw_signature", checked_signature)
+
+            target = BytesIO()
+            renderer.draw_certificate(
+                target,
+                {
+                    "template": template,
+                    "font_family": family,
+                    "name": "Shashwat Solanki",
+                    "roll_number": "CSE2026-24039C04060",
+                    "activity": "Inter-College Technical Festival and Innovation Challenge 2026",
+                    "position": "First Place / Overall Winner",
+                    "certificate_type": "Workshop / Training",
+                    "academic_year": "2026-27",
+                    "certificate_id": "SRGPC-2026-DF4971159AF1",
+                },
+                verification_url=None,
+                logo_path=None,
+                show_qr=False,
+            )
+            pdf = target.getvalue()
+            assert pdf.startswith(b"%PDF-")
+            page_box = re.search(
+                rb"/MediaBox\s*\[\s*0\s+0\s+([0-9.]+)\s+([0-9.]+)\s*\]",
+                pdf,
+            )
+            assert page_box, (template, family, "missing PDF page box")
+            page_width, page_height = map(float, page_box.groups())
+            assert page_width == pytest.approx(renderer.PAGE_W, abs=0.02)
+            assert page_height == pytest.approx(renderer.PAGE_H, abs=0.02)
+            assert page_width > page_height  # A4 landscape, not a portrait crop.
+
+            assert len(logo_records) == 1
+            assert logo_records[0][0] == pytest.approx(center, abs=0.01)
+            assert logo_records[0][1] == renderer.LOGO_CENTER_Y
+            assert logo_records[0][2:] == (renderer.LOGO_MAX_W, renderer.LOGO_MAX_H)
+
+            assert len(signature_records) == 2
+            assert signature_records == pytest.approx(signature_xs, abs=0.01)
+
+            header_positions = {
+                text: x for text, x, _y, _width, _size in fit_records
+                if text in {"SRGPC", "CERTIFICATE OF ACHIEVEMENT"}
+            }
+            assert header_positions["SRGPC"] == pytest.approx(center, abs=0.01)
+            assert header_positions["CERTIFICATE OF ACHIEVEMENT"] == pytest.approx(center, abs=0.01)
+
+
+def test_certificate_content_bounds_cover_all_three_asymmetric_frames():
+    import certificate_renderer as renderer
+
+    expected = {
+        "modern": (106.0, renderer.PAGE_W - renderer.SAFE),
+        "skyline": (118.0, renderer.PAGE_W - renderer.SAFE),
+        "coastal": (66.0, renderer.PAGE_W - renderer.SAFE),
+    }
+    assert renderer.TEMPLATE_CONTENT_BOUNDS == expected
+
+    for template in renderer.TEMPLATES:
+        left, right = renderer.content_bounds(template)
+        assert left >= 0
+        assert right <= renderer.PAGE_W
+        assert right > left
+        assert renderer.content_center(template) == pytest.approx((left + right) / 2, abs=0.01)

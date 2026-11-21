@@ -25,9 +25,9 @@ QR_SIZE = 68
 QR_BOX_X = PAGE_W - SAFE - QR_BOX - 16
 QR_BOX_Y = 24
 LOGO_CENTER_Y = 523
-LOGO_MAX_W = 68
-LOGO_MAX_H = 68
-INSTITUTION_Y = 473
+LOGO_MAX_W = 64
+LOGO_MAX_H = 64
+INSTITUTION_Y = 470
 TITLE_Y = 426
 SUBTITLE_Y = 396
 PRESENTED_TO_Y = 362
@@ -64,6 +64,25 @@ TEMPLATES = {
     "geometric": {"bg": "#fbfcff", "ink": "#20273a", "muted": "#707a8e", "accent": "#4056a1", "accent_soft": "#e8ebf8"},
     "monochrome": {"bg": "#ffffff", "ink": "#1f2933", "muted": "#737b86", "accent": "#20252b", "accent_soft": "#edf0f2"},
 }
+
+# The asymmetric templates reserve a left design rail. All content is centered
+# in the printable area to the right of that rail, not at the physical page
+# midpoint. Right edges share the same 24pt safe margin.
+TEMPLATE_CONTENT_BOUNDS = {
+    "modern": (106.0, PAGE_W - SAFE),
+    "skyline": (118.0, PAGE_W - SAFE),
+    "coastal": (66.0, PAGE_W - SAFE),
+}
+
+
+def content_bounds(tpl: str):
+    """Return the horizontal safe area used by content for a template."""
+    return TEMPLATE_CONTENT_BOUNDS.get(tpl, (float(SAFE), PAGE_W - SAFE))
+
+
+def content_center(tpl: str) -> float:
+    left, right = content_bounds(tpl)
+    return (left + right) / 2
 
 
 def _font_family(name: str):
@@ -206,8 +225,14 @@ def draw_signature(c: canvas.Canvas, path: Optional[Path], center_x: float, line
 
 
 def _footer_positions(tpl: str):
+    # Each tuple is (roll center/width, type center/width, ID center/width).
+    # Keep columns disjoint and stop the ID before the QR verification panel.
     if tpl == "skyline":
-        return (232, 180, 430, 205, 610, 165)
+        return (206, 166, 390, 180, 585, 150)
+    if tpl == "modern":
+        return (196, 160, 390, 185, 590, 160)
+    if tpl == "coastal":
+        return (166, 172, 385, 190, 600, 150)
     return (142, 190, 370, 220, 580, 175)
 
 
@@ -250,8 +275,9 @@ def draw_frame(c: canvas.Canvas, tpl: str, theme: dict):
     elif tpl == "modern":
         c.setFillColor(colors.HexColor("#0f172a")); c.rect(0, PAGE_H-78, PAGE_W, 78, fill=1, stroke=0)
         c.setFillColor(colors.HexColor("#eaf2ff")); c.rect(0, 0, 88, PAGE_H-78, fill=1, stroke=0)
-        c.setFillColor(colors.white); c.roundRect(PAGE_W/2-42, 485, 84, 76, 11, fill=1, stroke=0)
-        c.setStrokeColor(colors.HexColor("#cbd5e1")); c.setLineWidth(0.7); c.rect(SAFE+10, SAFE+10, PAGE_W-2*(SAFE+10), PAGE_H-2*(SAFE+10), fill=0, stroke=1)
+        modern_cx = content_center(tpl)
+        c.setFillColor(colors.white); c.roundRect(modern_cx-42, 485, 84, 76, 11, fill=1, stroke=0)
+        c.setStrokeColor(colors.HexColor("#cbd5e1")); c.setLineWidth(0.7); c.rect(106, 34, PAGE_W-130, PAGE_H-68, fill=0, stroke=1)
     elif tpl == "emerald":
         c.setStrokeColor(accent); c.setLineWidth(2.3); c.roundRect(SAFE, SAFE, PAGE_W-2*SAFE, PAGE_H-2*SAFE, 12, fill=0, stroke=1)
         c.setStrokeColor(colors.HexColor("#a5d4c8")); c.setLineWidth(0.7); c.roundRect(SAFE+12, SAFE+12, PAGE_W-2*(SAFE+12), PAGE_H-2*(SAFE+12), 9, fill=0, stroke=1)
@@ -349,7 +375,7 @@ def draw_frame(c: canvas.Canvas, tpl: str, theme: dict):
         gold = colors.HexColor("#d2ad5f")
         c.setStrokeColor(gold); c.setLineWidth(1.6); c.rect(24,24,PAGE_W-48,PAGE_H-48,fill=0,stroke=1)
         c.setStrokeColor(colors.HexColor("#6c5830")); c.setLineWidth(0.7); c.rect(35,35,PAGE_W-70,PAGE_H-70,fill=0,stroke=1)
-        c.setFillColor(gold); c.rect(24,PAGE_H-31,PAGE_W,7,fill=1,stroke=0); c.rect(24,24,PAGE_W-48,3,fill=1,stroke=0)
+        c.setFillColor(gold); c.rect(24,PAGE_H-31,PAGE_W-48,7,fill=1,stroke=0); c.rect(24,24,PAGE_W-48,3,fill=1,stroke=0)
         c.setFillColor(colors.HexColor("#2a2417")); c.circle(PAGE_W/2,PAGE_H-68,36,fill=1,stroke=0)
     elif tpl == "coastal":
         blue = colors.HexColor("#0b82a5")
@@ -388,19 +414,22 @@ def _title_band(c, info, theme, font, cx):
         c.setFillColor(colors.white)
         c.roundRect(cx - 42, 485, 84, 76, 11, fill=1, stroke=0)
     _logo(c, info.get("logo_path"), cx, LOGO_CENTER_Y, LOGO_MAX_W, LOGO_MAX_H)
-    draw_fit_centered(c, "SRGPC", bold, cx, INSTITUTION_Y, 160, 13.8, 10.5, accent, 0.2)
+    draw_fit_centered(c, "SRGPC", bold, cx, INSTITUTION_Y, min(160, content_bounds(info.get("template", "classic"))[1] - content_bounds(info.get("template", "classic"))[0] - 36), 13.8, 10.5, accent, 0.2)
 
     title = _safe_text(info.get("title"), "CERTIFICATE OF ACHIEVEMENT")
     draw_fit_centered(c, title, bold, cx, TITLE_Y, 670, 28, 18.5, dark, 0.5)
     draw_fit_centered(c, "Presented in recognition of outstanding performance", regular, cx, SUBTITLE_Y, 560, 10.6, 8.2, muted, 0.25)
 
 
-def content_center(tpl: str) -> float:
-    return (118 + PAGE_W) / 2 if tpl == "skyline" else PAGE_W / 2
-
-
 def signature_centers(tpl: str):
-    return (355, 605) if tpl == "skyline" else SIGNATURE_XS
+    cx = content_center(tpl)
+    if tpl == "modern":
+        return (cx - 171, cx + 171)
+    if tpl == "skyline":
+        return (cx - 125, cx + 125)
+    if tpl == "coastal":
+        return (cx - 171, cx + 171)
+    return SIGNATURE_XS
 
 
 def draw_certificate(target, info: dict, verification_url: Optional[str] = None,
