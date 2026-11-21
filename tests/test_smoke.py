@@ -374,7 +374,7 @@ def test_certificate_layout_header_footer_clearance(app):
     assert renderer.SUBTITLE_Y - renderer.PRESENTED_TO_Y >= 28
 
     # Reserve a distinct footer zone and keep the QR panel inside the frame.
-    assert renderer.FOOTER_TEXT_Y == 82
+    assert renderer.FOOTER_TEXT_Y == 50
     assert renderer.FOOTER_TEXT_Y - renderer.QR_BOX_Y >= 20
     assert renderer.LOGO_MAX_W == 64 and renderer.LOGO_MAX_H == 64
     assert renderer.QR_BOX_X + renderer.QR_BOX <= renderer.PAGE_W - 40
@@ -384,8 +384,9 @@ def test_certificate_layout_header_footer_clearance(app):
     assert "addImage(svg,stage.dataset.logoUrl,cx-32,40,64,64)" in preview
     assert "addText(svg,'SRGPC',cx,125" in preview
     assert "addText(svg,'CERTIFICATE OF ACHIEVEMENT',cx,169" in preview
-    assert "Roll No." in preview and "footer.rollX,513" in preview
-    assert "footer.typeX,513" in preview and "footer.idX,513" in preview
+    assert "Roll No." in preview and "footerBaselines" in preview
+    assert "footer.rollX,footerY" in preview
+    assert "footer.typeX,footerY" in preview and "footer.idX,footerY" in preview
     assert "Protected footer panel" not in preview
     assert "addRect(svg,qrX,475,96,96" in preview
     assert "M80 544 L220 544" in preview
@@ -682,10 +683,35 @@ def test_original_certificate_style_is_restored_and_preview_cache_is_fresh():
     renderer = (root / "certificate_renderer.py").read_text(encoding="utf-8")
 
     # Keep the original single-line footer, crest scale, and template art.
-    assert "filename='app.js', v='13'" in base_template
+    assert "filename='app.js', v='14'" in base_template
     assert "Protected footer panel" not in preview
     assert "addText(svg,'SRGPC',cx,125" in preview
     assert "addImage(svg,stage.dataset.logoUrl,cx-32,40,64,64)" in preview
     assert "M80 544 L220 544" in preview
-    assert "FOOTER_TEXT_Y = 82" in renderer
+    assert "FOOTER_TEXT_Y = 50" in renderer
     assert "FOOTER_PANEL_BOTTOM" not in renderer
+
+
+def test_footer_rows_have_small_template_specific_inset_from_lower_border():
+    import certificate_renderer as renderer
+    root = Path(__file__).resolve().parents[1]
+    preview = (root / "static" / "app.js").read_text(encoding="utf-8")
+
+    expected = {
+        "classic": 50, "modern": 48, "emerald": 50, "midnight": 52,
+        "royal": 50, "burgundy": 48, "skyline": 38, "minimal": 48,
+        "academic_blueprint": 46, "heritage_seal": 50, "teal_arch": 43,
+        "copper_ledger": 39, "ivory_ribbon": 42, "crimson_sash": 51,
+        "cobalt_wave": 39, "sage_garden": 51, "charcoal_gold": 49,
+        "coastal": 38, "geometric": 48, "monochrome": 56,
+    }
+    assert renderer.FOOTER_TEXT_Y_BY_TEMPLATE == expected
+    assert set(expected) == set(renderer.TEMPLATES)
+    for template, baseline in expected.items():
+        # Existing borders/decorations remain untouched; values stay low in
+        # the page with a modest inset rather than a large empty footer gap.
+        assert 0 < renderer.footer_text_y(template) <= 56
+        assert renderer.footer_text_y(template) == baseline
+    assert "const footerBaselines=" in preview
+    assert "const footerY=595-(footerBaselines[tpl]??50)" in preview
+    assert "footer.idX,footerY" in preview
