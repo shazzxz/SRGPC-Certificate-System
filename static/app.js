@@ -125,9 +125,12 @@ function renderLiveCertificate(){
     coastal:{rollX:166,rollW:172,typeX:385,typeW:190,idX:600,idW:150}
   };
   const footer=footerLayouts[tpl]||{rollX:142,rollW:190,typeX:370,typeW:220,idX:580,idW:175};
-  addText(svg,'Roll No. '+roll,footer.rollX,513,{font:ff,size:10.5,fill:t.ink,length:footer.rollW,minSize:9});
-  addText(svg,type+' - '+year,footer.typeX,513,{font:ff,size:10.5,fill:t.ink,length:footer.typeW,minSize:9});
-  addText(svg,'SRGPC-PREVIEW',footer.idX,513,{font:ff,size:10,fill:t.ink,length:footer.idW,minSize:8.6});
+  // Keep each footer row a small, consistent inset above its own template border.
+  const footerBaselines={classic:50,modern:48,emerald:50,midnight:52,royal:50,burgundy:48,skyline:38,minimal:48,academic_blueprint:46,heritage_seal:50,teal_arch:43,copper_ledger:39,ivory_ribbon:42,crimson_sash:51,cobalt_wave:39,sage_garden:51,charcoal_gold:49,coastal:38,geometric:48,monochrome:56};
+  const footerY=595-(footerBaselines[tpl]??50);
+  addText(svg,'Roll No. '+roll,footer.rollX,footerY,{font:ff,size:10.5,fill:t.ink,length:footer.rollW,minSize:9});
+  addText(svg,type+' - '+year,footer.typeX,footerY,{font:ff,size:10.5,fill:t.ink,length:footer.typeW,minSize:9});
+  addText(svg,'SRGPC-PREVIEW',footer.idX,footerY,{font:ff,size:10,fill:t.ink,length:footer.idW,minSize:8.6});
 
   const qrX=706;
   addRect(svg,qrX,475,96,96,{fill:'#fff',stroke:t.accent,'stroke-width':0.8,rx:8});
