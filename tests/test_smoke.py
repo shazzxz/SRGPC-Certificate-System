@@ -295,22 +295,27 @@ def test_mobile_oauth_response_returns_app_callback(app):
 
 
 def _create_test_student(client):
+    import secrets
     from app import get_db
     from werkzeug.security import generate_password_hash
     from datetime import datetime
 
+    suffix = secrets.token_hex(4)
+    username = f"student-test-{suffix}"
+    roll_number = f"CSETEST{suffix.upper()}"
+    gmail = f"{username}@gmail.com"
     with get_db() as db:
         cursor = db.execute(
             "INSERT INTO students(username,password_hash,mobile,roll_number,gmail,name,created_at) VALUES(?,?,?,?,?,?,?)",
-            ("student-test", generate_password_hash("student-pass"), "9999999999", "CSE24001", "student-test@gmail.com", "Test Student", datetime.now().isoformat(timespec="seconds")),
+            (username, generate_password_hash("student-pass"), "9999999999", roll_number, gmail, "Test Student", datetime.now().isoformat(timespec="seconds")),
         )
         student_id = cursor.lastrowid
         db.commit()
     with client.session_transaction() as session_data:
         session_data["role"] = "student"
         session_data["student_id"] = student_id
-        session_data["username"] = "student-test"
-    return student_id
+        session_data["username"] = username
+    return student_id, roll_number
 
 
 def test_student_request_page_uses_one_respectful_free_text_box(app):
@@ -328,7 +333,7 @@ def test_student_request_page_uses_one_respectful_free_text_box(app):
 
 def test_student_free_text_request_uses_registered_identity(app):
     _, client = app
-    student_id = _create_test_student(client)
+    student_id, roll_number = _create_test_student(client)
     page = client.get("/student/request")
     token = csrf(page.get_data(as_text=True))
     response = client.post(
@@ -345,7 +350,7 @@ def test_student_free_text_request_uses_registered_identity(app):
         ).fetchone()
     assert row is not None
     assert row["name"] == "Test Student"
-    assert row["roll_number"] == "CSE24001"
+    assert row["roll_number"] == roll_number
     assert row["request_type"] == "Other"
     assert row["activity"] == "Student request"
     assert row["note"] == "I need a certificate for volunteering at the college technical fest."
