@@ -1126,6 +1126,31 @@ def student_for_session():
         return db.execute("SELECT * FROM students WHERE id = ?", (session["student_id"],)).fetchone()
 
 
+def certificates_for_student(db, student):
+    """Return request-linked certificates for this account plus legacy roll-linked certificates."""
+    return db.execute(
+        """SELECT c.*
+           FROM certificates c
+           LEFT JOIN certificate_requests r ON r.id=c.request_id
+           WHERE r.student_id=?
+              OR (c.request_id IS NULL AND lower(c.roll_number)=lower(?))
+           ORDER BY c.id DESC""",
+        (student["id"], student["roll_number"]),
+    ).fetchall()
+
+
+def student_owns_certificate(db, certificate, student):
+    """Request-issued certificates belong to the requester account, not a mutable roll snapshot."""
+    request_id = certificate["request_id"]
+    if request_id is not None:
+        linked = db.execute(
+            "SELECT 1 FROM certificate_requests WHERE id=? AND student_id=?",
+            (request_id, student["id"]),
+        ).fetchone()
+        return linked is not None
+    return str(certificate["roll_number"]).casefold() == str(student["roll_number"]).casefold()
+
+
 def certificate_for_filename(filename):
     with get_db() as db:
         return db.execute("SELECT * FROM certificates WHERE filename = ?", (filename,)).fetchone()
@@ -1775,12 +1800,15 @@ def student_certificate_detail(certificate_id):
     student = student_for_session()
     with get_db() as db:
         cert = db.execute(
-            "SELECT * FROM certificates WHERE certificate_id=? AND lower(roll_number)=lower(?)",
-            (clean(certificate_id,80).upper(), student["roll_number"]),
+            """SELECT c.*
+               FROM certificates c
+               LEFT JOIN certificate_requests r ON r.id=c.request_id
+               WHERE c.certificate_id=?
+                 AND (r.student_id=? OR (c.request_id IS NULL AND lower(c.roll_number)=lower(?)))""",
+            (clean(certificate_id,80).upper(), student["id"], student["roll_number"]),
         ).fetchone()
-    if not cert:
-        abort(404)
-    with get_db() as db:
+        if not cert:
+            abort(404)
         history = db.execute("SELECT * FROM certificate_history WHERE certificate_id=? ORDER BY id ASC", (cert["certificate_id"],)).fetchall()
     return render_template("student_certificate_detail.html", student=student, certificate=cert, history=history, active="certificates", templates=TEMPLATES)
 
@@ -2165,45 +2193,80 @@ def admin_request_review(request_id):
 @app.post("/admin/request/<int:request_id>/generate")
 @admin_permission("requests")
 def admin_request_generate(request_id):
+    # Read the requester and their current profile together. The profile is the
+    # source of truth for the certificate recipient; submitted form values are
+    # only certificate content and can never change who receives the certificate.
     with get_db() as db:
-        req = db.execute("SELECT * FROM certificate_requests WHERE id=?", (request_id,)).fetchone()
+        req = db.execute(
+            """SELECT r.*, s.name AS student_name, s.roll_number AS student_roll,
+                      s.department AS student_department, s.programme AS student_programme,
+                      s.semester AS student_semester
+               FROM certificate_requests r
+               JOIN students s ON s.id=r.student_id
+               WHERE r.id=?""",
+            (request_id,),
+        ).fetchone()
     if not req:
-        flash("Certificate request not found.", "error")
+        flash("Certificate request or student account not found.", "error")
         return redirect(url_for("admin_requests"))
     if req["status"] not in {"Pending", "Under Review"}:
         flash("This request has already been processed.", "error")
-        return redirect(url_for("admin_requests"))
-
-    is_freeform_request = req["activity"] == "Student request"
-    certificate_type = clean(request.form.get("certificate_type") or ("" if is_freeform_request else req["request_type"]), 60)
-    activity = clean(request.form.get("activity") or ("" if is_freeform_request else req["activity"]), 140)
-    position = clean(request.form.get("position") or ("" if is_freeform_request else req["position"]), 80)
-    if certificate_type not in REQUEST_TYPES or not activity or not position:
-        flash("Choose a certificate type and complete the official activity and achievement details before generation.", "error")
         return redirect(url_for("admin_request_detail", request_id=request_id))
 
+    is_freeform_request = req["activity"] == "Student request"
+    certificate_type = clean(
+        request.form.get("certificate_type") or ("" if is_freeform_request else req["request_type"]),
+        60,
+    )
+    activity = clean(
+        request.form.get("activity") or ("" if is_freeform_request else req["activity"]),
+        140,
+    )
+    position = clean(
+        request.form.get("position") or ("" if is_freeform_request else req["position"]),
+        80,
+    )
+    if certificate_type not in REQUEST_TYPES or not activity or not position:
+        flash("Choose a certificate type and enter the approved activity and achievement details.", "error")
+        return redirect(url_for("admin_request_detail", request_id=request_id))
+
+    recipient_name = req["student_name"]
+    recipient_roll = req["student_roll"]
     with get_db() as db:
+        # Re-check request state and duplicates just before writing, so a second
+        # click cannot issue the same request twice.
+        current = db.execute(
+            "SELECT status FROM certificate_requests WHERE id=?",
+            (request_id,),
+        ).fetchone()
+        if not current or current["status"] not in {"Pending", "Under Review"}:
+            flash("This request has already been processed.", "error")
+            return redirect(url_for("admin_request_detail", request_id=request_id))
         duplicate = db.execute(
             """SELECT certificate_id FROM certificates
                WHERE lower(name)=lower(?) AND lower(roll_number)=lower(?)
                  AND lower(activity)=lower(?) AND lower(position)=lower(?)
                  AND status='Valid'""",
-            (req["name"], req["roll_number"], activity, position),
+            (recipient_name, recipient_roll, activity, position),
         ).fetchone()
     if duplicate:
-        flash(f"A matching valid certificate already exists ({duplicate['certificate_id']}). Use the certificate archive to reissue if this is intentional.", "error")
+        flash(
+            f"A matching valid certificate already exists ({duplicate['certificate_id']}). "
+            "Use the certificate archive to reissue if this is intentional.",
+            "error",
+        )
         return redirect(url_for("admin_request_detail", request_id=request_id))
 
     info = {
-        "name": req["name"],
-        "roll_number": req["roll_number"],
+        "name": recipient_name,
+        "roll_number": recipient_roll,
         "activity": activity,
         "position": position,
         "certificate_type": certificate_type,
         "academic_year": req["academic_year"] if "academic_year" in req.keys() else setting("default_academic_year", current_academic_year()),
-        "department": req["department"] if "department" in req.keys() else "",
-        "programme": req["programme"] if "programme" in req.keys() else "",
-        "semester": req["semester"] if "semester" in req.keys() else "",
+        "department": req["student_department"] or "",
+        "programme": req["student_programme"] or "",
+        "semester": req["student_semester"] or "",
         "template": allowed_template(request.form.get("template") or setting("default_template", "classic")),
         "font_family": allowed_font(request.form.get("font_family") or setting("default_font", "Helvetica")),
         "certificate_id": make_certificate_id(),
@@ -2215,16 +2278,52 @@ def admin_request_generate(request_id):
     filename = f"{slug}_{info['certificate_id']}.pdf"
     render_certificate(GENERATED_DIR / filename, info, public_verify_url(info["certificate_id"]))
     pdf_hash = file_sha256(GENERATED_DIR / filename)
-    with get_db() as db:
-        db.execute("INSERT INTO certificates(certificate_id,name,roll_number,activity,position,template,font_family,filename,created_at,certificate_type,academic_year,status,payload_hash,pdf_sha256,created_by,request_id,department,programme,semester) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (info["certificate_id"], info["name"], info["roll_number"], info["activity"], info["position"], info["template"], info["font_family"], filename, info["created_at"], info["certificate_type"], info["academic_year"], "Valid", info["payload_hash"], pdf_hash, info["created_by"], request_id, info["department"], info["programme"], info["semester"]))
-        db.execute("UPDATE certificate_requests SET status='Generated', processed_at=?, processed_by=?, certificate_id=? WHERE id=?", (info["created_at"], session.get("username", ADMIN_USERNAME), info["certificate_id"], request_id))
-        add_certificate_history(db, info["certificate_id"], "Generated", "Certificate generated from request.", session.get("admin_role","admin"), session.get("username", ADMIN_USERNAME), info["created_at"])
-        add_request_update(db, request_id, "Generated", f"Certificate generated: {info['certificate_id']}.", session.get("admin_role","admin"), session.get("username", ADMIN_USERNAME))
-        db.commit()
+
+    try:
+        with get_db() as db:
+            # Atomically claim the request. Only the first concurrent submit can
+            # transition Pending/Under Review to Generated and attach its ID.
+            claim = db.execute(
+                """UPDATE certificate_requests
+                   SET status='Generated', processed_at=?, processed_by=?, certificate_id=?
+                   WHERE id=? AND status IN ('Pending','Under Review')""",
+                (info["created_at"], session.get("username", ADMIN_USERNAME), info["certificate_id"], request_id),
+            )
+            if claim.rowcount != 1:
+                (GENERATED_DIR / filename).unlink(missing_ok=True)
+                flash("This request has already been processed. No second certificate was issued.", "error")
+                return redirect(url_for("admin_request_detail", request_id=request_id))
+            db.execute(
+                """INSERT INTO certificates(
+                    certificate_id,name,roll_number,activity,position,template,font_family,
+                    filename,created_at,certificate_type,academic_year,status,payload_hash,
+                    pdf_sha256,created_by,request_id,department,programme,semester
+                ) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (
+                    info["certificate_id"], info["name"], info["roll_number"], info["activity"],
+                    info["position"], info["template"], info["font_family"], filename,
+                    info["created_at"], info["certificate_type"], info["academic_year"], "Valid",
+                    info["payload_hash"], pdf_hash, info["created_by"], request_id,
+                    info["department"], info["programme"], info["semester"],
+                ),
+            )
+            add_certificate_history(
+                db, info["certificate_id"], "Generated", "Certificate generated from request.",
+                session.get("admin_role", "admin"), session.get("username", ADMIN_USERNAME), info["created_at"],
+            )
+            add_request_update(
+                db, request_id, "Generated", f"Certificate generated: {info['certificate_id']}.",
+                session.get("admin_role", "admin"), session.get("username", ADMIN_USERNAME),
+            )
+            db.commit()
+    except Exception:
+        (GENERATED_DIR / filename).unlink(missing_ok=True)
+        raise
+
     notify_student(req["student_id"], "Certificate generated", f"Your certificate is ready: {info['certificate_id']}")
     audit("Fulfil request", "request", request_id, f"Generated {info['certificate_id']}")
-    flash(f"Request fulfilled and certificate generated: {info['certificate_id']}", "success")
-    return redirect(url_for("admin_requests"))
+    flash(f"Certificate issued to {recipient_name} ({recipient_roll}): {info['certificate_id']}", "success")
+    return redirect(url_for("admin_requests", status="Generated"))
 
 
 @app.post("/admin/request/<int:request_id>/reject")
@@ -2267,7 +2366,7 @@ def student_dashboard():
     student = student_for_session()
     search_name = clean(request.args.get("name"), 80)
     with get_db() as db:
-        certs = db.execute("SELECT * FROM certificates WHERE roll_number = ? ORDER BY id DESC", (student["roll_number"],)).fetchall()
+        certs = certificates_for_student(db, student)
         requests = db.execute("SELECT * FROM certificate_requests WHERE student_id = ? ORDER BY id DESC", (student["id"],)).fetchall()
         notifications = db.execute("SELECT * FROM notifications WHERE student_id=? ORDER BY id DESC LIMIT 8", (student["id"],)).fetchall()
         unread = db.execute("SELECT COUNT(*) c FROM notifications WHERE student_id=? AND is_read=0", (student["id"],)).fetchone()["c"]
@@ -2287,7 +2386,7 @@ def student_certificates():
     student = student_for_session()
     search_name = clean(request.args.get("name"), 80)
     with get_db() as db:
-        certs = db.execute("SELECT * FROM certificates WHERE roll_number = ? ORDER BY id DESC", (student["roll_number"],)).fetchall()
+        certs = certificates_for_student(db, student)
     shown = [c for c in certs if not search_name or norm(c["name"]) == norm(search_name)]
     return render_template("student_certificates.html", student=student, certs=shown, search_name=search_name, templates=TEMPLATES, active="certificates")
 
@@ -2894,8 +2993,11 @@ def download(filename):
         abort(404)
     if role == "student":
         student = student_for_session()
-        if not student or student["roll_number"].casefold() != cert["roll_number"].casefold():
+        if not student:
             abort(403)
+        with get_db() as db:
+            if not student_owns_certificate(db, cert, student):
+                abort(403)
 
     # Render's free web-service filesystem is ephemeral, so generated PDFs can
     # disappear after a new deployment. Rebuild a missing certificate from the

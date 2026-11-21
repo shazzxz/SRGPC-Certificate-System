@@ -4,52 +4,131 @@
 {% block subheading %}{{ request.student_name }} · {{ request.student_roll }}{% endblock %}
 {% block topaction %}<a href="{{ url_for('admin_requests',status='All') }}" class="ghost-btn">← Request Queue</a>{% endblock %}
 {% block content %}
-{% if request.activity == 'Student request' %}
-<section class="detail-hero panel"><div><span class="eyebrow">REQUEST #{{ request.id }}</span><h2>New certificate request</h2><p>Academic Year {{ request.academic_year }} · Submitted {{ request.created_at }}</p></div><span class="status-chip status-{{ request.status|lower|replace(' ','-') }}">{{ request.status }}</span></section>
-{% else %}
-<section class="detail-hero panel"><div><span class="eyebrow">REQUEST #{{ request.id }}</span><h2>{{ request.activity }}</h2><p>{{ request.position }} · Academic Year {{ request.academic_year }}</p></div><span class="status-chip status-{{ request.status|lower|replace(' ','-') }}">{{ request.status }}</span></section>
-{% endif %}
-<div class="dashboard-grid">
-<section class="panel">
-  <div class="panel-head"><div><h2>Student and request details</h2><p>Review the student's information before preparing the certificate.</p></div></div>
-  <div class="detail-grid">
-    <div><span>Student</span><b>{{ request.student_name }}</b></div><div><span>Roll Number</span><b>{{ request.student_roll }}</b></div>
-    <div><span>Gmail</span><b>{{ request.student_gmail }}</b></div><div><span>Mobile</span><b>{{ request.student_mobile }}</b></div>
-    <div><span>Department</span><b>{{ request.student_department or request.department }}</b></div><div><span>Programme</span><b>{{ request.student_programme or request.programme }}</b></div><div><span>Semester</span><b>{{ request.student_semester or request.semester }}</b></div>
+<section class="detail-hero panel">
+  <div>
+    <span class="eyebrow">REQUEST #{{ request.id }}</span>
+    {% if request.activity == 'Student request' %}
+      <h2>New certificate request</h2>
+    {% else %}
+      <h2>{{ request.activity }}</h2>
+    {% endif %}
+    <p>Submitted {{ request.created_at }} · Academic year {{ request.academic_year }}</p>
   </div>
-  {% if request.activity == 'Student request' %}
-    <div class="request-message-card"><span>What the student is requesting</span><p>{{ request.note }}</p></div>
-  {% else %}
-    <div class="detail-grid"><div><span>Certificate Type</span><b>{{ request.request_type }}</b></div><div class="full"><span>Activity</span><b>{{ request.activity }}</b></div><div class="full"><span>Achievement</span><b>{{ request.position }}</b></div></div>
-    {% if request.note %}<div class="request-note"><span>Student note</span>{{ request.note }}</div>{% endif %}
-  {% endif %}
+  <span class="status-chip status-{{ request.status|lower|replace(' ','-') }}">{{ request.status }}</span>
 </section>
-<section class="panel">
-  <div class="panel-head"><div><h2>Next action</h2><p>Review the request, then prepare the certificate details on the college's behalf.</p></div></div>
-  {% if request.status=='Pending' %}
-    <form method="post" action="{{ url_for('admin_request_review',request_id=request.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="secondary-btn" type="submit">Start review →</button></form>
-  {% elif request.status=='Under Review' %}
+
+<div class="dashboard-grid admin-request-workspace">
+  <section class="panel admin-request-summary">
+    <div class="panel-head">
+      <div><h2>Student and request</h2><p>Check the request and confirm the recipient.</p></div>
+    </div>
+    <div class="detail-grid">
+      <div><span>Student</span><b>{{ request.student_name }}</b></div>
+      <div><span>Roll number</span><b>{{ request.student_roll }}</b></div>
+      <div><span>Gmail</span><b>{{ request.student_gmail }}</b></div>
+      <div><span>Mobile</span><b>{{ request.student_mobile }}</b></div>
+      <div><span>Department</span><b>{{ request.student_department or request.department }}</b></div>
+      <div><span>Programme</span><b>{{ request.student_programme or request.programme }}</b></div>
+      <div><span>Semester</span><b>{{ request.student_semester or request.semester }}</b></div>
+    </div>
+    {% if request.activity == 'Student request' %}
+      <div class="request-message-card admin-original-request">
+        <span>Student's message</span>
+        <p>{{ request.note }}</p>
+      </div>
+    {% else %}
+      <div class="request-message-card admin-original-request">
+        <span>Requested certificate</span>
+        <p><strong>{{ request.request_type }}</strong> · {{ request.activity }} · {{ request.position }}</p>
+        {% if request.note %}<p class="admin-original-note">{{ request.note }}</p>{% endif %}
+      </div>
+    {% endif %}
+    {% if request.admin_note %}<div class="rejected-note"><b>Admin note:</b> {{ request.admin_note }}</div>{% endif %}
+  </section>
+
+  <section class="panel admin-issue-panel">
+    <div class="panel-head">
+      <div><h2>Issue certificate</h2><p>Recipient details are linked to the student's account automatically.</p></div>
+    </div>
+
+    {% if request.status in ['Pending','Under Review'] %}
     <form method="post" action="{{ url_for('admin_request_generate',request_id=request.id) }}" class="admin-generate-request">
       <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-      <div class="admin-request-fields">
-        <label>Certificate type<select name="certificate_type" required><option value="">Choose certificate type</option>{% for item in request_types %}<option value="{{ item }}" {% if request.activity != 'Student request' and request.request_type == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></label>
-        <label>Activity / Event<input name="activity" value="{% if request.activity != 'Student request' %}{{ request.activity }}{% endif %}" maxlength="140" required placeholder="Enter the official event or activity"></label>
-        <label>Position / Achievement<input name="position" value="{% if request.activity != 'Student request' %}{{ request.position }}{% endif %}" maxlength="80" required placeholder="Enter the approved achievement"></label>
+
+      <div class="admin-recipient-fields">
+        <label>Student name<input value="{{ request.student_name }}" readonly aria-readonly="true" tabindex="-1"></label>
+        <label>Roll number<input value="{{ request.student_roll }}" readonly aria-readonly="true" tabindex="-1"></label>
       </div>
-      <label>Certificate template<select name="template"><option value="{{ default_template }}">Default template</option>{% for key,tpl in templates.items() %}<option value="{{ key }}">{{ tpl.name }}</option>{% endfor %}</select></label>
-      <label>Certificate font<select name="font_family"><option value="{{ default_font }}">Default font</option><option value="Helvetica">Helvetica</option><option value="Times">Times</option><option value="Courier">Courier</option></select></label>
-      <button class="primary-btn" type="submit">Prepare and generate certificate →</button>
+
+      <div class="admin-request-fields">
+        <label>Certificate type
+          <select name="certificate_type" required>
+            <option value="" {% if request.activity == 'Student request' or request.request_type not in request_types %}selected{% endif %} disabled>Choose type</option>
+            {% for item in request_types %}
+              <option value="{{ item }}" {% if request.activity != 'Student request' and request.request_type == item %}selected{% endif %}>{{ item }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>Activity / event
+          <input name="activity" value="{% if request.activity != 'Student request' %}{{ request.activity }}{% endif %}" maxlength="140" required placeholder="Enter approved event or activity">
+        </label>
+        <label>Position / achievement
+          <input name="position" value="{% if request.activity != 'Student request' %}{{ request.position }}{% endif %}" maxlength="80" required placeholder="Enter approved achievement">
+        </label>
+      </div>
+
+      <label>Certificate template
+        <select name="template">
+          <option value="{{ default_template }}" selected>Default · {{ templates[default_template].name }}</option>
+          {% for key,tpl in templates.items() if key != default_template %}
+            <option value="{{ key }}">{{ tpl.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Certificate font
+        <select name="font_family">
+          <option value="{{ default_font }}" selected>Default · {{ default_font }}</option>
+          {% for font in ['Helvetica','Times','Courier'] if font != default_font %}
+            <option value="{{ font }}">{{ font }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <p class="admin-issue-footnote">When you issue it, the certificate will appear in this student's wallet and a notification will be sent to their account.</p>
+      <button class="primary-btn admin-issue-submit" type="submit">Generate &amp; send to student →</button>
     </form>
-    <form method="post" action="{{ url_for('admin_request_reject',request_id=request.id) }}" class="reject-inline"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input name="admin_note" placeholder="Reason for rejection (optional)"><button class="secondary-btn danger-btn" type="submit">Reject Request</button></form>
-  {% elif request.certificate_id %}
-    <a class="primary-btn" href="{{ url_for('admin_certificate_detail',certificate_id=request.certificate_id) }}">Open Generated Certificate →</a>
-  {% endif %}
-</section>
+
+    <form method="post" action="{{ url_for('admin_request_reject',request_id=request.id) }}" class="reject-inline admin-reject-form">
+      <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+      <input name="admin_note" maxlength="240" placeholder="Rejection reason (optional)">
+      <button class="secondary-btn danger-btn" type="submit">Reject request</button>
+    </form>
+    {% elif request.certificate_id %}
+      <div class="admin-issued-state">
+        <span class="status-chip status-generated">Issued</span>
+        <p>This request has already been fulfilled.</p>
+        <a class="primary-btn" href="{{ url_for('admin_certificate_detail',certificate_id=request.certificate_id) }}">Open issued certificate →</a>
+      </div>
+    {% else %}
+      <div class="admin-issued-state"><p>This request is closed.</p></div>
+    {% endif %}
+  </section>
 </div>
+
 <section class="panel">
-  <div class="panel-head"><div><h2>Request timeline</h2><p>Every workflow change is recorded.</p></div></div>
+  <div class="panel-head"><div><h2>Request timeline</h2><p>Workflow changes and certificate issuance.</p></div></div>
   <div class="timeline">
-    {% for update in updates %}<div class="timeline-row"><span class="timeline-dot"></span><div><div class="timeline-top"><strong>{{ update.status }}</strong><small>{{ update.created_at }}</small></div><p>{{ update.message }}</p><span>{{ update.actor_name }}</span></div></div>{% else %}<div class="empty-card">No timeline events yet.</div>{% endfor %}
+    {% for update in updates %}
+      <div class="timeline-row">
+        <span class="timeline-dot"></span>
+        <div>
+          <div class="timeline-top"><strong>{{ update.status }}</strong><small>{{ update.created_at }}</small></div>
+          <p>{{ update.message }}</p><span>{{ update.actor_name }}</span>
+        </div>
+      </div>
+    {% else %}
+      <div class="empty-card">No timeline events yet.</div>
+    {% endfor %}
   </div>
 </section>
 {% endblock %}

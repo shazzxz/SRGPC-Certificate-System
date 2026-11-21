@@ -1,11 +1,15 @@
 {% extends 'base.html' %}
 {% block title %}My Certificates · SRGPC{% endblock %}
 {% block heading %}My Certificates{% endblock %}
-{% block subheading %}Your official certificates issued against your registered roll number.{% endblock %}
+{% block subheading %}Your issued certificates, linked to your student account.{% endblock %}
 {% block topaction %}<a href="{{ url_for('student_request_page') }}" class="primary-btn">＋ Request Certificate</a>{% endblock %}
 {% block content %}
 <section class="student-certificate-intro panel">
-  <div><span class="eyebrow">CERTIFICATE WALLET</span><h2>{{ certs|length }} certificate{{ '' if certs|length==1 else 's' }} available</h2><p>No name search is required. Your account identity and roll number determine which certificates you can access.</p></div>
+  <div>
+    <span class="eyebrow">CERTIFICATE WALLET</span>
+    <h2>{{ certs|length }} certificate{{ '' if certs|length==1 else 's' }} available</h2>
+    <p class="student-wallet-recipient">{{ student.name }} · Roll {{ student.roll_number }}</p>
+  </div>
 </section>
 <section class="student-cards">
   {% for item in certs %}
@@ -21,7 +25,11 @@
     </div>
   </article>
   {% else %}
-  <div class="empty-card"><h3>No certificates yet</h3><p>Once an admin approves and generates a certificate for your roll number, it will appear here automatically.</p><a class="primary-btn inline-btn" href="{{ url_for('student_request_page') }}">Request your first certificate →</a></div>
+  <div class="empty-card student-wallet-empty">
+    <h3>No certificates yet</h3>
+    <p>Certificates issued to your account will appear here.</p>
+    <a class="primary-btn inline-btn" href="{{ url_for('student_request_page') }}">Request a certificate →</a>
+  </div>
   {% endfor %}
 </section>
 {% endblock %}

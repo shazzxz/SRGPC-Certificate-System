@@ -1,22 +1,31 @@
 {% extends 'base.html' %}
 {% block title %}Request Certificate · SRGPC{% endblock %}
 {% block heading %}Request a Certificate{% endblock %}
-{% block subheading %}Tell us what certificate you need. The college team will review your request and handle the certificate details.{% endblock %}
+{% block subheading %}Send a short note. Your student account details are attached automatically.{% endblock %}
 {% block content %}
-<div class="content-grid">
-  <section class="panel form-panel">
-    <div class="panel-head"><div><h2>Your certificate request</h2><p>Your registered student details are attached automatically.</p></div><span class="pill">Student</span></div>
+<div class="content-grid student-request-layout">
+  <section class="panel student-request-panel">
+    <div class="student-request-account">
+      <div>
+        <span>Requesting as</span>
+        <strong>{{ student.name }}</strong>
+        <small>Roll number · {{ student.roll_number }}</small>
+      </div>
+      <span class="status-chip status-valid">Account linked</span>
+    </div>
     <form method="post" action="{{ url_for('student_request_submit') }}">
       <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-      <label class="student-request-prompt" for="request_text">What certificate would you like to request?</label>
-      <p class="student-request-help">Describe what you need in your own words. You can mention the event, programme, achievement or purpose. You do not need to choose a certificate type or fill in administrative details.</p>
-      <textarea class="student-request-box" id="request_text" name="request_text" rows="7" maxlength="600" minlength="5" required placeholder="Please describe the certificate you need..."></textarea>
-      <button class="primary-btn student-request-submit" type="submit">Submit certificate request →</button>
+      <label class="sr-only" for="request_text">Request details</label>
+      <textarea class="student-request-box" id="request_text" name="request_text" rows="4" maxlength="600" minlength="5" required placeholder="Describe the certificate you need…"></textarea>
+      <button class="primary-btn student-request-submit" type="submit">Submit request →</button>
     </form>
   </section>
 
-  <section class="panel">
-    <div class="panel-head"><div><h2>Your request history</h2><p>Open a request to follow its review and issuance status.</p></div><span class="count-pill">{{ requests|length }}</span></div>
+  <section class="panel student-request-history">
+    <div class="panel-head">
+      <div><h2>My requests</h2><p>Track review and issuance status.</p></div>
+      <span class="count-pill">{{ requests|length }}</span>
+    </div>
     <div class="request-list">
       {% for r in requests %}
       <a class="request-row request-history request-link-row" href="{{ url_for('student_request_detail',request_id=r.id) }}">
