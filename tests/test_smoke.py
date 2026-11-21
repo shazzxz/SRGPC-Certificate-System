@@ -379,8 +379,8 @@ def test_certificate_layout_header_footer_clearance(app):
     assert renderer.SIGNATURE_LINE_Y > renderer.QR_BOX_Y + 80
 
     # The live SVG preview must use the same spacing and no crest-crossing rule.
-    assert "addImage(svg,stage.dataset.logoUrl,cx-34,38,68,68)" in preview
-    assert "addText(svg,'SRGPC',cx,122" in preview
+    assert "addImage(svg,stage.dataset.logoUrl,cx-32,40,64,64)" in preview
+    assert "addText(svg,'SRGPC',cx,125" in preview
     assert "addText(svg,'CERTIFICATE OF ACHIEVEMENT',cx,169" in preview
     assert "Roll No." in preview and "footer.rollX,545" in preview
     assert "addRect(svg,qrX,475,96,96" in preview
