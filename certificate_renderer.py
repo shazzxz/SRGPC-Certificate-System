@@ -375,7 +375,7 @@ def draw_frame(c: canvas.Canvas, tpl: str, theme: dict):
         gold = colors.HexColor("#d2ad5f")
         c.setStrokeColor(gold); c.setLineWidth(1.6); c.rect(24,24,PAGE_W-48,PAGE_H-48,fill=0,stroke=1)
         c.setStrokeColor(colors.HexColor("#6c5830")); c.setLineWidth(0.7); c.rect(35,35,PAGE_W-70,PAGE_H-70,fill=0,stroke=1)
-        c.setFillColor(gold); c.rect(24,PAGE_H-31,PAGE_W,7,fill=1,stroke=0); c.rect(24,24,PAGE_W-48,3,fill=1,stroke=0)
+        c.setFillColor(gold); c.rect(24,PAGE_H-31,PAGE_W-48,7,fill=1,stroke=0); c.rect(24,24,PAGE_W-48,3,fill=1,stroke=0)
         c.setFillColor(colors.HexColor("#2a2417")); c.circle(PAGE_W/2,PAGE_H-68,36,fill=1,stroke=0)
     elif tpl == "coastal":
         blue = colors.HexColor("#0b82a5")
