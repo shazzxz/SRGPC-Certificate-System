@@ -683,12 +683,12 @@ def test_original_certificate_style_is_restored_and_preview_cache_is_fresh():
     renderer = (root / "certificate_renderer.py").read_text(encoding="utf-8")
 
     # Keep the original single-line footer, crest scale, and template art.
-    assert "filename='app.js', v='13'" in base_template
+    assert "filename='app.js', v='14'" in base_template
     assert "Protected footer panel" not in preview
     assert "addText(svg,'SRGPC',cx,125" in preview
     assert "addImage(svg,stage.dataset.logoUrl,cx-32,40,64,64)" in preview
     assert "M80 544 L220 544" in preview
-    assert "FOOTER_TEXT_Y = 82" in renderer
+    assert "FOOTER_TEXT_Y = 50" in renderer
     assert "FOOTER_PANEL_BOTTOM" not in renderer
 
 
