@@ -36,7 +36,21 @@ NAME_RULE_Y = 305
 ACHIEVEMENT_TEXT_Y = 274
 BADGE_Y = 197
 SIGNATURE_LINE_Y = 129
-FOOTER_TEXT_Y = 82
+FOOTER_TEXT_Y = 50
+# Keep the existing one-line metadata just inside each template's lower frame.
+# Values are chosen per frame so decorative rules/waves do not run through text.
+FOOTER_TEXT_Y_BY_TEMPLATE = {
+    "classic": 50, "modern": 48, "emerald": 50, "midnight": 52,
+    "royal": 50, "burgundy": 48, "skyline": 38, "minimal": 48,
+    "academic_blueprint": 46, "heritage_seal": 50, "teal_arch": 43,
+    "copper_ledger": 39, "ivory_ribbon": 42, "crimson_sash": 51,
+    "cobalt_wave": 39, "sage_garden": 51, "charcoal_gold": 49,
+    "coastal": 38, "geometric": 48, "monochrome": 56,
+}
+
+
+def footer_text_y(tpl: str) -> float:
+    return float(FOOTER_TEXT_Y_BY_TEMPLATE.get(tpl, FOOTER_TEXT_Y))
 SIGNATURE_XS = (250, PAGE_W - 250)
 
 # The renderer deliberately uses one shared content grid for every template.
@@ -245,9 +259,9 @@ def draw_footer_metadata(c: canvas.Canvas, info: dict, font: dict, theme: dict, 
     type_value = certificate_type or _safe_text(info.get('certificate_type'), "Achievement")
     center_text = f"{type_value} - {_safe_text(info.get('academic_year'), '2026-27')}"
     cert_text = _safe_text(info.get('certificate_id'), "SRGPC-PREVIEW")
-    draw_fit_centered(c, roll_text, bold, roll_x, FOOTER_TEXT_Y, roll_w, 10.5, 9.0, text, 0.25)
-    draw_fit_centered(c, center_text, bold, center_x, FOOTER_TEXT_Y, center_w, 10.5, 9.0, text, 0.25)
-    draw_fit_centered(c, cert_text, bold, cert_x, FOOTER_TEXT_Y, cert_w, 10.0, 8.6, text, 0.2)
+    draw_fit_centered(c, roll_text, bold, roll_x, footer_text_y(tpl), roll_w, 10.5, 9.0, text, 0.25)
+    draw_fit_centered(c, center_text, bold, center_x, footer_text_y(tpl), center_w, 10.5, 9.0, text, 0.25)
+    draw_fit_centered(c, cert_text, bold, cert_x, footer_text_y(tpl), cert_w, 10.0, 8.6, text, 0.2)
 
 
 def draw_footer(c: canvas.Canvas, info: dict, verification_url: Optional[str], font: dict, theme: dict, tpl: str):
