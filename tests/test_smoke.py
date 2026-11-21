@@ -624,7 +624,7 @@ def test_all_certificate_templates_and_fonts_use_aligned_safe_areas(monkeypatch)
             pdf = target.getvalue()
             assert pdf.startswith(b"%PDF-")
             page_box = re.search(
-                rb"/MediaBox\\s*\\[\\s*0\\s+0\\s+([0-9.]+)\\s+([0-9.]+)\\s*\\]",
+                rb"/MediaBox\s*\[\s*0\s+0\s+([0-9.]+)\s+([0-9.]+)\s*\]",
                 pdf,
             )
             assert page_box, (template, family, "missing PDF page box")
