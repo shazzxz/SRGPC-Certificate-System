@@ -674,3 +674,13 @@ def test_certificate_content_bounds_cover_all_three_asymmetric_frames():
         assert right <= renderer.PAGE_W
         assert right > left
         assert renderer.content_center(template) == pytest.approx((left + right) / 2, abs=0.01)
+
+
+def test_live_preview_asset_cache_key_is_bumped():
+    root = Path(__file__).resolve().parents[1]
+    base_template = (root / "templates" / "base.html").read_text(encoding="utf-8")
+    preview_js = (root / "static" / "app.js").read_text(encoding="utf-8")
+    assert "filename='app.js', v='12'" in base_template
+    assert "Protected footer panel" in preview_js
+    assert "footerLayouts" not in preview_js
+    assert "label:'CERTIFICATE ID'" in preview_js
