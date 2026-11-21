@@ -44,14 +44,12 @@
       {% endif %}
       {% if r.admin_note %}<div class="rejected-note"><b>Admin note:</b> {{ r.admin_note }}</div>{% endif %}
       <div class="request-actions">
-        <a class="secondary-btn inline-btn" href="{{ url_for('admin_request_detail',request_id=r.id) }}">Review &amp; prepare</a>
-        {% if r.status=='Pending' %}
-        <form method="post" action="{{ url_for('admin_request_review',request_id=r.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><button class="secondary-btn inline-btn" type="submit">Start review</button></form>
-        {% endif %}
         {% if r.status in ['Pending','Under Review'] %}
-        <form method="post" action="{{ url_for('admin_request_reject',request_id=r.id) }}"><input type="hidden" name="_csrf_token" value="{{ csrf_token() }}"><input name="admin_note" placeholder="Reason (optional)"><button class="secondary-btn danger-btn inline-btn" type="submit">Reject</button></form>
+        <a class="primary-btn inline-btn" href="{{ url_for('admin_request_detail',request_id=r.id) }}">Review &amp; issue certificate →</a>
         {% elif r.certificate_id %}
-        <a class="primary-btn inline-btn" href="{{ url_for('admin_certificate_detail',certificate_id=r.certificate_id) }}">Open certificate</a>
+        <a class="primary-btn inline-btn" href="{{ url_for('admin_certificate_detail',certificate_id=r.certificate_id) }}">Open issued certificate →</a>
+        {% else %}
+        <a class="secondary-btn inline-btn" href="{{ url_for('admin_request_detail',request_id=r.id) }}">View request</a>
         {% endif %}
       </div>
     </article>
