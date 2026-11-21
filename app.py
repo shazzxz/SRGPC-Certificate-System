@@ -2135,7 +2135,7 @@ def admin_request_detail(request_id):
         if not req:
             abort(404)
         updates = db.execute("SELECT * FROM request_updates WHERE request_id=? ORDER BY id ASC", (request_id,)).fetchall()
-    return render_template("admin_request_detail.html", **ctx, request=req, updates=updates, templates=TEMPLATES, default_template=setting("default_template","classic"), default_font=setting("default_font","Helvetica"))
+    return render_template("admin_request_detail.html", **ctx, request=req, updates=updates, templates=TEMPLATES, request_types=REQUEST_TYPES, default_template=setting("default_template","classic"), default_font=setting("default_font","Helvetica"))
 
 
 @app.post("/admin/request/<int:request_id>/review")
@@ -2156,7 +2156,7 @@ def admin_request_review(request_id):
         )
         add_request_update(db, request_id, "Under Review", "Request moved to under review.", session.get("admin_role","admin"), session.get("username", ADMIN_USERNAME))
         db.commit()
-    notify_student(req["student_id"], "Request under review", f"Your {req['request_type']} certificate request is now being reviewed by the admin.")
+    notify_student(req["student_id"], "Request under review", "Your certificate request is now being reviewed by the college team.")
     audit("Review request", "request", request_id, "Moved to Under Review")
     flash("Request moved to review.", "success")
     return redirect(url_for("admin_requests", status="Under Review"))
@@ -2173,13 +2173,22 @@ def admin_request_generate(request_id):
     if req["status"] not in {"Pending", "Under Review"}:
         flash("This request has already been processed.", "error")
         return redirect(url_for("admin_requests"))
+
+    is_freeform_request = req["activity"] == "Student request"
+    certificate_type = clean(request.form.get("certificate_type") or ("" if is_freeform_request else req["request_type"]), 60)
+    activity = clean(request.form.get("activity") or ("" if is_freeform_request else req["activity"]), 140)
+    position = clean(request.form.get("position") or ("" if is_freeform_request else req["position"]), 80)
+    if certificate_type not in REQUEST_TYPES or not activity or not position:
+        flash("Choose a certificate type and complete the official activity and achievement details before generation.", "error")
+        return redirect(url_for("admin_request_detail", request_id=request_id))
+
     with get_db() as db:
         duplicate = db.execute(
             """SELECT certificate_id FROM certificates
                WHERE lower(name)=lower(?) AND lower(roll_number)=lower(?)
                  AND lower(activity)=lower(?) AND lower(position)=lower(?)
                  AND status='Valid'""",
-            (req["name"], req["roll_number"], req["activity"], req["position"]),
+            (req["name"], req["roll_number"], activity, position),
         ).fetchone()
     if duplicate:
         flash(f"A matching valid certificate already exists ({duplicate['certificate_id']}). Use the certificate archive to reissue if this is intentional.", "error")
@@ -2188,9 +2197,9 @@ def admin_request_generate(request_id):
     info = {
         "name": req["name"],
         "roll_number": req["roll_number"],
-        "activity": req["activity"],
-        "position": req["position"],
-        "certificate_type": req["request_type"],
+        "activity": activity,
+        "position": position,
+        "certificate_type": certificate_type,
         "academic_year": req["academic_year"] if "academic_year" in req.keys() else setting("default_academic_year", current_academic_year()),
         "department": req["department"] if "department" in req.keys() else "",
         "programme": req["programme"] if "programme" in req.keys() else "",
@@ -2212,7 +2221,7 @@ def admin_request_generate(request_id):
         add_certificate_history(db, info["certificate_id"], "Generated", "Certificate generated from request.", session.get("admin_role","admin"), session.get("username", ADMIN_USERNAME), info["created_at"])
         add_request_update(db, request_id, "Generated", f"Certificate generated: {info['certificate_id']}.", session.get("admin_role","admin"), session.get("username", ADMIN_USERNAME))
         db.commit()
-    notify_student(req["student_id"], "Certificate generated", f"Your {req['request_type']} certificate is ready: {info['certificate_id']}")
+    notify_student(req["student_id"], "Certificate generated", f"Your certificate is ready: {info['certificate_id']}")
     audit("Fulfil request", "request", request_id, f"Generated {info['certificate_id']}")
     flash(f"Request fulfilled and certificate generated: {info['certificate_id']}", "success")
     return redirect(url_for("admin_requests"))
@@ -2318,36 +2327,33 @@ def student_request_detail(request_id):
 @require_role("student")
 def student_request_submit():
     student = student_for_session()
+    request_text = clean(request.form.get("request_text"), 600)
+    if not request_text or len(request_text) < 5:
+        flash("Please describe the certificate you need before submitting.", "error")
+        return redirect(url_for("student_request_page"))
+
     fields = {
-        "name": clean(request.form.get("name"), 80),
-        "roll_number": clean(request.form.get("roll_number"), 40),
-        "request_type": clean(request.form.get("request_type"), 60),
-        "activity": clean(request.form.get("activity"), 140),
-        "position": clean(request.form.get("position"), 80),
-        "note": clean(request.form.get("note"), 240),
+        "name": student["name"],
+        "roll_number": student["roll_number"],
+        "request_type": "Other",
+        "activity": "Student request",
+        "position": "Details to be confirmed",
+        "note": request_text,
         "department": student["department"],
         "programme": student["programme"],
         "semester": student["semester"],
     }
-    if fields["name"] != student["name"] or fields["roll_number"].casefold() != student["roll_number"].casefold():
-        flash("For security, the requested certificate name and roll number must match your registered account.", "error")
-        return redirect(url_for("student_request_page"))
-    if fields["request_type"] not in REQUEST_TYPES:
-        flash("Choose a valid certificate type.", "error")
-        return redirect(url_for("student_request_page"))
-    if not all([fields["name"], fields["roll_number"], fields["activity"], fields["position"]]):
-        flash("Please fill in name, roll number, activity and position.", "error")
-        return redirect(url_for("student_request_page"))
     with get_db() as db:
         duplicate_request = db.execute(
             """SELECT id FROM certificate_requests
-               WHERE student_id=? AND status IN ('Pending','Under Review')
-                 AND lower(activity)=lower(?) AND lower(position)=lower(?)""",
-            (student["id"], fields["activity"], fields["position"]),
+               WHERE student_id=? AND activity='Student request'
+                 AND status IN ('Pending','Under Review') AND lower(note)=lower(?)""",
+            (student["id"], request_text),
         ).fetchone()
     if duplicate_request:
-        flash("You already have an active request for the same activity and achievement.", "error")
+        flash("You already have an active request with the same description.", "error")
         return redirect(url_for("student_request_page"))
+
     created_at = datetime.now().isoformat(timespec="seconds")
     with get_db() as db:
         db.execute(
@@ -2361,8 +2367,8 @@ def student_request_submit():
         if req:
             add_request_update(db, req["id"], "Pending", "Certificate request submitted.", "student", student["name"])
         db.commit()
-    notify_student(student["id"], "Request submitted", "Your certificate request has been submitted and is waiting for admin review.")
-    flash("Certificate request submitted to the admin.", "success")
+    notify_student(student["id"], "Certificate request submitted", "Your request has been submitted and is waiting for college review.")
+    flash("Your certificate request has been submitted for review.", "success")
     return redirect(url_for("student_request_page"))
 
 
