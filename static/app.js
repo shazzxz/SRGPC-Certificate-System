@@ -107,7 +107,7 @@ function renderLiveCertificate(){
   addText(svg,type.toUpperCase(),cx,393,{font:ff,size:10.5,weight:700,fill:t.accent,length:badgeW-24});
 
   // Signature columns are balanced around the certificate content center.
-  const signatureOffsets={modern:171,skyline:125,coastal:171};
+  const signatureOffsets={modern:145,skyline:125,coastal:145};
   const signatureOffset=signatureOffsets[tpl]??171;
   const [sx1,sx2]=[cx-signatureOffset,cx+signatureOffset];
   const teacher=stage.dataset.teacherUrl, principal=stage.dataset.principalUrl;
