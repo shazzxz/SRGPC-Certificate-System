@@ -413,12 +413,7 @@ def draw_frame(c: canvas.Canvas, tpl: str, theme: dict):
         coral = colors.HexColor("#e49b7e")
         c.setFillColor(coral); c.rect(0,0,14,PAGE_H,fill=1,stroke=0); c.setFillColor(colors.HexColor("#d9f0f6")); c.rect(14,0,42,PAGE_H,fill=1,stroke=0)
         c.setStrokeColor(blue); c.setLineWidth(1.3); c.roundRect(66,24,PAGE_W-90,PAGE_H-48,10,fill=0,stroke=1)
-        # The original lower wave crossed the footer text baseline. The footer
-        # now owns that entire band, so keep the coastal frame clean below it.
-        c.setStrokeColor(colors.HexColor("#9bcbd8")); c.setLineWidth(0.9)
-        c.line(80, 104, 220, 104); c.line(220, 104, 360, 110)
-        c.line(360, 110, 500, 102); c.line(500, 102, 640, 109)
-        c.line(640, 109, PAGE_W-45, 103)
+        # The protected footer panel is the sole lower detail in this frame.
     elif tpl == "geometric":
         indigo = colors.HexColor("#4056a1")
         c.setStrokeColor(indigo); c.setLineWidth(1.4); c.rect(24,24,PAGE_W-48,PAGE_H-48,fill=0,stroke=1)
@@ -431,10 +426,10 @@ def draw_frame(c: canvas.Canvas, tpl: str, theme: dict):
         c.setFillColor(charcoal); c.rect(0,0,11,PAGE_H,fill=1,stroke=0); c.rect(0,PAGE_H-8,PAGE_W,8,fill=1,stroke=0)
         c.setStrokeColor(charcoal); c.setLineWidth(0.9); c.rect(30,30,PAGE_W-60,PAGE_H-60,fill=0,stroke=1)
         c.setStrokeColor(colors.HexColor("#dfe3e7")); c.setLineWidth(0.7); c.rect(42,42,PAGE_W-84,PAGE_H-84,fill=0,stroke=1)
-        c.line(160,104,PAGE_W-160,104)
+        # Keep the signature/footer band free of extra rules.
     else:  # minimal
         c.setStrokeColor(colors.HexColor("#cbd5e1")); c.setLineWidth(0.9); c.rect(SAFE+10, SAFE+10, PAGE_W-2*(SAFE+10), PAGE_H-2*(SAFE+10), fill=0, stroke=1)
-        c.setStrokeColor(colors.HexColor("#e2e8f0")); c.setLineWidth(0.7); c.line(180, 104, PAGE_W-180, 104)
+        # Keep the signature/footer band free of extra rules.
 
 
 def _title_band(c, info, theme, font, cx):
