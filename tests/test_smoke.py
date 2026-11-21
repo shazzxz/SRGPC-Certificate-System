@@ -328,7 +328,10 @@ def test_student_request_page_uses_one_respectful_free_text_box(app):
     assert 'name="request_type"' not in html
     assert 'name="activity"' not in html
     assert 'name="position"' not in html
-    assert "What certificate would you like to request?" in html
+    assert "Requesting as" in html
+    assert "student-request-account" in html
+    assert "What certificate would you like to request?" not in html
+    assert "Describe what you need in your own words." not in html
 
 
 def test_student_free_text_request_uses_registered_identity(app):
@@ -382,3 +385,147 @@ def test_certificate_layout_header_footer_clearance(app):
     assert "Roll No." in preview and "footer.rollX,545" in preview
     assert "addRect(svg,qrX,475,96,96" in preview
     assert "addLine(svg,36,84,806,84" not in preview
+
+
+
+def test_admin_can_issue_pending_request_to_linked_student_account(app):
+    from app import get_db
+
+    _, client = app
+    student_id, original_roll = _create_test_student(client)
+
+    # Submit a request as the student using their authenticated identity.
+    student_page = client.get("/student/request")
+    student_token = csrf(student_page.get_data(as_text=True))
+    submitted = client.post(
+        "/student/request",
+        data={
+            "_csrf_token": student_token,
+            "request_text": "Please provide my participation certificate for the annual technical fest.",
+        },
+        follow_redirects=False,
+    )
+    assert submitted.status_code == 302
+
+    with get_db() as db:
+        request_row = db.execute(
+            "SELECT * FROM certificate_requests WHERE student_id=? ORDER BY id DESC LIMIT 1",
+            (student_id,),
+        ).fetchone()
+        assert request_row is not None
+        request_id = request_row["id"]
+
+        # Simulate a profile update after the request was first submitted.
+        # The live student profile, not the stale request snapshot, must issue
+        # the certificate and remain its permanent account owner.
+        db.execute(
+            "UPDATE students SET name=?, roll_number=? WHERE id=?",
+            ("Current Profile Name", "CSECURRENT01", student_id),
+        )
+        db.execute(
+            "UPDATE certificate_requests SET name=?, roll_number=? WHERE id=?",
+            ("Old Request Snapshot", original_roll, request_id),
+        )
+        db.commit()
+
+    # Sign in as admin without moving the request through the old review step.
+    with client.session_transaction() as session_data:
+        session_data.clear()
+    login_page = client.get("/")
+    admin_token = csrf(login_page.get_data(as_text=True))
+    login = client.post(
+        "/login",
+        data={
+            "role": "admin",
+            "username": "ADMIN",
+            "password": "0000",
+            "_csrf_token": admin_token,
+        },
+        follow_redirects=False,
+    )
+    assert login.status_code == 302
+
+    detail = client.get(f"/admin/request/{request_id}")
+    assert detail.status_code == 200
+    detail_html = detail.get_data(as_text=True)
+    assert "Current Profile Name" in detail_html
+    assert "CSECURRENT01" in detail_html
+    assert "Generate &amp; send to student" in detail_html
+    assert "readonly" in detail_html
+
+    # Direct generation from Pending must succeed; no /review POST required.
+    generate_token = csrf(detail_html)
+    generated = client.post(
+        f"/admin/request/{request_id}/generate",
+        data={
+            "_csrf_token": generate_token,
+            "certificate_type": "Participation",
+            "activity": "Annual Technical Fest",
+            "position": "Volunteer",
+            "template": "classic",
+            "font_family": "Helvetica",
+        },
+        follow_redirects=False,
+    )
+    assert generated.status_code == 302
+
+    with get_db() as db:
+        request_after = db.execute(
+            "SELECT status,certificate_id FROM certificate_requests WHERE id=?",
+            (request_id,),
+        ).fetchone()
+        certificate = db.execute(
+            "SELECT * FROM certificates WHERE certificate_id=?",
+            (request_after["certificate_id"],),
+        ).fetchone()
+        notification = db.execute(
+            "SELECT * FROM notifications WHERE student_id=? AND title='Certificate generated' ORDER BY id DESC LIMIT 1",
+            (student_id,),
+        ).fetchone()
+
+    assert request_after["status"] == "Generated"
+    assert certificate is not None
+    assert certificate["request_id"] == request_id
+    assert certificate["name"] == "Current Profile Name"
+    assert certificate["roll_number"] == "CSECURRENT01"
+    assert certificate["activity"] == "Annual Technical Fest"
+    assert notification is not None
+
+    # The issued PDF and detail page belong to that exact account even if its
+    # roll number later changes; another student with a different ID cannot see it.
+    with get_db() as db:
+        db.execute("UPDATE students SET roll_number='CSEUPDATED02' WHERE id=?", (student_id,))
+        db.commit()
+    with client.session_transaction() as session_data:
+        session_data.clear()
+        session_data["role"] = "student"
+        session_data["student_id"] = student_id
+    wallet = client.get("/student/certificates")
+    assert wallet.status_code == 200
+    assert request_after["certificate_id"] in wallet.get_data(as_text=True)
+    student_detail = client.get(f"/student/certificate/{request_after['certificate_id']}")
+    assert student_detail.status_code == 200
+    download = client.get(f"/download/{certificate['filename']}")
+    assert download.status_code == 200
+    assert download.data.startswith(b"%PDF")
+
+    other_student_id, _ = _create_test_student(client)
+    assert other_student_id != student_id
+    denied_detail = client.get(f"/student/certificate/{request_after['certificate_id']}")
+    assert denied_detail.status_code == 404
+    denied_download = client.get(f"/download/{certificate['filename']}")
+    assert denied_download.status_code == 403
+
+
+def test_mobile_student_layout_has_stacked_actions_and_compact_request_ui(app):
+    root = Path(__file__).resolve().parents[1]
+    mobile_css = (root / "static" / "mobile-polish.css").read_text(encoding="utf-8")
+    request_template = (root / "templates" / "student_request.html").read_text(encoding="utf-8")
+    wallet_template = (root / "templates" / "student_certificates.html").read_text(encoding="utf-8")
+
+    assert "grid-template-columns: minmax(0, 1fr) !important" in mobile_css
+    assert ".glass-ui .notification-row" in mobile_css
+    assert ".glass-ui .panel-head" in mobile_css
+    assert "student-request-account" in request_template
+    assert "What certificate would you like to request?" not in request_template
+    assert "No name search is required" not in wallet_template
