@@ -159,15 +159,17 @@ def server_error(error):
 
 @app.get("/healthz")
 def healthz():
-    checks = {"database": "ok", "storage": "not_configured"}
+    # PostgreSQL is the durable fallback when optional S3-compatible object
+    # storage is not configured: signatures are stored in the DB and missing
+    # certificate PDFs can be regenerated from their certificate records.
+    storage_state = "configured" if storage_configured() else "database_fallback"
+    checks = {"database": "ok", "storage": storage_state}
     try:
         with get_db() as db:
             db.execute("SELECT 1").fetchone()
     except Exception as exc:
         app.logger.error("Health check database failure: %s", exc, extra={"request_id": getattr(g, "request_id", "")})
         checks["database"] = "error"
-    if storage_configured():
-        checks["storage"] = "configured"
     status = 200 if checks["database"] == "ok" else 503
     return jsonify({
         "status": "ok" if status == 200 else "degraded",

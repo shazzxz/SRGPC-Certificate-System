@@ -33,11 +33,17 @@ def csrf(html):
     return match.group(1)
 
 
-def test_healthz(app):
-    _, client = app
+def test_healthz_reports_database_fallback_when_object_storage_is_optional(app, monkeypatch):
+    flask_app, client = app
+    import app as app_module
+    monkeypatch.setattr(app_module, "storage_configured", lambda: False)
+
     response = client.get("/healthz")
+    payload = response.get_json()
     assert response.status_code == 200
-    assert response.get_json()["status"] == "ok"
+    assert payload["status"] == "ok"
+    assert payload["checks"]["database"] == "ok"
+    assert payload["checks"]["storage"] == "database_fallback"
 
 
 def test_csrf_rejects_state_change_without_token(app):

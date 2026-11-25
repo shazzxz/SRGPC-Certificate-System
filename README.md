@@ -136,7 +136,9 @@ Set these environment variables for a public deployment:
 
 ### Production storage note
 
-Render production uses PostgreSQL through `DATABASE_URL`. Generated PDFs/signatures are still stored on the web service filesystem, so the app regenerates a missing certificate PDF from its database record when a download is requested. For long-term production use, move generated files and uploaded signatures to persistent object storage.
+Render production uses PostgreSQL through `DATABASE_URL`. Uploaded signature bytes are also stored in the PostgreSQL `signature_library` table, and a missing generated certificate PDF is rebuilt from its certificate record after a deploy. This database-backed fallback keeps the certificate workflow usable without a separate object-storage account.
+
+The optional S3-compatible object-storage integration supports AWS S3, Cloudflare R2 or MinIO. When it is not configured, `/healthz` reports `storage: database_fallback` rather than treating this optional integration as a broken service. For independent file retention and larger production workloads, configure `SRGPC_S3_BUCKET`, `SRGPC_S3_ENDPOINT`, `SRGPC_S3_ACCESS_KEY`, `SRGPC_S3_SECRET_KEY` and `SRGPC_S3_REGION`.
 
 
 ## v6.1 UI improvements
